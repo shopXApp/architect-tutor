@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project File Index</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .file-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            background-color: #667eea;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            padding: 12px 20px;
+            border-left: 4px solid #667eea;
+            background-color: #f8f9fa;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background-color: #e9ecef;
+            border-left-color: #764ba2;
+            transform: translateX(5px);
+        }
+
+        .file-item a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .file-item a:hover {
+            color: #764ba2;
+            text-decoration: underline;
+        }
+
+        .file-path {
+            color: #999;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .stats {
+            background-color: #f0f2f5;
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .stat-item {
+            display: inline-block;
+            margin: 0 20px;
+            color: #555;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Project File Index</h1>
+        <p class="subtitle">All files in the Architect-tutor project</p>
+
+        <!-- Root Level Files -->
+        <div class="file-section">
+            <div class="section-title">Root Level Files</div>
+            <ul class="file-list">
+                <li class="file-item">
+                    <a href="day1-v1.html">day1-v1.html</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+                <li class="file-item">
+                    <a href="day2-v1.html">day2-v1.html</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+                <li class="file-item">
+                    <a href="day3-v1.html">day3-v1.html</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+                <li class="file-item">
+                    <a href="Mastering%20technical%20architect%20interview.html">Mastering technical architect interview.html</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+                <li class="file-item">
+                    <a href="roadmap.html">roadmap.html</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+                <li class="file-item">
+                    <a href=".gitignore">.gitignore</a>
+                    <div class="file-path">Root directory</div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Others Directory -->
+        <div class="file-section">
+            <div class="section-title">?? Others Directory</div>
+            <ul class="file-list">
+                <li class="file-item">
+                    <a href="others/day1.html">day1.html</a>
+                    <div class="file-path">others/</div>
+                </li>
+                <li class="file-item">
+                    <a href="others/day2.html">day2.html</a>
+                    <div class="file-path">others/</div>
+                </li>
+                <li class="file-item">
+                    <a href="others/day3-index.html">day3-index.html</a>
+                    <div class="file-path">others/</div>
+                </li>
+                <li class="file-item">
+                    <a href="others/day3-v0.html">day3-v0.html</a>
+                    <div class="file-path">others/</div>
+                </li>
+                <li class="file-item">
+                    <a href="others/day3.html">day3.html</a>
+                    <div class="file-path">others/</div>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Statistics -->
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-number">11</div>
+                <div>Total Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">10</div>
+                <div>HTML Files</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">2</div>
+                <div>Directories</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

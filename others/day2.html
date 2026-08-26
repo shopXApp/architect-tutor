@@ -1,0 +1,1735 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="Day 2 of the 30-Day Technical Architect Track: Scalability — design for 1 million users. Load estimation, bottlenecks, caching, database scaling, stateless apps, CDN, and interview preparation."/>
+<title>Day 2 — Scalability: Design for 1 Million Users · 30-Day Architect Track</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%231B6B8A'/%3E%3Cpath d='M6 24 L6 14 M12 24 L12 10 M18 24 L18 6 M24 24 L24 12' stroke='%23F0F7FB' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E"/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet"/>
+<style>
+/* ===== DESIGN TOKENS ===== */
+:root{
+  --paper:#F2F7FB;--paper2:#E5EFF5;--card:#FAFCFE;--card2:#EDF4F9;
+  --ink:#1A2533;--ink2:#4A5A6E;--ink3:#7A8BA0;
+  --line:#C8D8E5;--line2:#B0C4D5;
+  --accent:#1B6B8A;--accent-d:#145470;--accent-t:rgba(27,107,138,.08);
+  --green:#206B4E;--red:#8C2F39;--amber:#7A5C14;--purple:#4A2C7A;
+  --ok:#206B4E;--warn-bg:rgba(140,47,57,.07);--tip-bg:rgba(27,107,138,.07);--key-bg:rgba(26,37,51,.05);
+  --shadow:0 16px 40px -22px rgba(26,37,51,.32);
+  --grid:rgba(26,37,51,.05);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --disp:'Fraunces',Georgia,serif;
+  --body:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+body.dark{
+  --paper:#0F1820;--paper2:#0B1219;--card:#162230;--card2:#121C28;
+  --ink:#DDE8F0;--ink2:#8FA8BE;--ink3:#5A7288;
+  --line:#1E3045;--line2:#284055;
+  --accent:#3DA0C8;--accent-d:#5AB8DC;--accent-t:rgba(61,160,200,.1);
+  --green:#4DAA80;--red:#D97A86;--amber:#C9A84C;--purple:#9A7ED0;
+  --ok:#4DAA80;--warn-bg:rgba(217,122,134,.09);--tip-bg:rgba(61,160,200,.09);--key-bg:rgba(221,232,240,.05);
+  --shadow:0 16px 40px -22px rgba(0,0,0,.7);
+  --grid:rgba(221,232,240,.04);
+}
+/* ===== RESET ===== */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.68;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#fff}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit;cursor:pointer;border:0;background:0}
+/* noise overlay */
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:400;opacity:.04;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E")}
+/* ===== PROGRESS ===== */
+.prog{position:fixed;top:0;left:0;right:0;height:3px;z-index:300;background:transparent}
+.prog i{display:block;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left;transition:transform .1s linear}
+/* ===== TOPBAR ===== */
+.topbar{position:sticky;top:0;z-index:200;background:var(--paper);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 24px}
+.tb-left{display:flex;align-items:center;gap:12px;min-width:0}
+.hamburger{display:none;align-items:center;justify-content:center;width:34px;height:34px;border:1px solid var(--line2);border-radius:3px;color:var(--ink);flex:none}
+.track-label{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--ink3);white-space:nowrap}
+.day-pill{font-family:var(--mono);font-size:11px;letter-spacing:.14em;background:var(--accent);color:#fff;padding:4px 10px;border-radius:3px;white-space:nowrap}
+.tb-right{display:flex;gap:8px;align-items:center}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;border:1px solid var(--line2);background:transparent;color:var(--ink);padding:7px 13px;border-radius:3px;transition:all .22s;display:inline-flex;align-items:center;gap:7px}
+.btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.btn.sq{width:34px;height:34px;padding:0;justify-content:center}
+/* ===== HERO ===== */
+.hero{border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:28px 28px;animation:gdrift 80s linear infinite}
+@keyframes gdrift{to{background-position:280px 280px}}
+.hero-in{position:relative;max-width:1240px;margin:0 auto;padding:66px 28px 52px;display:grid;grid-template-columns:1fr auto;gap:48px;align-items:center}
+.hero-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.hero-kicker::before{content:"";width:36px;height:1px;background:var(--accent)}
+.hero-h1{font-family:var(--disp);font-weight:900;font-size:clamp(36px,5.2vw,68px);line-height:1.03;letter-spacing:-.015em}
+.hero-h1 em{font-style:italic;color:var(--accent)}
+.hero-sub{margin-top:20px;font-size:17.5px;color:var(--ink2);max-width:620px;line-height:1.6}
+.hero-sub b{color:var(--ink)}
+.hero-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.12em;border:1px solid var(--line2);padding:5px 10px;border-radius:3px;color:var(--ink3);background:var(--card)}
+.hero-warn{margin-top:22px;border:1px solid var(--accent);background:var(--accent-t);border-radius:5px;padding:14px 18px;max-width:620px;font-size:15px;color:var(--ink2)}
+.hero-warn b{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--accent);display:block;margin-bottom:5px}
+/* hero metric cards */
+.hero-metrics{display:grid;grid-template-rows:repeat(3,1fr);gap:10px;min-width:200px}
+.metric{border:1px solid var(--line);background:var(--card);border-radius:5px;padding:14px 18px;text-align:center}
+.metric .m-val{font-family:var(--disp);font-weight:900;font-size:26px;color:var(--accent);line-height:1}
+.metric .m-lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--ink3);margin-top:5px}
+/* section strip */
+.sec-strip{max-width:1240px;margin:0 auto;padding:18px 28px;display:flex;flex-wrap:wrap;gap:8px;border-bottom:1px solid var(--line)}
+.sec-link{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;border:1px solid var(--line2);background:var(--card);color:var(--ink2);padding:7px 12px;border-radius:3px;text-decoration:none;transition:all .22s;display:inline-flex;align-items:center;gap:6px}
+.sec-link:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.sec-link span{font-size:9.5px;opacity:.7}
+/* ===== SHELL ===== */
+.shell{max-width:1240px;margin:0 auto;padding:0 28px;display:grid;grid-template-columns:240px minmax(0,1fr);gap:52px}
+.toc{position:sticky;top:62px;align-self:start;max-height:calc(100vh - 80px);overflow-y:auto;padding:30px 0;scrollbar-width:thin}
+.toc-hd{font-family:var(--mono);font-size:9.5px;letter-spacing:.26em;color:var(--ink3);margin-bottom:10px}
+.tn{display:flex;gap:10px;align-items:baseline;font-size:13px;color:var(--ink2);padding:5px 10px 5px 0;border-left:2px solid transparent;text-decoration:none;transition:all .2s;line-height:1.4}
+.tn .tno{font-family:var(--mono);font-size:10px;color:var(--ink3);min-width:22px}
+.tn:hover{color:var(--ink);border-left-color:var(--line2);padding-left:8px}
+.tn.on{color:var(--accent);border-left-color:var(--accent);background:var(--accent-t);padding-left:8px}
+.tn.on .tno{color:var(--accent)}
+.tn.sub{font-size:12px;padding-left:22px}
+.tn.sub.on{padding-left:28px}
+/* ===== DOC ===== */
+.doc{min-width:0;padding-bottom:60px}
+.sec{padding:70px 0 8px;border-top:1px solid var(--line)}
+.sec:first-child{border-top:0;padding-top:52px}
+.sk{font-family:var(--mono);font-size:10.5px;letter-spacing:.26em;color:var(--accent);display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.sk::after{content:"";flex:1;height:1px;background:var(--line)}
+.sh2{font-family:var(--disp);font-weight:700;font-size:clamp(28px,3.4vw,44px);line-height:1.06;letter-spacing:-.01em;max-width:820px}
+.slead{margin-top:16px;font-size:18px;color:var(--ink2);max-width:760px}
+.slead b{color:var(--ink)}
+.sec p{margin:14px 0;max-width:820px}
+.sec p b{font-weight:700}
+.sec h3{font-family:var(--disp);font-size:22px;font-weight:700;margin:40px 0 12px}
+.sec h4{font-family:var(--mono);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);margin:28px 0 10px}
+.lead-q{font-family:var(--disp);font-style:italic;font-size:20px;color:var(--ink)}
+/* reveal */
+.rv{opacity:0;transform:translateY(20px);transition:opacity .65s ease,transform .65s ease}
+.rv.in{opacity:1;transform:none}
+/* ===== CALLOUTS ===== */
+.co{border-left:3px solid var(--accent);background:var(--accent-t);padding:16px 20px;border-radius:0 5px 5px 0;margin:22px 0;max-width:840px}
+.co .co-lbl{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--accent);display:block;margin-bottom:7px}
+.co p,.co li{font-size:15.5px}
+.co.warn{border-left-color:var(--red);background:var(--warn-bg)} .co.warn .co-lbl{color:var(--red)}
+.co.tip{border-left-color:var(--accent);background:var(--tip-bg)} .co.tip .co-lbl{color:var(--accent)}
+.co.key{border-left-color:var(--ink);background:var(--key-bg)} .co.key .co-lbl{color:var(--ink)}
+.co.green{border-left-color:var(--green);background:rgba(32,107,78,.07)} .co.green .co-lbl{color:var(--green)}
+/* ===== TABLES ===== */
+.tw{overflow-x:auto;margin:22px 0;border:1px solid var(--line);border-radius:5px;background:var(--card)}
+table.t{width:100%;border-collapse:collapse;font-size:14.5px;min-width:540px}
+.t th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:13px 16px;border-bottom:2px solid var(--ink);color:var(--ink);background:var(--card2)}
+.t td{padding:13px 16px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+.t tr:last-child td{border-bottom:0}
+.t td b{color:var(--ink)}
+.t td .yes{color:var(--green);font-weight:600} .t td .no{color:var(--red);font-weight:600}
+/* ===== PROGRESSION CARDS ===== */
+.prog-row{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:26px 0}
+.prog-card{border:1px solid var(--line);border-top:3px solid var(--pc,var(--accent));background:var(--card);border-radius:0 5px 5px 5px;padding:20px 22px;transition:transform .22s,box-shadow .22s}
+.prog-card:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.prog-card .pc-label{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--pc,var(--accent));margin-bottom:8px}
+.prog-card h4{font-family:var(--disp);font-size:18px;font-weight:700;margin-bottom:8px}
+.prog-card p{font-size:14.5px;color:var(--ink2);margin:0}
+.prog-card ul{margin:8px 0 0 16px;font-size:14px;color:var(--ink2)}
+.prog-card li{margin:5px 0}
+/* ===== CALC BOX ===== */
+.calc{border:1px solid var(--line);background:var(--card);border-radius:5px;margin:20px 0;overflow:hidden;max-width:840px}
+.calc-head{font-family:var(--mono);font-size:11px;letter-spacing:.2em;padding:12px 20px;background:var(--card2);border-bottom:1px solid var(--line);color:var(--ink);display:flex;align-items:center;justify-content:space-between}
+.calc-body{padding:18px 20px}
+.calc-step{display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.calc-step:last-child{border-bottom:0;padding-bottom:0}
+.calc-step .cs-n{font-family:var(--mono);font-size:10.5px;color:var(--ink3)}
+.calc-step .cs-f{color:var(--ink2)}
+.calc-step .cs-r{font-family:var(--mono);font-size:13.5px;font-weight:600;color:var(--accent);text-align:right;white-space:nowrap}
+.calc-result{margin-top:12px;padding:12px 16px;background:var(--accent-t);border-radius:4px;font-family:var(--mono);font-size:13px;color:var(--accent)}
+/* ===== BOTTLENECK QUIZ ===== */
+.bnq{border:1px solid var(--line);background:var(--card);border-radius:5px;margin:14px 0;overflow:hidden;max-width:840px}
+.bnq-head{width:100%;display:flex;align-items:center;gap:14px;padding:15px 20px;background:0;border:0;text-align:left;color:var(--ink);transition:background .2s}
+.bnq-head:hover{background:var(--card2)}
+.bnq-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--accent);min-width:26px}
+.bnq-t{font-size:16px;font-weight:600;flex:1;line-height:1.35}
+.bnq-ic{width:22px;height:22px;border:1px solid var(--line2);border-radius:3px;position:relative;flex:none;transition:transform .35s,border-color .25s}
+.bnq-ic::before,.bnq-ic::after{content:"";position:absolute;background:var(--ink2);top:50%;left:50%}
+.bnq-ic::before{width:10px;height:1.5px;transform:translate(-50%,-50%)}
+.bnq-ic::after{width:1.5px;height:10px;transform:translate(-50%,-50%)}
+.bnq.open .bnq-ic{transform:rotate(45deg);border-color:var(--accent)}
+.bnq.open .bnq-ic::before,.bnq.open .bnq-ic::after{background:var(--accent)}
+.bnq-ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.bnq.open .bnq-ans{grid-template-rows:1fr}
+.bnq-ans-in{overflow:hidden;min-height:0}
+.bnq-pad{padding:0 20px 18px 62px;font-size:15px;color:var(--ink2);max-width:780px}
+.bnq-pad .bn-label{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--green);display:block;margin-bottom:6px}
+.bnq-pad .bnq-bot{font-family:var(--mono);font-size:12px;color:var(--accent);font-weight:600;display:block;margin-bottom:8px}
+/* ===== SCALING COMPARE ===== */
+.scale-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.sc-box{border:1px solid var(--line);background:var(--card);border-radius:5px;overflow:hidden}
+.sc-head{padding:14px 18px;font-family:var(--mono);font-size:11px;letter-spacing:.16em;background:var(--card2);border-bottom:1px solid var(--line);color:var(--ink)}
+.sc-body{padding:16px 18px}
+.sc-body ul{margin:0 0 0 16px}
+.sc-body li{margin:7px 0;font-size:14.5px;color:var(--ink2)}
+.sc-body li b{color:var(--ink)}
+/* ===== ARCH DIAGRAMS ===== */
+.diag{border:1px solid var(--line);background:var(--card);border-radius:5px;padding:16px;margin:22px 0}
+.diag svg{width:100%;height:auto}
+.db{fill:var(--card);stroke:var(--ink);stroke-width:1.3}
+.db.hi{fill:var(--accent-t);stroke:var(--accent);stroke-width:2}
+.db.ext{stroke-dasharray:6 4}
+.db.red{fill:var(--warn-bg);stroke:var(--red)}
+.db.green{fill:rgba(32,107,78,.06);stroke:var(--green)}
+.dl{font-family:'IBM Plex Mono',monospace;font-size:10.5px;fill:var(--ink);letter-spacing:.05em;font-weight:600}
+.ds{font-family:'IBM Plex Mono',monospace;font-size:8.5px;fill:var(--ink3)}
+.da{fill:none;stroke:var(--ink3);stroke-width:1.1}
+.da.hi{stroke:var(--accent);stroke-width:1.8}
+.da.dash{stroke-dasharray:6 4}
+.dn{font-family:'IBM Plex Mono',monospace;font-size:9px;fill:var(--accent);letter-spacing:.06em}
+/* version tabs */
+.vtabs{display:flex;flex-wrap:wrap;gap:8px;margin:26px 0 16px}
+.vtab{font-family:var(--mono);font-size:11px;letter-spacing:.08em;border:1px solid var(--line2);background:transparent;color:var(--ink2);padding:9px 16px;border-radius:4px;transition:all .22s}
+.vtab:hover{border-color:var(--accent);color:var(--accent)}
+.vtab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.vpanel{display:none;animation:fadeup .45s ease}
+.vpanel.on{display:block}
+@keyframes fadeup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.vcard{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--card);border-radius:0 5px 5px 5px;padding:22px 26px;max-width:840px}
+.vcard h4{font-family:var(--disp);font-size:20px;font-weight:700;margin-bottom:10px}
+.vcard .vc-meta{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px}
+.vc-tag{font-family:var(--mono);font-size:10px;letter-spacing:.12em;border:1px solid var(--line2);padding:4px 9px;border-radius:3px;color:var(--ink2);background:var(--card2)}
+.vcard p{font-size:15px;color:var(--ink2);margin:0 0 12px}
+.vcard p:last-child{margin:0}
+.vcard .prob{color:var(--red);font-weight:600} .vcard .fix{color:var(--green);font-weight:600} .vcard .tradeoff{color:var(--amber);font-weight:600}
+/* ===== CONCEPT BLOCKS ===== */
+.cblock{border:1px solid var(--line);background:var(--card);border-radius:5px;margin:18px 0;max-width:840px}
+.cblock-head{padding:14px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+.cb-num{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--accent);min-width:28px}
+.cb-title{font-family:var(--disp);font-size:19px;font-weight:700}
+.cb-sub{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);margin-left:auto}
+.cblock-body{padding:18px 20px}
+.cb-row{display:grid;grid-template-columns:140px 1fr;gap:16px;padding:10px 0;border-bottom:1px dashed var(--line);font-size:15px}
+.cb-row:last-child{border-bottom:0;padding-bottom:0}
+.cb-key{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--ink3);padding-top:2px}
+.cb-val{color:var(--ink2)}
+.cb-val b{color:var(--ink)}
+/* ===== 20 QUESTIONS ===== */
+.qa-toolbar{display:flex;gap:8px;margin:20px 0 14px}
+.qa{border:1px solid var(--line);background:var(--card);border-radius:5px;margin-bottom:8px;overflow:hidden;transition:border-color .22s;max-width:840px}
+.qa:hover{border-color:var(--line2)}
+.qa.open{border-color:var(--accent)}
+.qa-head{width:100%;display:flex;gap:14px;align-items:baseline;background:0;border:0;text-align:left;padding:15px 20px;color:var(--ink)}
+.qa-no{font-family:var(--mono);font-size:11.5px;color:var(--accent);min-width:26px;font-weight:600}
+.qa-t{font-size:16px;font-weight:600;flex:1;line-height:1.35}
+.qa-ic{flex:none;width:22px;height:22px;border:1px solid var(--line2);border-radius:3px;position:relative;align-self:center;transition:transform .35s}
+.qa-ic::before,.qa-ic::after{content:"";position:absolute;background:var(--ink2);top:50%;left:50%}
+.qa-ic::before{width:10px;height:1.5px;transform:translate(-50%,-50%)}
+.qa-ic::after{width:1.5px;height:10px;transform:translate(-50%,-50%)}
+.qa.open .qa-ic{transform:rotate(45deg);border-color:var(--accent)}
+.qa.open .qa-ic::before,.qa.open .qa-ic::after{background:var(--accent)}
+.qa-ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.qa.open .qa-ans{grid-template-rows:1fr}
+.qa-ans-in{overflow:hidden;min-height:0}
+.qa-ans-pad{padding:0 20px 18px 60px;font-size:15px;color:var(--ink2);max-width:780px}
+.qa-ans-pad::before{content:"WHY IT MATTERS — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.16em;color:var(--ink3)}
+/* ===== MISTAKES ===== */
+.mistake{display:grid;grid-template-columns:64px 1fr;gap:18px;padding:22px 0;border-bottom:1px dashed var(--line);max-width:840px}
+.mistake:last-of-type{border-bottom:0}
+.m-n{font-family:var(--disp);font-weight:900;font-size:38px;color:var(--accent);line-height:1;opacity:.85}
+.mistake h4{font-family:var(--disp);font-size:19px;font-weight:700;margin-bottom:7px}
+.m-why{font-size:15px;color:var(--ink2);margin:0 0 6px;max-width:760px}
+.m-why::before{content:"WHY — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink3)}
+.m-fix{font-size:15px;color:var(--ink2);margin:0;max-width:760px}
+.m-fix::before{content:"FIX — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--green)}
+/* ===== ASSIGNMENT ===== */
+.asg-spec{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);background:var(--card);border-radius:5px;overflow:hidden;margin:22px 0}
+.asg-spec>div{padding:16px 20px;border-top:1px solid var(--line)}
+.asg-spec>div:nth-child(-n+4){border-top:0}
+.asg-spec>div:not(:nth-child(4n)){border-right:1px solid var(--line)}
+.asg-spec b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink3);margin-bottom:5px}
+.asg-spec span{font-size:15px;color:var(--ink)}
+.asg-bar-wrap{display:flex;align-items:center;gap:14px;margin:22px 0 12px;max-width:840px}
+.asg-bar{flex:1;height:7px;border:1px solid var(--line2);border-radius:99px;overflow:hidden;background:var(--card)}
+.asg-bar i{display:block;height:100%;width:0%;background:var(--accent);transition:width .4s ease}
+.asg-cnt{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+.asg-item{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);background:var(--card);border-radius:4px;padding:13px 16px;margin-bottom:8px;cursor:pointer;transition:all .22s;max-width:840px;user-select:none}
+.asg-item:hover{border-color:var(--accent);transform:translateX(3px)}
+.asg-cb{flex:none;width:20px;height:20px;border:1.5px solid var(--line2);border-radius:3px;margin-top:3px;position:relative;transition:all .22s;background:var(--paper)}
+.asg-item input{position:absolute;opacity:0;pointer-events:none}
+.asg-item input:checked ~ .asg-cb{background:var(--accent);border-color:var(--accent)}
+.asg-item input:checked ~ .asg-cb::after{content:"";position:absolute;left:5px;top:2px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(43deg)}
+.asg-tx{font-size:15px;color:var(--ink2)}
+.asg-tx b{font-family:var(--mono);font-size:10.5px;color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:2px}
+.asg-item input:checked ~ .asg-tx{color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--line2)}
+/* ===== INTERVIEW Q ===== */
+.iq{border:1px solid var(--line);background:var(--card);border-radius:5px;padding:18px 22px;margin-bottom:10px;max-width:840px}
+.iq-q{font-size:16.5px;font-weight:600;display:flex;gap:13px;line-height:1.4}
+.iq-no{font-family:var(--mono);font-size:11px;color:var(--accent);min-width:26px;padding-top:3px}
+.iq-show{margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line2);background:transparent;color:var(--ink2);padding:7px 13px;border-radius:3px;transition:all .22s}
+.iq-show:hover,.iq.open .iq-show{border-color:var(--accent);color:var(--accent)}
+.iq-ans{display:grid;grid-template-rows:0fr;transition:grid-template-rows .4s ease}
+.iq.open .iq-ans{grid-template-rows:1fr}
+.iq-ans-in{overflow:hidden;min-height:0}
+.iq-ans-pad{margin-top:14px;border-top:1px dashed var(--line);padding-top:13px;font-size:15px;color:var(--ink2);max-width:760px}
+.iq-ans-pad::before{content:"MODEL ANSWER — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--accent)}
+/* ===== SUCCESS ===== */
+.success{border:1px solid var(--line);border-top:3px solid var(--green);background:var(--card);border-radius:0 5px 5px 5px;padding:22px 26px;margin:30px 0;max-width:840px}
+.success h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--green);margin-bottom:12px}
+.success ul{list-style:none}
+.success li{display:flex;gap:12px;align-items:baseline;padding:7px 0;border-bottom:1px dashed var(--line);font-size:15.5px;color:var(--ink2)}
+.success li:last-child{border-bottom:0}
+.success li::before{content:"✓";font-family:var(--mono);color:var(--green);font-weight:700}
+/* ===== MINDSET ===== */
+.mindset{background:var(--paper2);border-top:2px solid var(--ink)}
+.mindset-in{max-width:1240px;margin:0 auto;padding:70px 28px 60px}
+.rule{display:grid;grid-template-columns:100px 1fr;gap:26px;padding:30px 0;border-top:1px solid var(--line2);align-items:start}
+.rule:first-of-type{border-top:2px solid var(--ink)}
+.rule-n{font-family:var(--disp);font-weight:900;font-size:58px;line-height:.9;color:var(--accent)}
+.rule h3{font-family:var(--disp);font-size:clamp(20px,2.2vw,27px);font-weight:700;margin:0 0 7px}
+.rule p{font-size:15.5px;color:var(--ink2);max-width:680px;margin:0}
+.main-rule{font-family:var(--disp);font-style:italic;font-size:20px;max-width:720px;color:var(--ink);margin-top:40px;line-height:1.5}
+/* ===== FOOTER ===== */
+.foot{border-top:2px solid var(--ink)}
+.foot-in{max-width:1240px;margin:0 auto;padding:30px 28px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+.foot .fl{font-family:var(--mono);font-size:10px;letter-spacing:.2em;color:var(--ink3)}
+.foot .fr{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--ink3)}
+.foot .fr b{color:var(--accent)}
+/* ===== TO TOP / SCRIM ===== */
+#toTop{position:fixed;right:22px;bottom:22px;width:42px;height:42px;border-radius:50%;border:1px solid var(--line2);background:var(--card);color:var(--ink);z-index:210;opacity:0;pointer-events:none;transform:translateY(10px);transition:all .3s;box-shadow:var(--shadow)}
+#toTop.show{opacity:1;pointer-events:auto;transform:none}
+#toTop:hover{border-color:var(--accent);color:var(--accent)}
+.scrim{position:fixed;inset:0;background:rgba(10,18,28,.45);z-index:190;opacity:0;pointer-events:none;transition:opacity .28s}
+.scrim.on{opacity:1;pointer-events:auto}
+/* ===== RESPONSIVE ===== */
+@media(max-width:1100px){
+  .hero-in{grid-template-columns:1fr}
+  .hero-metrics{grid-template-columns:repeat(3,auto);grid-template-rows:auto;justify-content:start}
+}
+@media(max-width:900px){
+  .shell{grid-template-columns:1fr;gap:0}
+  .hamburger{display:inline-flex}
+  .track-label{display:none}
+  .toc{position:fixed;top:0;left:0;height:100%;width:280px;max-height:none;background:var(--paper);z-index:195;transform:translateX(-110%);transition:transform .32s ease;padding:70px 20px 30px;border-right:1px solid var(--line)}
+  .toc.open{transform:none}
+}
+@media(max-width:680px){
+  body{font-size:15.5px}
+  .hero-in{padding:44px 18px 38px}
+  .prog-row{grid-template-columns:1fr}
+  .scale-grid{grid-template-columns:1fr}
+  .asg-spec{grid-template-columns:1fr 1fr}
+  .asg-spec>div:nth-child(4n){border-right:1px solid var(--line)}
+  .asg-spec>div:nth-child(2n){border-right:0!important}
+  .cb-row{grid-template-columns:1fr}
+  .cb-key{border-bottom:0;padding-bottom:0}
+  .mistake{grid-template-columns:48px 1fr;gap:12px}
+  .m-n{font-size:28px}
+  .rule{grid-template-columns:56px 1fr;gap:14px}
+  .rule-n{font-size:38px}
+  .bnq-pad,.qa-ans-pad,.iq-ans-pad{padding-left:20px}
+  .hero-metrics{grid-template-columns:1fr 1fr}
+  .shell{padding:0 16px}
+  .hero-in{padding:38px 16px 30px}
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .rv{opacity:1;transform:none}
+}
+@media print{
+  .topbar,.prog,#toTop,.scrim,.qa-toolbar,.iq-show,.asg-bar-wrap,.tb-right{display:none!important}
+  body{background:#fff;color:#111;font-size:12px}
+  body::after{display:none}
+  .hero::before{display:none}
+  .rv{opacity:1!important;transform:none!important}
+  .qa-ans,.iq-ans,.bnq-ans{grid-template-rows:1fr!important}
+  .toc{display:none}.shell{grid-template-columns:1fr}
+  .vpanel{display:block!important}
+  .sec{page-break-inside:avoid}
+}
+</style>
+</head>
+<body>
+<div class="prog"><i id="progBar"></i></div>
+
+<header class="topbar">
+  <div class="tb-left">
+    <button class="hamburger btn sq" id="tocBtn" aria-label="Table of contents">
+      <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <span class="track-label">30-DAY TECHNICAL ARCHITECT TRACK</span>
+    <span class="day-pill">DAY 02 / 30</span>
+  </div>
+  <div class="tb-right">
+    <button class="btn sq" id="themeBtn" aria-label="Toggle dark mode">
+      <svg class="ic-moon" width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="ic-sun" style="display:none" width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button class="btn" id="printBtn">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M6 8V3h12v5M6 17H4a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4 8h16a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 20 17h-2M6 14h12v7H6v-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+      PRINT
+    </button>
+  </div>
+</header>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 02 / 30</div>
+      <h1 class="hero-h1">Scalability.<br><em>Design for</em><br>1 million users.</h1>
+      <p class="hero-sub">You already know the tools. Today you learn how an architect <b>thinks about load, bottlenecks, and growth</b> — before touching a single technology. This is the question every architect interview asks.</p>
+      <div class="hero-chips">
+        <span class="chip">≈ 90 MIN READ</span>
+        <span class="chip">15 SECTIONS</span>
+        <span class="chip">5 CALC EXAMPLES</span>
+        <span class="chip">5 ARCH VERSIONS</span>
+        <span class="chip">10 INTERVIEW Q&amp;A</span>
+        <span class="chip">1 ASSIGNMENT</span>
+      </div>
+      <div class="hero-warn">
+        <b>DAY 2 GOAL</b>
+        After today you should be able to walk into any architecture interview and clearly answer: <em>"How would you design a system for 1 million users?"</em> — with a structured, defensible, honest answer.
+      </div>
+    </div>
+    <div class="hero-metrics">
+      <div class="metric"><div class="m-val">1M</div><div class="m-lbl">REGISTERED USERS</div></div>
+      <div class="metric"><div class="m-val">100K</div><div class="m-lbl">DAILY ACTIVE</div></div>
+      <div class="metric"><div class="m-val">2K/s</div><div class="m-lbl">PEAK REQUESTS</div></div>
+    </div>
+  </div>
+</section>
+
+<nav class="sec-strip" aria-label="Quick jump">
+  <a class="sec-link" href="#s1"><span>01</span> The Real Problem</a>
+  <a class="sec-link" href="#s2"><span>02</span> Understand Load</a>
+  <a class="sec-link" href="#s3"><span>03</span> Find Bottlenecks</a>
+  <a class="sec-link" href="#s4"><span>04</span> Vertical vs Horizontal</a>
+  <a class="sec-link" href="#s5"><span>05</span> Load Balancer</a>
+  <a class="sec-link" href="#s6"><span>06</span> Caching</a>
+  <a class="sec-link" href="#s7"><span>07</span> DB Scaling</a>
+  <a class="sec-link" href="#s8"><span>08</span> Stateless Apps</a>
+  <a class="sec-link" href="#s9"><span>09</span> CDN</a>
+  <a class="sec-link" href="#s10"><span>10</span> Full Design</a>
+  <a class="sec-link" href="#s11"><span>11</span> Architect Questions</a>
+  <a class="sec-link" href="#s12"><span>12</span> Mistakes</a>
+  <a class="sec-link" href="#s13"><span>13</span> Assignment</a>
+  <a class="sec-link" href="#s14"><span>14</span> Interview Q&amp;A</a>
+  <a class="sec-link" href="#s15"><span>15</span> Success Criteria</a>
+</nav>
+
+<div class="shell">
+<!-- TOC sidebar -->
+<aside class="toc" id="toc">
+  <div class="toc-hd">ON THIS PAGE</div>
+  <a class="tn" href="#s1" data-spy="s1"><span class="tno">01</span>The Real Problem</a>
+  <a class="tn" href="#s2" data-spy="s2"><span class="tno">02</span>Understand Load</a>
+  <a class="tn sub" href="#s2-calc">5 Calculation Examples</a>
+  <a class="tn" href="#s3" data-spy="s3"><span class="tno">03</span>Find Bottlenecks</a>
+  <a class="tn" href="#s4" data-spy="s4"><span class="tno">04</span>Vertical vs Horizontal</a>
+  <a class="tn" href="#s5" data-spy="s5"><span class="tno">05</span>Load Balancer</a>
+  <a class="tn" href="#s6" data-spy="s6"><span class="tno">06</span>Caching</a>
+  <a class="tn" href="#s7" data-spy="s7"><span class="tno">07</span>DB Scaling</a>
+  <a class="tn" href="#s8" data-spy="s8"><span class="tno">08</span>Stateless Apps</a>
+  <a class="tn" href="#s9" data-spy="s9"><span class="tno">09</span>CDN &amp; Static Content</a>
+  <a class="tn" href="#s10" data-spy="s10"><span class="tno">10</span>Full Design (6 Versions)</a>
+  <a class="tn" href="#s11" data-spy="s11"><span class="tno">11</span>20 Architect Questions</a>
+  <a class="tn" href="#s12" data-spy="s12"><span class="tno">12</span>10 Common Mistakes</a>
+  <a class="tn" href="#s13" data-spy="s13"><span class="tno">13</span>Day 2 Assignment</a>
+  <a class="tn" href="#s14" data-spy="s14"><span class="tno">14</span>Interview Q&amp;A</a>
+  <a class="tn" href="#s15" data-spy="s15"><span class="tno">15</span>Success Criteria</a>
+  <a class="tn" href="#mindset" data-spy="mindset"><span class="tno">★</span>Architect Mindset</a>
+</aside>
+
+<main class="doc">
+
+<!-- ===== S1: THE REAL PROBLEM ===== -->
+<section class="sec" id="s1">
+  <div class="sk">SECTION 01 — FOUNDATION</div>
+  <h2 class="sh2 rv">Start with the Real Problem</h2>
+  <p class="slead rv">The interview question is <b>"design a system for 1 million users."</b> The wrong answer starts with technology. The right answer starts with a question: <b>what actually changes as users grow?</b></p>
+
+  <h3 class="rv">What changes as users grow</h3>
+  <p class="rv">Think of a restaurant. One table is easy. Ten tables need more waiters. A hundred tables need a bigger kitchen, multiple chefs, and a reservation system. The food is still the same — but <b>everything around it must change shape</b>.</p>
+  <div class="prog-row rv">
+    <div class="prog-card" style="--pc:var(--green)">
+      <div class="pc-label">SMALL SYSTEM</div>
+      <h4>100 Users</h4>
+      <p>One server handles everything comfortably. The database is fast. Deploys are simple. If one thing slows down, nobody really notices.</p>
+      <ul>
+        <li>~1–5 requests/second</li>
+        <li>One machine, one DB</li>
+        <li>Response time is fast naturally</li>
+        <li>Failure affects very few people</li>
+      </ul>
+    </div>
+    <div class="prog-card" style="--pc:var(--amber)">
+      <div class="pc-label">GROWING SYSTEM</div>
+      <h4>10,000 Users</h4>
+      <p>The database starts to sweat. Some queries are slow. Memory fills up. Requests queue. One slow request blocks others. You start noticing the shape of traffic.</p>
+      <ul>
+        <li>~50–200 requests/second</li>
+        <li>DB becomes the bottleneck</li>
+        <li>Need caching, indexing</li>
+        <li>One server is now a risk</li>
+      </ul>
+    </div>
+    <div class="prog-card" style="--pc:var(--red)">
+      <div class="pc-label">LARGE SYSTEM</div>
+      <h4>1,000,000 Users</h4>
+      <p>Every single assumption you made at 100 users is wrong. You need multiple servers, intelligent routing, database replicas, caches, queues, CDN, monitoring. Failure is not a question of if — it is a question of which part next.</p>
+      <ul>
+        <li>1,000–10,000 requests/second</li>
+        <li>Every layer is a potential bottleneck</li>
+        <li>Stateless apps, distributed state</li>
+        <li>Partial failure is normal</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 class="rv">The six things that change</h3>
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th>What changes</th><th>At 100 users</th><th>At 10,000 users</th><th>At 1,000,000 users</th></tr></thead>
+      <tbody>
+        <tr><td><b>Requests</b></td><td>A trickle. One server is bored.</td><td>Noticeable. Slow queries begin to hurt.</td><td>A firehose. Every component is under pressure.</td></tr>
+        <tr><td><b>Database queries</b></td><td>Fast. No tuning needed.</td><td>Slow queries appear. Indexes matter.</td><td>DB is usually the first thing to collapse without design.</td></tr>
+        <tr><td><b>Memory usage</b></td><td>Minimal. Plenty of headroom.</td><td>Sessions, caches, connection pools fill up.</td><td>Memory must be designed — every byte has a cost.</td></tr>
+        <tr><td><b>Network traffic</b></td><td>Negligible.</td><td>Bandwidth begins to matter for images, files.</td><td>CDN, compression, and efficient protocols become critical.</td></tr>
+        <tr><td><b>Concurrent users</b></td><td>Maybe 10 at a time.</td><td>Hundreds at a time. Thread pool pressure.</td><td>Thousands simultaneously. Async becomes essential.</td></tr>
+        <tr><td><b>Failures</b></td><td>Rare. Affects few people.</td><td>Occasional. Need graceful degradation.</td><td>Constant somewhere. Design assumes parts always fail.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="co key rv">
+    <span class="co-lbl">THE ARCHITECT'S FIRST MOVE</span>
+    <p>Before drawing any diagram, an architect asks: <b>what is the actual load? Where will it break first? What is the cheapest fix for that specific problem?</b> — not "which technology should we use?"</p>
+  </div>
+</section>
+
+<!-- ===== S2: UNDERSTAND LOAD ===== -->
+<section class="sec" id="s2">
+  <div class="sk">SECTION 02 — LOAD ESTIMATION</div>
+  <h2 class="sh2 rv">Understand Load Before Designing</h2>
+  <p class="slead rv">The single most common mistake in architecture interviews: someone hears <b>"1 million users"</b> and immediately starts designing for 1 million simultaneous requests. That is almost never the reality.</p>
+
+  <h3 class="rv">The vocabulary you need</h3>
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">Load Concepts — Plain English</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">REGISTERED USERS</div><div class="cb-val">People who have an account. <b>Most of them are not using the app right now.</b> On a typical SaaS product, maybe 10–20% visit on a given day.</div></div>
+      <div class="cb-row"><div class="cb-key">DAILY ACTIVE USERS</div><div class="cb-val">People who actually use it today. Usually <b>10–30%</b> of registered users. For a social app it is higher; for a payroll tool it is much lower.</div></div>
+      <div class="cb-row"><div class="cb-key">CONCURRENT USERS</div><div class="cb-val">People actively using the system <b>at the same exact moment</b>. Typically 5–15% of daily active users during peak hours. This number drives server sizing.</div></div>
+      <div class="cb-row"><div class="cb-key">REQUESTS PER SECOND</div><div class="cb-val">Each user action (page load, search, button click) sends 1–10 HTTP requests. Concurrent users × actions per minute ÷ 60 = RPS. <b>This is what you actually design for.</b></div></div>
+      <div class="cb-row"><div class="cb-key">PEAK TRAFFIC</div><div class="cb-val">The highest load in a day, week, or year. A food delivery app peaks at dinner time. A tax software peaks in March. <b>Design for the peak, not the average.</b></div></div>
+      <div class="cb-row"><div class="cb-key">AVERAGE TRAFFIC</div><div class="cb-val">The normal, quiet load. Useful for cost estimation and baseline capacity. Not useful for scaling decisions — those are made at the peak.</div></div>
+      <div class="cb-row"><div class="cb-key">RESPONSE TIME</div><div class="cb-val">How long the user waits for an answer. The target is not the same for every action — a product page should load in &lt;1s; a report can take 30s. Measure at <b>p95</b> (95th percentile), not the average, which hides the slow users.</div></div>
+    </div>
+  </div>
+
+  <div class="co warn rv">
+    <span class="co-lbl">INTERVIEW TRAP — THIS WILL BE ASKED</span>
+    <p><b>1 million registered users does NOT mean 1 million users are sending requests at the same time.</b> A shopping platform with 1M registered users might have 80,000 active today, 8,000 online right now, and 2,000 requests per second at peak. <b>Those four numbers are completely different design problems.</b> The interviewer wants to know if you know this distinction.</p>
+  </div>
+
+  <h3 class="rv" id="s2-calc">5 Calculation Examples — Step by Step</h3>
+  <p class="rv">You will be asked to estimate in interviews. Here is the thinking pattern — use it every time.</p>
+
+  <div class="calc rv">
+    <div class="calc-head"><span>EXAMPLE 1 — E-COMMERCE: HOW MANY CONCURRENT USERS?</span></div>
+    <div class="calc-body">
+      <div class="calc-step"><span class="cs-n">1</span><span class="cs-f">Registered users</span><span class="cs-r">1,000,000</span></div>
+      <div class="calc-step"><span class="cs-n">2</span><span class="cs-f">Daily active users (10% of registered — typical e-commerce)</span><span class="cs-r">100,000</span></div>
+      <div class="calc-step"><span class="cs-n">3</span><span class="cs-f">Active during peak 2-hour window (50% of daily)</span><span class="cs-r">50,000</span></div>
+      <div class="calc-step"><span class="cs-n">4</span><span class="cs-f">Concurrent at any single moment (10% of peak window active)</span><span class="cs-r">5,000</span></div>
+      <div class="calc-result">→ Design for ~5,000 concurrent users, not 1,000,000</div>
+    </div>
+  </div>
+
+  <div class="calc rv">
+    <div class="calc-head"><span>EXAMPLE 2 — E-COMMERCE: HOW MANY REQUESTS PER SECOND AT PEAK?</span></div>
+    <div class="calc-body">
+      <div class="calc-step"><span class="cs-n">1</span><span class="cs-f">Concurrent users at peak</span><span class="cs-r">5,000</span></div>
+      <div class="calc-step"><span class="cs-n">2</span><span class="cs-f">Average actions per user per minute (browse, search, add to cart)</span><span class="cs-r">3</span></div>
+      <div class="calc-step"><span class="cs-n">3</span><span class="cs-f">Total requests per minute (5,000 × 3)</span><span class="cs-r">15,000</span></div>
+      <div class="calc-step"><span class="cs-n">4</span><span class="cs-f">Requests per second (15,000 ÷ 60)</span><span class="cs-r">250 RPS</span></div>
+      <div class="calc-step"><span class="cs-n">5</span><span class="cs-f">Add 3× safety margin for flash sales and spikes</span><span class="cs-r">750 RPS</span></div>
+      <div class="calc-result">→ Design infrastructure to handle ~750 requests/second at peak</div>
+    </div>
+  </div>
+
+  <div class="calc rv">
+    <div class="calc-head"><span>EXAMPLE 3 — FOOD DELIVERY: HOW MUCH DATA STORAGE?</span></div>
+    <div class="calc-body">
+      <div class="calc-step"><span class="cs-n">1</span><span class="cs-f">Daily active users</span><span class="cs-r">100,000</span></div>
+      <div class="calc-step"><span class="cs-n">2</span><span class="cs-f">Average orders per active user per day</span><span class="cs-r">1.2</span></div>
+      <div class="calc-step"><span class="cs-n">3</span><span class="cs-f">Total orders per day (100,000 × 1.2)</span><span class="cs-r">120,000</span></div>
+      <div class="calc-step"><span class="cs-n">4</span><span class="cs-f">Average order record size (order + items + address)</span><span class="cs-r">2 KB</span></div>
+      <div class="calc-step"><span class="cs-n">5</span><span class="cs-f">Storage per day (120,000 × 2KB)</span><span class="cs-r">240 MB</span></div>
+      <div class="calc-step"><span class="cs-n">6</span><span class="cs-f">Storage per year (240MB × 365)</span><span class="cs-r">~87 GB</span></div>
+      <div class="calc-result">→ Orders DB needs ~87 GB/year — manageable on a single well-tuned SQL Server for several years</div>
+    </div>
+  </div>
+
+  <div class="calc rv">
+    <div class="calc-head"><span>EXAMPLE 4 — BANKING: HOW MANY SERVERS DO I NEED?</span></div>
+    <div class="calc-body">
+      <div class="calc-step"><span class="cs-n">1</span><span class="cs-f">Target peak RPS</span><span class="cs-r">1,000</span></div>
+      <div class="calc-step"><span class="cs-n">2</span><span class="cs-f">One ASP.NET Core server handles (well-written, async, no blocking)</span><span class="cs-r">~300 RPS</span></div>
+      <div class="calc-step"><span class="cs-n">3</span><span class="cs-f">Servers needed to handle peak (1,000 ÷ 300)</span><span class="cs-r">~4</span></div>
+      <div class="calc-step"><span class="cs-n">4</span><span class="cs-f">Add 2 extra for redundancy and rolling deploys</span><span class="cs-r">+2</span></div>
+      <div class="calc-step"><span class="cs-n">5</span><span class="cs-f">Total servers</span><span class="cs-r">6</span></div>
+      <div class="calc-result">→ Start with 6 app servers. The DB capacity is a separate calculation — and usually the harder one.</div>
+    </div>
+  </div>
+
+  <div class="calc rv">
+    <div class="calc-head"><span>EXAMPLE 5 — SAAS: WHAT IS THE READ/WRITE RATIO?</span></div>
+    <div class="calc-body">
+      <div class="calc-step"><span class="cs-n">1</span><span class="cs-f">Users browse reports and dashboards (read)</span><span class="cs-r">80% of requests</span></div>
+      <div class="calc-step"><span class="cs-n">2</span><span class="cs-f">Users create/update/delete records (write)</span><span class="cs-r">20% of requests</span></div>
+      <div class="calc-step"><span class="cs-n">3</span><span class="cs-f">Read/write ratio</span><span class="cs-r">4 : 1</span></div>
+      <div class="calc-step"><span class="cs-n">4</span><span class="cs-f">Decision: reads can use a read replica or cache; writes still go to primary DB</span><span class="cs-r">✓</span></div>
+      <div class="calc-result">→ A 4:1 read/write ratio is a strong signal to add a cache and a read replica — before adding more app servers</div>
+    </div>
+  </div>
+
+  <div class="co tip rv">
+    <span class="co-lbl">INTERVIEW PATTERN</span>
+    <p>In an interview, always estimate in this sequence: <b>Registered → Daily Active → Concurrent → RPS → Storage</b>. Showing this chain tells the interviewer you have done this before. Making up a final number without showing the chain tells them you have not.</p>
+  </div>
+</section>
+
+<!-- ===== S3: BOTTLENECKS ===== -->
+<section class="sec" id="s3">
+  <div class="sk">SECTION 03 — BOTTLENECK ANALYSIS</div>
+  <h2 class="sh2 rv">Find the Bottleneck First</h2>
+  <p class="slead rv">Before adding any infrastructure, find <b>where the system will slow down first</b>. The whole system is limited by its weakest part — just like water through a pipe narrows to the smallest section.</p>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">Common Bottleneck Locations</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">APPLICATION SERVER</div><div class="cb-val">CPU-heavy processing, blocking I/O, synchronous waits, memory leaks, connection pool exhaustion. <b>First place to look when response time rises steadily.</b></div></div>
+      <div class="cb-row"><div class="cb-key">DATABASE</div><div class="cb-val">Missing indexes, N+1 queries, too many connections, large table scans, lock contention, no read replicas. <b>The most common bottleneck in .NET + SQL Server systems.</b></div></div>
+      <div class="cb-row"><div class="cb-key">NETWORK</div><div class="cb-val">Too much data per response (large JSON, no compression), too many round trips, high latency between services, bandwidth limits. Common when you have many services calling each other.</div></div>
+      <div class="cb-row"><div class="cb-key">EXTERNAL API</div><div class="cb-val">Payment gateway slow, SMS provider timing out, third-party data feed latency. <b>You cannot optimize what you do not own — so you design around it.</b> (Timeout, retry, queue, fallback.)</div></div>
+      <div class="cb-row"><div class="cb-key">FILE STORAGE</div><div class="cb-val">Disk I/O limits, slow image uploads/downloads, large file reads on hot paths. Move files to blob storage (Azure Blob) and serve through CDN.</div></div>
+      <div class="cb-row"><div class="cb-key">CACHE</div><div class="cb-val">Cache too small (constant eviction), wrong eviction policy, cache misses on every request (cold start), cache going down with no fallback — suddenly everything hits the DB at once.</div></div>
+    </div>
+  </div>
+
+  <div class="co key rv">
+    <span class="co-lbl">THE RULE</span>
+    <p><b>"The whole system is limited by its weakest part."</b> Adding 10 more app servers does nothing if the database is at 100% CPU. Find the bottleneck first. Fix that. Measure again. The bottleneck will simply move somewhere else — and that is progress.</p>
+  </div>
+
+  <h3 class="rv">5 Scenarios — Identify the Bottleneck</h3>
+  <p class="rv">Read each scenario. Try to identify the bottleneck before you open the answer.</p>
+
+  <div class="bnq rv">
+    <button class="bnq-head" type="button"><span class="bnq-num">01</span><span class="bnq-t">An e-commerce site is fast for most pages but the product search takes 8–12 seconds. CPU on the app server is at 15%. Memory is fine. DB CPU is at 90%.</span><span class="bnq-ic"></span></button>
+    <div class="bnq-ans"><div class="bnq-ans-in"><div class="bnq-pad">
+      <span class="bn-label">ANSWER</span>
+      <span class="bnq-bot">BOTTLENECK: DATABASE — specifically the search query</span>
+      The app server is nearly idle (15% CPU). The database is saturated (90% CPU). The app server is not the problem — it is waiting for the DB. <b>Likely cause:</b> a LIKE '%keyword%' query doing a full table scan on a products table with no full-text index, or a missing composite index on searchable columns. Fix: add a full-text index, or move search to a dedicated search engine (Azure Search, Elasticsearch). Do NOT add more app servers — they will all just queue at the same DB bottleneck.
+    </div></div></div>
+  </div>
+
+  <div class="bnq rv">
+    <button class="bnq-head" type="button"><span class="bnq-num">02</span><span class="bnq-t">A food delivery app works fine all day, but at 6–8pm every evening, the API response time jumps from 200ms to 5+ seconds. DB CPU is 40%, app server CPU is 35%.</span><span class="bnq-ic"></span></button>
+    <div class="bnq-ans"><div class="bnq-ans-in"><div class="bnq-pad">
+      <span class="bn-label">ANSWER</span>
+      <span class="bnq-bot">BOTTLENECK: EXTERNAL API — the restaurant availability or payment provider</span>
+      Neither the app server nor the DB is saturated — yet the response time is terrible at peak hours. The bottleneck is almost certainly an <b>external dependency</b>: the restaurant POS system, the payment gateway, or the mapping API — all of which are also at their peak at dinner time. Fix: add a timeout (never wait more than 1–2 seconds for a vendor), move non-critical vendor calls off the request path into a queue, and implement a fallback. Do NOT scale hardware — you are waiting for someone else's server.
+    </div></div></div>
+  </div>
+
+  <div class="bnq rv">
+    <button class="bnq-head" type="button"><span class="bnq-num">03</span><span class="bnq-t">A SaaS app with 500 concurrent users. The app server has 80% CPU. The DB is at 20%. Adding more app servers doesn't help — it actually makes it slightly worse.</span><span class="bnq-ic"></span></button>
+    <div class="bnq-ans"><div class="bnq-ans-in"><div class="bnq-pad">
+      <span class="bn-label">ANSWER</span>
+      <span class="bnq-bot">BOTTLENECK: APPLICATION SERVER — likely CPU-bound synchronous processing, OR a shared downstream resource</span>
+      App server CPU at 80% with only 20% DB load means the CPU work is happening <b>in the app</b>: heavy computation, PDF generation, synchronous operations, or serializing large objects. Adding more servers doesn't help because either: (a) they share a resource that is now the new bottleneck (a connection pool, a lock, a queue), or (b) the problem is a shared state component you have not noticed yet. Profile the app — find the hot code path. Then decide: offload it to a background job, cache the result, or make it async.
+    </div></div></div>
+  </div>
+
+  <div class="bnq rv">
+    <button class="bnq-head" type="button"><span class="bnq-num">04</span><span class="bnq-t">A banking API is fast (under 200ms) for normal transactions. But when a new customer uploads their identity documents, the API times out for all other requests too — for 10–30 seconds.</span><span class="bnq-ic"></span></button>
+    <div class="bnq-ans"><div class="bnq-ans-in"><div class="bnq-pad">
+      <span class="bn-label">ANSWER</span>
+      <span class="bnq-bot">BOTTLENECK: FILE STORAGE I/O — blocking the request thread during upload</span>
+      A synchronous file upload is blocking the web server thread pool. While the upload is happening, no other request can be served by that thread. At enough concurrency, the thread pool is exhausted. Fix: make the upload fully async (ASP.NET Core async file streaming to Azure Blob), accept the upload and return immediately, then process it in the background. The API call should be: "I received your file. Processing will complete in a moment." — not: "wait here while I read 20 MB off a slow disk."
+    </div></div></div>
+  </div>
+
+  <div class="bnq rv">
+    <button class="bnq-head" type="button"><span class="bnq-num">05</span><span class="bnq-t">An e-commerce site uses Redis for caching. Redis goes down for 3 minutes during a sale. During those 3 minutes, the DB hits 100% CPU and the site becomes unresponsive.</span><span class="bnq-ic"></span></button>
+    <div class="bnq-ans"><div class="bnq-ans-in"><div class="bnq-pad">
+      <span class="bn-label">ANSWER</span>
+      <span class="bnq-bot">BOTTLENECK: CACHE FAILURE causing a "thundering herd" to the database</span>
+      This is called a <b>thundering herd</b> or <b>cache stampede</b>: when the cache goes down, every request that was previously answered from cache now hits the database simultaneously. The database was never designed to handle that load — it was always protected by the cache. The real bottleneck here was the database's capacity, hidden until the cache was removed. Fixes: (1) add a fallback in-process cache, (2) implement circuit breaker — if cache is down, return degraded data instead of hitting DB, (3) Redis cluster/HA so the cache itself doesn't go down.
+    </div></div></div>
+  </div>
+</section>
+
+<!-- ===== S4: VERTICAL VS HORIZONTAL ===== -->
+<section class="sec" id="s4">
+  <div class="sk">SECTION 04 — SCALING STRATEGY</div>
+  <h2 class="sh2 rv">Vertical vs Horizontal Scaling</h2>
+  <p class="slead rv">When the system is under pressure, you have two levers. Understanding when to pull each one is a core architect decision — and a guaranteed interview question.</p>
+
+  <div class="scale-grid rv">
+    <div class="sc-box">
+      <div class="sc-head">⬆ VERTICAL SCALING — Make one machine bigger</div>
+      <div class="sc-body">
+        <ul>
+          <li><b>What:</b> Upgrade CPU, add RAM, faster disk on the same machine</li>
+          <li><b>Analogy:</b> Hire one really experienced chef who can cook faster</li>
+          <li><b>Pros:</b> Simple — no code changes, no network complexity, no session problem</li>
+          <li><b>Cons:</b> Expensive — big machines cost disproportionately more</li>
+          <li><b>Cons:</b> There is a physical ceiling — you can only buy so much machine</li>
+          <li><b>Cons:</b> Single point of failure — one machine, one outage</li>
+          <li><b>Cost curve:</b> Linear, then suddenly exponential at the top</li>
+          <li><b>Use when:</b> The bottleneck is a single component that is hard to distribute (e.g., SQL Server, a stateful service)</li>
+          <li><b>Don't use when:</b> You need high availability — one big machine still fails as one</li>
+        </ul>
+      </div>
+    </div>
+    <div class="sc-box">
+      <div class="sc-head">↔ HORIZONTAL SCALING — Add more machines</div>
+      <div class="sc-body">
+        <ul>
+          <li><b>What:</b> Run multiple identical smaller machines behind a load balancer</li>
+          <li><b>Analogy:</b> Hire more chefs, each handling separate tables simultaneously</li>
+          <li><b>Pros:</b> Near-unlimited scale — just add machines</li>
+          <li><b>Pros:</b> High availability — one machine fails, others keep serving</li>
+          <li><b>Pros:</b> Cost scales linearly and stays predictable</li>
+          <li><b>Cons:</b> Requires <b>stateless</b> application design — sessions can't live in memory</li>
+          <li><b>Cons:</b> Consistency is harder — multiple machines, shared DB, race conditions</li>
+          <li><b>Cons:</b> More operational complexity — deploy, monitor, route across many machines</li>
+          <li><b>Use when:</b> The app tier is the bottleneck and the app is (or can be made) stateless</li>
+          <li><b>Don't use when:</b> The bottleneck is the database — more app servers just create more DB pressure</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th>Factor</th><th>Vertical Scaling</th><th>Horizontal Scaling</th></tr></thead>
+      <tbody>
+        <tr><td><b>Speed to add capacity</b></td><td>Slow — need to resize/restart server</td><td>Fast — spin up a new instance in minutes</td></tr>
+        <tr><td><b>Cost per unit</b></td><td>High at the top end</td><td>Linear and predictable</td></tr>
+        <tr><td><b>Ceiling</b></td><td>Hard ceiling — maximum machine size</td><td>Effectively unlimited</td></tr>
+        <tr><td><b>Code changes needed</b></td><td>None — transparent to the app</td><td>App must be stateless or externalize state</td></tr>
+        <tr><td><b>Failure impact</b></td><td class="no">Total — one machine, one outage</td><td class="yes">Partial — other machines keep running</td></tr>
+        <tr><td><b>Best for</b></td><td>Databases, early-stage systems</td><td>Web/API tiers, mature systems with load</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="co tip rv">
+    <span class="co-lbl">WHY MODERN SYSTEMS PREFER HORIZONTAL</span>
+    <p>Horizontal scaling aligns with cloud economics (pay per small machine, not one giant machine), enables <b>zero-downtime deploys</b> (take down one server at a time), provides built-in <b>high availability</b> (other servers keep running when one dies), and allows <b>autoscaling</b> — the cloud adds machines during a spike and removes them afterwards. Vertical scaling is still used — especially for databases — but it is always a starting point, never the end game.</p>
+  </div>
+
+  <div class="co key rv">
+    <span class="co-lbl">INTERVIEW ANSWER PATTERN</span>
+    <p>"I would start with vertical scaling for the database (simpler, no code change) and horizontal scaling for the stateless app tier (multiple instances behind a load balancer). As the database reaches its vertical ceiling, I would move to read replicas and eventually sharding — but only when measured load demands it."</p>
+  </div>
+</section>
+
+<!-- ===== S5: LOAD BALANCER ===== -->
+<section class="sec" id="s5">
+  <div class="sk">SECTION 05 — TRAFFIC DISTRIBUTION</div>
+  <h2 class="sh2 rv">Load Balancer</h2>
+  <p class="slead rv">A load balancer is the traffic cop that stands in front of your servers. Without it, horizontal scaling is impossible — because users do not know which server to talk to.</p>
+
+  <h3 class="rv">What it actually does</h3>
+  <div class="diag rv">
+    <svg viewBox="0 0 880 260" fill="none">
+      <defs><marker id="a1" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker>
+      <marker id="a2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--accent)"/></marker></defs>
+      <!-- Users -->
+      <rect class="db" x="20" y="108" width="110" height="44" rx="3"/>
+      <text class="dl" x="75" y="128" text-anchor="middle">USERS</text>
+      <text class="ds" x="75" y="143" text-anchor="middle">all requests</text>
+      <!-- Arrow to LB -->
+      <path class="da hi" d="M130 130 H 218" marker-end="url(#a2)"/>
+      <!-- LB -->
+      <rect class="db hi" x="224" y="100" width="130" height="60" rx="3"/>
+      <text class="dl" x="289" y="124" text-anchor="middle">LOAD</text>
+      <text class="dl" x="289" y="140" text-anchor="middle">BALANCER</text>
+      <text class="ds" x="289" y="155" text-anchor="middle">health checks · routes</text>
+      <!-- Arrows to servers -->
+      <path class="da" d="M354 115 H 450" marker-end="url(#a1)"/>
+      <path class="da" d="M354 130 H 450" marker-end="url(#a1)"/>
+      <path class="da" d="M354 145 H 450" marker-end="url(#a1)"/>
+      <!-- Server 1 -->
+      <rect class="db green" x="456" y="52" width="120" height="52" rx="3"/>
+      <text class="dl" x="516" y="75" text-anchor="middle">APP SERVER 1</text>
+      <text class="ds" x="516" y="91" text-anchor="middle">healthy ✓</text>
+      <!-- Server 2 -->
+      <rect class="db green" x="456" y="114" width="120" height="52" rx="3"/>
+      <text class="dl" x="516" y="137" text-anchor="middle">APP SERVER 2</text>
+      <text class="ds" x="516" y="153" text-anchor="middle">healthy ✓</text>
+      <!-- Server 3 -->
+      <rect class="db red" x="456" y="176" width="120" height="52" rx="3"/>
+      <text class="dl" x="516" y="199" text-anchor="middle">APP SERVER 3</text>
+      <text class="ds" x="516" y="215" text-anchor="middle">DOWN ✗ — skipped</text>
+      <!-- Arrows to DB -->
+      <path class="da" d="M576 78 H 660" marker-end="url(#a1)"/>
+      <path class="da" d="M576 140 H 660" marker-end="url(#a1)"/>
+      <!-- DB -->
+      <rect class="db" x="666" y="88" width="120" height="64" rx="3"/>
+      <text class="dl" x="726" y="114" text-anchor="middle">DATABASE</text>
+      <text class="ds" x="726" y="130" text-anchor="middle">shared, all servers</text>
+      <text class="ds" x="726" y="144" text-anchor="middle">read from same source</text>
+      <!-- Note on server 3 -->
+      <text class="dn" x="456" y="244">LB detects failure via health check — removes Server 3 from rotation automatically</text>
+    </svg>
+  </div>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">What a Load Balancer Does — Five Jobs</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">DISTRIBUTES TRAFFIC</div><div class="cb-val">Sends each incoming request to a server — round-robin (take turns), least connections (pick the least busy), or IP hash (same user goes to same server). <b>This is the main job.</b></div></div>
+      <div class="cb-row"><div class="cb-key">HEALTH CHECKS</div><div class="cb-val">Every few seconds, pings each server ("are you alive?"). If a server doesn't respond, the LB removes it from rotation automatically. Users never see the failed server — they hit a healthy one.</div></div>
+      <div class="cb-row"><div class="cb-key">SSL TERMINATION</div><div class="cb-val">Handles HTTPS encryption/decryption at the edge, so app servers get plain HTTP internally. Offloads CPU-intensive crypto from the app servers.</div></div>
+      <div class="cb-row"><div class="cb-key">ENABLES ROLLING DEPLOYS</div><div class="cb-val">Take Server 1 out of rotation, deploy new code, health-check passes, put it back. Repeat for all servers. Zero-downtime deployment is only possible <b>because of the load balancer</b>.</div></div>
+      <div class="cb-row"><div class="cb-key">RATE LIMITING / DDoS PROTECTION</div><div class="cb-val">Reject or throttle requests from a single source that is sending too many. Protects the servers behind it from being overwhelmed by a single bad actor.</div></div>
+    </div>
+  </div>
+
+  <h3 class="rv">The Session Problem — and How to Solve It</h3>
+  <p class="rv">Here is the classic trap with horizontal scaling:</p>
+  <div class="co warn rv">
+    <span class="co-lbl">THE SESSION PROBLEM</span>
+    <p>User logs in. Server 1 creates a session and stores it in memory. Next request goes to Server 2 — which has no memory of this session. <b>The user is logged out.</b> Adding servers without solving this problem makes login unreliable in proportion to the number of servers.</p>
+  </div>
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th>Solution</th><th>How it works</th><th>Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td><b>Sticky Sessions (Affinity)</b></td><td>LB always sends same user to same server (via IP or cookie)</td><td>Simple but breaks HA — if that server dies, the user loses session. Not truly stateless.</td></tr>
+        <tr><td><b>Centralized Session Store</b></td><td>Session data lives in Redis. Every server reads/writes the same store.</td><td>Redis becomes a dependency — if it goes down, all sessions are gone. Add Redis HA.</td></tr>
+        <tr><td><b>JWT Tokens (Stateless)</b></td><td>Session info is in a signed token carried by the client. No server stores it.</td><td>Tokens can't be invalidated before expiry without a server-side check. Keep them short-lived.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="co green rv">
+    <span class="co-lbl">ARCHITECT RECOMMENDATION</span>
+    <p>Use <b>JWT with short expiry (15–60 min) + refresh tokens stored in Redis</b>. This gives you stateless app servers (any server handles any request), while keeping the ability to revoke sessions (invalidate the refresh token). This is the pattern used in most serious ASP.NET Core systems with horizontal scaling.</p>
+  </div>
+</section>
+
+<!-- ===== S6: CACHING ===== -->
+<section class="sec" id="s6">
+  <div class="sk">SECTION 06 — CACHING</div>
+  <h2 class="sh2 rv">Caching</h2>
+  <p class="slead rv">The fastest database query is the one you never make. Caching stores a pre-computed answer close to the consumer so the same work is not repeated for every request.</p>
+
+  <h3 class="rv">The core idea — a shopping example</h3>
+  <p class="rv"><span class="lead-q">"Show me the product page for iPhone 15."</span></p>
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th>Without Cache</th><th>With Cache</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>Request → App → <b>DB Query (200ms)</b> → Serialize → Response<br><br>Every single user triggers the same DB query. At 500 RPS on product pages, that is 500 × 200ms of DB time per second. The DB is doing the same work, repeatedly, for identical data.</td>
+          <td>Request → App → <b>Cache hit? Yes → Return in 2ms</b> → Response<br><br>The product data is fetched from DB once (on cache miss), stored in Redis for 5 minutes. For the next 5 minutes, all product page requests are served from memory in 2ms. The DB sees a tiny fraction of the traffic.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">Caching Concepts — Plain English</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">CACHE HIT</div><div class="cb-val">The answer is already in cache. Return it immediately. No DB call. This is what you are designing for.</div></div>
+      <div class="cb-row"><div class="cb-key">CACHE MISS</div><div class="cb-val">Not in cache. Go to the DB, get the data, store it in cache for next time, return it. Slightly slower than normal but happens once per cache window.</div></div>
+      <div class="cb-row"><div class="cb-key">EXPIRATION (TTL)</div><div class="cb-val">How long the cached data is valid. After TTL, the next request is a cache miss and the cache refreshes. Product prices: maybe 5 minutes TTL. User profile: 30 minutes. Homepage hero banner: 1 hour.</div></div>
+      <div class="cb-row"><div class="cb-key">STALE DATA</div><div class="cb-val">The cached data is older than reality. A product price updated in the DB is still the old price in cache for up to 5 minutes. <b>This is an explicit trade-off: speed for freshness.</b> You decide what is acceptable per use case.</div></div>
+      <div class="cb-row"><div class="cb-key">CACHE INVALIDATION</div><div class="cb-val">Removing or updating cached data when the source changes. Hard problem. Best approach: short TTL (let it expire naturally) + explicit delete on write (remove the key when the product updates).</div></div>
+    </div>
+  </div>
+
+  <h3 class="rv">What to cache — and what NOT to cache</h3>
+  <div class="scale-grid rv">
+    <div class="sc-box">
+      <div class="sc-head" style="color:var(--green)">✓ GOOD CANDIDATES FOR CACHE</div>
+      <div class="sc-body">
+        <ul>
+          <li>Product catalog data — changes rarely, read millions of times</li>
+          <li>User profile / preferences — stable, read on every page</li>
+          <li>Homepage content, banners, featured items — static for hours</li>
+          <li>Reference data — country lists, category trees, config values</li>
+          <li>Aggregated stats — dashboard totals, report summaries (with acceptable delay)</li>
+          <li>API responses from slow external services (with short TTL)</li>
+        </ul>
+      </div>
+    </div>
+    <div class="sc-box">
+      <div class="sc-head" style="color:var(--red)">✗ BAD CANDIDATES FOR CACHE</div>
+      <div class="sc-body">
+        <ul>
+          <li>Real-time stock levels during checkout — must be exact</li>
+          <li>Payment transaction results — must be exact, never stale</li>
+          <li>User's own orders in real-time — freshness matters</li>
+          <li>Per-user, per-second data — the cache key space explodes</li>
+          <li>Sensitive PII without encryption and access control</li>
+          <li>Data that changes every request — caching it is pointless</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <h3 class="rv">What happens when the cache goes down?</h3>
+  <div class="co warn rv">
+    <span class="co-lbl">CACHE FAILURE — THE THUNDERING HERD</span>
+    <p>When cache goes down, <b>every request that was previously a cache hit now becomes a DB query simultaneously</b>. If the DB was never designed to handle that load (because the cache was always protecting it), the DB collapses under the sudden traffic. The cache failing causes a full site outage — even if the cache itself is not critical data.</p>
+  </div>
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th>Strategy</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><b>In-process fallback cache</b></td><td>Keep a small in-memory cache inside the app. If Redis is down, serve from memory for a short time. Buys time for Redis to recover without a DB stampede.</td></tr>
+        <tr><td><b>Circuit breaker</b></td><td>If cache calls are failing, stop calling it. Return a degraded response ("data may be slightly out of date") rather than stampeding the DB.</td></tr>
+        <tr><td><b>Redis HA / Cluster</b></td><td>Redis Sentinel or Redis Cluster — so the cache itself has redundancy and does not go down cleanly.</td></tr>
+        <tr><td><b>Staggered TTLs</b></td><td>Don't expire all keys at the same time. Add a small random jitter to TTL values so cache misses are spread out over time, not all at once.</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== S7: DB SCALING ===== -->
+<section class="sec" id="s7">
+  <div class="sk">SECTION 07 — DATABASE SCALING</div>
+  <h2 class="sh2 rv">Database Scaling</h2>
+  <p class="slead rv">The database is usually the last thing you can scale horizontally — and the first thing to become a bottleneck. Understanding how to relieve database pressure without immediately jumping to sharding is a sign of real architect experience.</p>
+
+  <h3 class="rv">Why the database bottlenecks first</h3>
+  <p class="rv">App servers are stateless and can be cloned. Databases are stateful — they hold <b>the truth</b>. Every write must go to one place. Every read must see consistent data. You can't just "add more databases" the way you add app servers.</p>
+
+  <h3 class="rv">The escalation ladder — in order</h3>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">1</span><span class="cb-title">Indexing</span><cb class="cb-sub">DO THIS FIRST — ALWAYS</cb></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">What</div><div class="cb-val">Database index — like the index at the back of a book. Instead of reading every row to find what you need, the DB jumps directly to the right page.</div></div>
+      <div class="cb-row"><div class="cb-key">When to use</div><div class="cb-val">Any column you filter on (WHERE), join on, or sort by (ORDER BY) in a frequently-run query. Missing index on a large table = full table scan = the most common cause of slow queries in SQL Server.</div></div>
+      <div class="cb-row"><div class="cb-key">Trade-off</div><div class="cb-val">Indexes slow down writes (the index must be updated too) and consume disk space. Add them deliberately, not everywhere.</div></div>
+      <div class="cb-row"><div class="cb-key">Example</div><div class="cb-val">Orders table with 50 million rows. Query: "give me all orders for user ID 12345." Without an index on UserID, SQL Server reads 50 million rows. With an index, it reads ~200 rows in milliseconds.</div></div>
+    </div>
+  </div>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">2</span><span class="cb-title">Read Replicas</span><span class="cb-sub">SEPARATE READ AND WRITE TRAFFIC</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">What</div><div class="cb-val">A copy of the database that continuously receives changes from the primary ("write") database. <b>Read traffic goes to replicas. Write traffic goes to primary.</b></div></div>
+      <div class="cb-row"><div class="cb-key">When to use</div><div class="cb-val">When you have a high read/write ratio (80% reads or more) and the primary DB is saturated despite indexing. Typical: reporting, dashboards, product listings, user profiles.</div></div>
+      <div class="cb-row"><div class="cb-key">Trade-off</div><div class="cb-val"><b>Replication lag</b>: writes go to the primary, but replicas may be a few milliseconds (or seconds) behind. A user who just created an order may not immediately see it in a read that goes to a replica. Design around this: writes always read-back from primary; dashboards read from replica.</div></div>
+      <div class="cb-row"><div class="cb-key">Example</div><div class="cb-val">E-commerce: product browsing (millions of reads) goes to replica. Order creation (writes) goes to primary. The primary DB CPU drops by 70%.</div></div>
+    </div>
+  </div>
+
+  <div class="diag rv">
+    <svg viewBox="0 0 840 200" fill="none">
+      <defs><marker id="a3" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker></defs>
+      <!-- Before -->
+      <text class="dn" x="16" y="22">BEFORE — ALL TRAFFIC TO ONE DB</text>
+      <rect class="db" x="16" y="36" width="110" height="44" rx="3"/>
+      <text class="dl" x="71" y="56" text-anchor="middle">APP</text>
+      <text class="ds" x="71" y="71" text-anchor="middle">reads + writes</text>
+      <path class="da hi" d="M126 58 H 176" marker-end="url(#a3)"/>
+      <rect class="db hi" x="182" y="36" width="120" height="44" rx="3"/>
+      <text class="dl" x="242" y="56" text-anchor="middle">SINGLE DB</text>
+      <text class="ds" x="242" y="71" text-anchor="middle">overloaded</text>
+      <!-- divider -->
+      <path d="M370 10 V 190" stroke="var(--line2)" stroke-width="1" stroke-dasharray="5 4"/>
+      <!-- After -->
+      <text class="dn" x="390" y="22">AFTER — READS SEPARATED FROM WRITES</text>
+      <rect class="db" x="390" y="60" width="110" height="80" rx="3"/>
+      <text class="dl" x="445" y="84" text-anchor="middle">APP</text>
+      <text class="ds" x="445" y="100" text-anchor="middle">writes → primary</text>
+      <text class="ds" x="445" y="115" text-anchor="middle">reads → replica</text>
+      <!-- write arrow -->
+      <path class="da hi" d="M500 72 H 556" marker-end="url(#a3)"/>
+      <rect class="db green" x="562" y="40" width="120" height="48" rx="3"/>
+      <text class="dl" x="622" y="62" text-anchor="middle">PRIMARY DB</text>
+      <text class="ds" x="622" y="78" text-anchor="middle">writes only</text>
+      <!-- replica arrows -->
+      <path class="da dash" d="M622 88 V 116" marker-end="url(#a3)"/>
+      <rect class="db" x="562" y="122" width="120" height="48" rx="3"/>
+      <text class="dl" x="622" y="144" text-anchor="middle">READ REPLICA</text>
+      <text class="ds" x="622" y="159" text-anchor="middle">reads only (async copy)</text>
+      <path class="da" d="M500 120 H 556" marker-end="url(#a3)"/>
+      <text class="dn" x="390" y="186">Replication lag is the trade-off — always decide which reads can tolerate it</text>
+    </svg>
+  </div>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">3</span><span class="cb-title">Partitioning (Sharding)</span><span class="cb-sub">LAST RESORT — USE WITH CARE</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">What</div><div class="cb-val">Split the data itself across multiple database servers. Each server holds a <b>subset</b> of the data (e.g., customers A–M on shard 1, N–Z on shard 2). No single server holds everything.</div></div>
+      <div class="cb-row"><div class="cb-key">When to use</div><div class="cb-val">When you have genuinely huge data volumes (billions of rows) or write throughput that exceeds what one primary DB can handle — even after vertical scaling and caching. This is rare at typical enterprise scale.</div></div>
+      <div class="cb-row"><div class="cb-key">Trade-off</div><div class="cb-val"><b>Cross-shard queries are expensive or impossible.</b> "Give me all orders" now requires asking every shard. Transactions across shards are complex. The shard key decision is extremely hard to change later. <b>Most systems at 1 million users do NOT need sharding.</b></div></div>
+      <div class="cb-row"><div class="cb-key">Example</div><div class="cb-val">A multi-tenant SaaS: shard by tenant ID. Each tenant's data lives entirely on one shard. Cross-tenant queries are rare by design — so the trade-off is acceptable.</div></div>
+    </div>
+  </div>
+
+  <div class="co key rv">
+    <span class="co-lbl">THE ORDER MATTERS</span>
+    <p>Indexing → Caching → Read Replicas → Vertical Scale → Sharding. Most systems at 1 million users need only the first three. Jumping to sharding before exhausting the others is overengineering — and will cost you dearly in operational complexity.</p>
+  </div>
+</section>
+
+<!-- ===== S8: STATELESS ===== -->
+<section class="sec" id="s8">
+  <div class="sk">SECTION 08 — STATELESS DESIGN</div>
+  <h2 class="sh2 rv">Stateless Application Design</h2>
+  <p class="slead rv">Making your application stateless is the single most important thing you must do before horizontal scaling works. Without it, adding servers creates problems instead of solving them.</p>
+
+  <h3 class="rv">What "stateless" means</h3>
+  <div class="tw rv">
+    <table class="t">
+      <thead><tr><th></th><th>Stateful App</th><th>Stateless App</th></tr></thead>
+      <tbody>
+        <tr><td><b>Session storage</b></td><td>Session lives in server memory (RAM)</td><td>Session lives externally — Redis, DB, or JWT</td></tr>
+        <tr><td><b>User context</b></td><td>Server "remembers" who you are between requests</td><td>Every request carries its own identity (JWT token)</td></tr>
+        <tr><td><b>Load balancer</b></td><td>Must send same user to same server (sticky)</td><td>Any server can handle any request — LB is free to route to healthiest</td></tr>
+        <tr><td><b>Scaling</b></td><td>Adding servers causes login and session bugs</td><td>Add any number of servers — each is identical</td></tr>
+        <tr><td><b>Server failure</b></td><td>User loses session and must log in again</td><td>Next request goes to a different server — user notices nothing</td></tr>
+        <tr><td><b>Local cache</b></td><td>Each server has its own in-memory cache — may be out of sync</td><td>Cache is external (Redis) — all servers see the same data</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3 class="rv">Where state must go instead</h3>
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">State Belongs in External Storage</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">USER SESSION</div><div class="cb-val">Redis (fast, ephemeral, shared across all servers). OR: JWT token (the state travels with the user, no server needs to store it).</div></div>
+      <div class="cb-row"><div class="cb-key">SHOPPING CART</div><div class="cb-val">Redis for active carts (fast reads/writes). Database for completed orders. Never in server memory — the cart must survive server restarts and load balancer routing changes.</div></div>
+      <div class="cb-row"><div class="cb-key">UPLOADED FILES</div><div class="cb-val">Azure Blob Storage, AWS S3 — shared, durable, accessible from any server. Never on the local disk of an app server.</div></div>
+      <div class="cb-row"><div class="cb-key">TEMP COMPUTATION</div><div class="cb-val">Background jobs or queues (RabbitMQ). The request accepts the work, puts it on the queue, and returns immediately. A worker picks it up regardless of which server it runs on.</div></div>
+      <div class="cb-row"><div class="cb-key">APPLICATION CONFIG</div><div class="cb-val">Environment variables, Azure App Config, or a config service. Never hardcoded per server — all servers must behave identically with the same config.</div></div>
+    </div>
+  </div>
+
+  <div class="co tip rv">
+    <span class="co-lbl">INTERVIEW PHRASE TO USE</span>
+    <p>"My application servers are stateless — any server can handle any request from any user. State lives in external systems: Redis for sessions and cache, SQL Server for persistent data, Azure Blob for files. This means I can add or remove servers without any impact on users."</p>
+  </div>
+</section>
+
+<!-- ===== S9: CDN ===== -->
+<section class="sec" id="s9">
+  <div class="sk">SECTION 09 — CONTENT DELIVERY</div>
+  <h2 class="sh2 rv">CDN and Static Content</h2>
+  <p class="slead rv">Why should a user in Mumbai download a product image from a server in West Europe, if the same image can be served from a server 20 km away from them?</p>
+
+  <h3 class="rv">What a CDN does</h3>
+  <p class="rv">A CDN (Content Delivery Network) is a <b>distributed network of cache servers spread around the world</b>. A file is stored once on your origin server, then automatically copied ("cached") to CDN servers ("edge nodes") around the world. When a user requests that file, the CDN serves it from the closest edge node — not from your origin.</p>
+
+  <div class="diag rv">
+    <svg viewBox="0 0 860 220" fill="none">
+      <defs><marker id="a4" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker>
+      <marker id="a5" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--green)"/></marker></defs>
+      <!-- Origin -->
+      <rect class="db" x="20" y="84" width="120" height="52" rx="3"/>
+      <text class="dl" x="80" y="106" text-anchor="middle">ORIGIN SERVER</text>
+      <text class="ds" x="80" y="122" text-anchor="middle">West Europe</text>
+      <!-- CDN nodes -->
+      <path class="da dash" d="M140 100 H 230" marker-end="url(#a4)"/>
+      <path class="da dash" d="M140 110 H 230" marker-end="url(#a4)"/>
+      <path class="da dash" d="M140 120 H 230" marker-end="url(#a4)"/>
+      <rect class="db hi" x="236" y="20" width="120" height="44" rx="3"/>
+      <text class="dl" x="296" y="39" text-anchor="middle">CDN EDGE</text>
+      <text class="ds" x="296" y="54" text-anchor="middle">Mumbai, India</text>
+      <rect class="db hi" x="236" y="88" width="120" height="44" rx="3"/>
+      <text class="dl" x="296" y="107" text-anchor="middle">CDN EDGE</text>
+      <text class="ds" x="296" y="122" text-anchor="middle">Singapore</text>
+      <rect class="db hi" x="236" y="156" width="120" height="44" rx="3"/>
+      <text class="dl" x="296" y="175" text-anchor="middle">CDN EDGE</text>
+      <text class="ds" x="296" y="190" text-anchor="middle">New York, USA</text>
+      <!-- User requests -->
+      <path class="da" style="stroke:var(--green)" d="M412 42 H 356" marker-end="url(#a5)"/>
+      <rect class="db green" x="418" y="20" width="110" height="44" rx="3"/>
+      <text class="dl" x="473" y="39" text-anchor="middle">USER IN</text>
+      <text class="ds" x="473" y="54" text-anchor="middle">Mumbai — 5ms</text>
+      <path class="da" style="stroke:var(--green)" d="M412 110 H 356" marker-end="url(#a5)"/>
+      <rect class="db green" x="418" y="88" width="110" height="44" rx="3"/>
+      <text class="dl" x="473" y="107" text-anchor="middle">USER IN</text>
+      <text class="ds" x="473" y="122" text-anchor="middle">Singapore — 3ms</text>
+      <path class="da" style="stroke:var(--green)" d="M412 178 H 356" marker-end="url(#a5)"/>
+      <rect class="db green" x="418" y="156" width="110" height="44" rx="3"/>
+      <text class="dl" x="473" y="175" text-anchor="middle">USER IN</text>
+      <text class="ds" x="473" y="190" text-anchor="middle">New York — 8ms</text>
+      <text class="dn" x="20" y="200">Without CDN, Mumbai user hits West Europe: 180ms+ latency. With CDN: 5ms. Same image, 36x faster.</text>
+    </svg>
+  </div>
+
+  <div class="cblock rv">
+    <div class="cblock-head"><span class="cb-num">→</span><span class="cb-title">CDN — When to Use, When Not To</span></div>
+    <div class="cblock-body">
+      <div class="cb-row"><div class="cb-key">GOOD FOR</div><div class="cb-val"><b>Images, CSS, JavaScript, fonts, HTML templates, videos, PDF files, downloadable content.</b> Anything static that does not change per user and can be cached. This category is often 60–80% of your total bandwidth.</div></div>
+      <div class="cb-row"><div class="cb-key">NOT FOR</div><div class="cb-val">Dynamic API responses that are unique per user (order history, personalized content). Anything that changes in real-time. Authenticated pages that should not be cached publicly.</div></div>
+      <div class="cb-row"><div class="cb-key">COST BENEFIT</div><div class="cb-val">CDN bandwidth is significantly cheaper than origin server bandwidth. More importantly, it offloads your servers and network — <b>a CDN cache hit never touches your origin server at all</b>.</div></div>
+      <div class="cb-row"><div class="cb-key">WHEN UNNECESSARY</div><div class="cb-val">All users are in one geography (internal enterprise tool). Content is entirely dynamic and user-specific. Very low traffic where latency is not a concern. Early-stage product with no global audience.</div></div>
+    </div>
+  </div>
+
+  <div class="co tip rv">
+    <span class="co-lbl">INTERVIEW ANSWER</span>
+    <p>"All static assets — images, JS, CSS — are served from CDN. This reduces origin server load by ~70% and cuts latency for global users from hundreds of milliseconds to single digits. The origin only handles API requests and page rendering. Static content that never changes gets a very long Cache-Control header (1 year) with a content-hash in the filename so we can deploy new versions without cache issues."</p>
+  </div>
+</section>
+
+<!-- ===== S10: FULL DESIGN ===== -->
+<section class="sec" id="s10">
+  <div class="sk">SECTION 10 — PUTTING IT TOGETHER</div>
+  <h2 class="sh2 rv">Full System Design — 6 Versions</h2>
+  <p class="slead rv">Now we combine everything. Same system, growing under load. Each version solves the problem created by the previous version's scale. <b>Watch the pattern: problem → change → why → new trade-off.</b></p>
+
+  <div class="vtabs rv" role="tablist">
+    <button class="vtab on" data-v="v1" role="tab">V1 — Basic</button>
+    <button class="vtab" data-v="v2" role="tab">V2 — Multi-Server</button>
+    <button class="vtab" data-v="v3" role="tab">V3 — Cache</button>
+    <button class="vtab" data-v="v4" role="tab">V4 — DB Scaling</button>
+    <button class="vtab" data-v="v5" role="tab">V5 — Async</button>
+    <button class="vtab" data-v="v6" role="tab">V6 — Final</button>
+  </div>
+
+  <div class="vpanel on" id="v1">
+    <div class="vcard">
+      <h4>Version 1 — Basic Application + Database</h4>
+      <div class="vc-meta"><span class="vc-tag">~100 USERS</span><span class="vc-tag">~5 RPS</span><span class="vc-tag">1 SERVER</span></div>
+      <p><span class="fix">Design:</span> One ASP.NET Core application server, one SQL Server database. All requests go to one machine. All data in one database. Simple deployment, simple monitoring.</p>
+      <p><span class="fix">Why it works here:</span> At 100 users the load is minimal. The simplest design is always the right design for small load — complexity has a cost too.</p>
+      <p><span class="prob">The problem that will appear:</span> When users grow to thousands, this single server becomes a single point of failure and a performance ceiling. One deploy = full downtime. One hardware failure = full outage.</p>
+      <p><span class="tradeoff">New trade-off introduced:</span> None — this is the baseline. Enjoy it while it lasts.</p>
+    </div>
+    <div class="diag">
+      <svg viewBox="0 0 500 130" fill="none">
+        <defs><marker id="av1" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker></defs>
+        <rect class="db" x="20" y="44" width="110" height="44" rx="3"/>
+        <text class="dl" x="75" y="63" text-anchor="middle">USERS</text>
+        <text class="ds" x="75" y="79" text-anchor="middle">~100</text>
+        <path class="da hi" d="M130 66 H 188" marker-end="url(#av1)"/>
+        <rect class="db hi" x="194" y="32" width="130" height="68" rx="3"/>
+        <text class="dl" x="259" y="59" text-anchor="middle">ASP.NET CORE</text>
+        <text class="ds" x="259" y="76" text-anchor="middle">1 server, all roles</text>
+        <text class="ds" x="259" y="91" text-anchor="middle">API + static files</text>
+        <path class="da" d="M324 66 H 382" marker-end="url(#av1)"/>
+        <rect class="db" x="388" y="44" width="100" height="44" rx="3"/>
+        <text class="dl" x="438" y="63" text-anchor="middle">SQL SERVER</text>
+        <text class="ds" x="438" y="79" text-anchor="middle">one DB</text>
+        <text class="dn" x="20" y="120">One server does everything. Simple. Correct for this scale.</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="vpanel" id="v2">
+    <div class="vcard">
+      <h4>Version 2 — Multiple App Servers + Load Balancer</h4>
+      <div class="vc-meta"><span class="vc-tag">~5,000 USERS</span><span class="vc-tag">~100 RPS</span><span class="vc-tag">3 APP SERVERS</span></div>
+      <p><span class="prob">Problem from V1:</span> Single server is at CPU capacity. One deploy takes the site down. One hardware failure = total outage.</p>
+      <p><span class="fix">Change:</span> Add a load balancer in front. Run 3 identical ASP.NET Core instances. Sessions moved to Redis (required for stateless routing). SSL termination at the LB.</p>
+      <p><span class="fix">Why:</span> Any server can now handle any request. Rolling deploys are possible (take one server out, deploy, put it back). One server can die and the other two keep serving.</p>
+      <p><span class="prob">New problem:</span> The database is now receiving 3× the connection pressure. All three app servers share one database. The DB becomes the new bottleneck.</p>
+      <p><span class="tradeoff">New trade-off:</span> Sessions must be stored externally (Redis). Added operational complexity of a load balancer and Redis. But gained HA and zero-downtime deploys.</p>
+    </div>
+    <div class="diag">
+      <svg viewBox="0 0 720 180" fill="none">
+        <defs><marker id="av2" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker></defs>
+        <rect class="db" x="10" y="70" width="90" height="40" rx="3"/>
+        <text class="dl" x="55" y="88" text-anchor="middle">USERS</text>
+        <text class="ds" x="55" y="103" text-anchor="middle">~5K</text>
+        <path class="da hi" d="M100 90 H 140" marker-end="url(#av2)"/>
+        <rect class="db hi" x="146" y="62" width="110" height="56" rx="3"/>
+        <text class="dl" x="201" y="85" text-anchor="middle">LOAD</text>
+        <text class="dl" x="201" y="101" text-anchor="middle">BALANCER</text>
+        <text class="ds" x="201" y="113" text-anchor="middle">health checks</text>
+        <path class="da" d="M256 76 H 300" marker-end="url(#av2)"/>
+        <path class="da" d="M256 90 H 300" marker-end="url(#av2)"/>
+        <path class="da" d="M256 104 H 300" marker-end="url(#av2)"/>
+        <rect class="db green" x="306" y="28" width="110" height="40" rx="3"/>
+        <text class="dl" x="361" y="46" text-anchor="middle">APP #1</text>
+        <text class="ds" x="361" y="62" text-anchor="middle">stateless</text>
+        <rect class="db green" x="306" y="76" width="110" height="40" rx="3"/>
+        <text class="dl" x="361" y="94" text-anchor="middle">APP #2</text>
+        <text class="ds" x="361" y="110" text-anchor="middle">stateless</text>
+        <rect class="db green" x="306" y="124" width="110" height="40" rx="3"/>
+        <text class="dl" x="361" y="142" text-anchor="middle">APP #3</text>
+        <text class="ds" x="361" y="158" text-anchor="middle">stateless</text>
+        <path class="da" d="M416 48 H 460" marker-end="url(#av2)"/>
+        <path class="da" d="M416 96 H 460" marker-end="url(#av2)"/>
+        <path class="da" d="M416 144 H 460" marker-end="url(#av2)"/>
+        <rect class="db" x="466" y="62" width="100" height="56" rx="3"/>
+        <text class="dl" x="516" y="85" text-anchor="middle">SQL DB</text>
+        <text class="ds" x="516" y="101" text-anchor="middle">primary only</text>
+        <text class="ds" x="516" y="113" text-anchor="middle">becoming hot</text>
+        <rect class="db" x="466" y="130" width="100" height="40" rx="3"/>
+        <text class="dl" x="516" y="148" text-anchor="middle">REDIS</text>
+        <text class="ds" x="516" y="163" text-anchor="middle">sessions + cache</text>
+        <path class="da dash" d="M361 116 L 361 125 L 460 145" marker-end="url(#av2)"/>
+        <text class="dn" x="10" y="172">Sessions live in Redis. All 3 servers are identical. LB detects health and routes around failure.</text>
+      </svg>
+    </div>
+  </div>
+
+  <div class="vpanel" id="v3">
+    <div class="vcard">
+      <h4>Version 3 — Add Caching Layer</h4>
+      <div class="vc-meta"><span class="vc-tag">~20,000 USERS</span><span class="vc-tag">~400 RPS</span><span class="vc-tag">CACHE HIT 80%</span></div>
+      <p><span class="prob">Problem from V2:</span> DB is overloaded. 80% of queries are reads for the same product pages, category lists, and reference data. The same SQL queries fire hundreds of times per second for identical data.</p>
+      <p><span class="fix">Change:</span> Add Redis caching for hot data. Product catalog: 5-min TTL. User preferences: 30-min TTL. Reference data (categories, brands): 1-hour TTL. Cache-aside pattern — app checks cache first, falls back to DB on miss.</p>
+      <p><span class="fix">Why:</span> 80% cache hit rate means 80% fewer DB queries. DB load drops dramatically. Response time for cached items falls from ~200ms to ~2ms.</p>
+      <p><span class="prob">New problem:</span> Stale data for up to 5 minutes (for product data). Cache failure causes thundering herd to DB. Cache warming needed after deploys (cold start problem).</p>
+      <p><span class="tradeoff">New trade-off:</span> Speed vs freshness. Cached product prices may be up to 5 minutes old. Acceptable for browsing — NOT acceptable for checkout (checkout always re-reads live stock and price).</p>
+    </div>
+  </div>
+
+  <div class="vpanel" id="v4">
+    <div class="vcard">
+      <h4>Version 4 — Database Scaling (Read Replicas)</h4>
+      <div class="vc-meta"><span class="vc-tag">~100,000 USERS</span><span class="vc-tag">~1,000 RPS</span><span class="vc-tag">READS SPLIT</span></div>
+      <p><span class="prob">Problem from V3:</span> Caching helped a lot, but cache misses and write traffic still hit the primary DB hard. Reporting queries and analytics are competing with live transaction queries. The primary DB is the bottleneck again.</p>
+      <p><span class="fix">Change:</span> Add one or two SQL Server read replicas. Route: order creation and payment → primary. Product reads, user profiles, reporting, dashboards → replica. All writes still go to primary.</p>
+      <p><span class="fix">Why:</span> The primary DB now only handles writes and the most critical reads. The replica absorbs the large volume of read traffic. Reporting queries can run on replica without affecting live transactions.</p>
+      <p><span class="prob">New problem:</span> Replication lag (typically milliseconds to seconds). A user who just placed an order might query the replica and not see it immediately. Handle this: after a write, redirect the next read for that user to the primary for a short window.</p>
+      <p><span class="tradeoff">New trade-off:</span> Consistency vs scale. Replica reads may be slightly stale. Acceptable for product browsing and reports. Never acceptable for financial data — those always go to primary.</p>
+    </div>
+  </div>
+
+  <div class="vpanel" id="v5">
+    <div class="vcard">
+      <h4>Version 5 — Background Processing for Slow Tasks</h4>
+      <div class="vc-meta"><span class="vc-tag">~200,000 USERS</span><span class="vc-tag">~2,000 RPS</span><span class="vc-tag">ASYNC QUEUE</span></div>
+      <p><span class="prob">Problem from V4:</span> Some operations are slow and holding up the request thread: sending confirmation emails, generating invoices, updating search indexes, sending SMS, processing images, generating reports. These make the user wait — and they block the thread pool during peak load.</p>
+      <p><span class="fix">Change:</span> Move all slow, non-critical work to a message queue (RabbitMQ / Azure Service Bus). The API accepts the request, writes the event to the queue, and returns immediately ("Order placed — confirmation email coming shortly"). A separate worker pool processes the queue asynchronously.</p>
+      <p><span class="fix">Why:</span> The web request path becomes short — just write to DB and enqueue the event. The user gets a fast response. Slow work runs at its own pace, with retries on failure, without blocking web threads.</p>
+      <p><span class="prob">New problem:</span> Eventual consistency — user places order, email arrives a few seconds later. If queue is down, events must not be lost (use persistent queues + dead-letter queues). Workers must be idempotent — the same message processed twice must produce the same result.</p>
+      <p><span class="tradeoff">New trade-off:</span> Simplicity vs speed. The request path is now simpler and faster. But the system is now distributed — you have more components to monitor, and debugging becomes harder (trace requests across services).</p>
+    </div>
+  </div>
+
+  <div class="vpanel" id="v6">
+    <div class="vcard">
+      <h4>Version 6 — Final Architecture for 1 Million Users</h4>
+      <div class="vc-meta"><span class="vc-tag">1M REGISTERED</span><span class="vc-tag">100K DAILY ACTIVE</span><span class="vc-tag">2,000 RPS PEAK</span><span class="vc-tag">10K CONCURRENT</span></div>
+      <p><span class="fix">Everything together:</span> CDN for all static assets → Load Balancer → 6–8 stateless app servers (autoscaling) → Redis cache + Redis sessions → Primary SQL DB (writes + critical reads) + 2 read replicas (read traffic + reporting) → RabbitMQ/Service Bus queue → Worker pool for async tasks (email, SMS, reports, search index updates) → Azure Blob for files → Monitoring and alerting on every layer.</p>
+      <p><span class="fix">Costs are justified because:</span> We added each component only when a measured bottleneck demanded it. We did not start here on Day 1 — we arrived here through five iterations driven by actual growth.</p>
+      <p><span class="prob">What would change this further (1M → 10M):</span> Separate the monolith into domains if team size demands it, consider sharding the DB by tenant or region, add a dedicated search service for product search, implement multi-region deployment for latency and availability, add a proper API gateway layer.</p>
+      <p><span class="tradeoff">The architect's honest statement:</span> This architecture works for the given load. If traffic suddenly grows 10×, the app servers autoscale, the cache absorbs the read spike, and the main risk is the primary DB write throughput — which would be the next planned upgrade. We know where the next bottleneck is before it happens.</p>
+    </div>
+    <div class="diag">
+      <svg viewBox="0 0 900 340" fill="none">
+        <defs><marker id="av6" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--ink3)"/></marker>
+        <marker id="av6g" markerWidth="7" markerHeight="7" refX="6" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 Z" fill="var(--green)"/></marker></defs>
+        <!-- CDN -->
+        <rect class="db" x="10" y="148" width="80" height="44" rx="3"/>
+        <text class="dl" x="50" y="167" text-anchor="middle" font-size="9.5">USERS</text>
+        <text class="ds" x="50" y="183" text-anchor="middle">1M registered</text>
+        <path class="da hi" d="M90 162 H 128" marker-end="url(#av6)"/>
+        <path class="da dash" style="stroke:var(--green)" d="M90 155 C 110 80 150 60 200 52" marker-end="url(#av6g)"/>
+        <rect class="db green" x="140" y="32" width="120" height="40" rx="3"/>
+        <text class="dl" x="200" y="50" text-anchor="middle">CDN</text>
+        <text class="ds" x="200" y="65" text-anchor="middle">images, CSS, JS, fonts</text>
+        <!-- LB -->
+        <rect class="db hi" x="134" y="140" width="110" height="52" rx="3"/>
+        <text class="dl" x="189" y="162" text-anchor="middle">LOAD</text>
+        <text class="dl" x="189" y="178" text-anchor="middle">BALANCER</text>
+        <text class="ds" x="189" y="189" text-anchor="middle">health · SSL · rate limit</text>
+        <!-- App servers -->
+        <path class="da" d="M244 160 H 290" marker-end="url(#av6)"/>
+        <path class="da" d="M244 164 H 290" marker-end="url(#av6)"/>
+        <path class="da" d="M244 168 H 290" marker-end="url(#av6)"/>
+        <rect class="db green" x="296" y="100" width="110" height="36" rx="3"/>
+        <text class="dl" x="351" y="118" text-anchor="middle">APP ×6-8</text>
+        <text class="ds" x="351" y="131" text-anchor="middle">autoscaling pool</text>
+        <rect class="db" x="296" y="148" width="110" height="36" rx="3"/>
+        <text class="dl" x="351" y="166" text-anchor="middle">REDIS</text>
+        <text class="ds" x="351" y="179" text-anchor="middle">cache + sessions</text>
+        <rect class="db" x="296" y="196" width="110" height="36" rx="3"/>
+        <text class="dl" x="351" y="214" text-anchor="middle">QUEUE</text>
+        <text class="ds" x="351" y="227" text-anchor="middle">async tasks</text>
+        <!-- DB layer -->
+        <path class="da" d="M406 118 H 488" marker-end="url(#av6)"/>
+        <path class="da dash" d="M406 166 H 488" marker-end="url(#av6)"/>
+        <path class="da" d="M406 214 H 488" marker-end="url(#av6)"/>
+        <rect class="db green" x="494" y="84" width="120" height="44" rx="3"/>
+        <text class="dl" x="554" y="103" text-anchor="middle">PRIMARY DB</text>
+        <text class="ds" x="554" y="119" text-anchor="middle">writes + critical reads</text>
+        <rect class="db" x="494" y="140" width="120" height="44" rx="3"/>
+        <text class="dl" x="554" y="159" text-anchor="middle">READ REPLICA ×2</text>
+        <text class="ds" x="554" y="175" text-anchor="middle">reports, dashboards</text>
+        <rect class="db" x="494" y="196" width="120" height="44" rx="3"/>
+        <text class="dl" x="554" y="215" text-anchor="middle">WORKER POOL</text>
+        <text class="ds" x="554" y="231" text-anchor="middle">email, SMS, indexing</text>
+        <!-- Blob -->
+        <path class="da dash" d="M554 84 V 56 H 666" marker-end="url(#av6)"/>
+        <rect class="db" x="672" y="36" width="110" height="40" rx="3"/>
+        <text class="dl" x="727" y="54" text-anchor="middle">BLOB STORAGE</text>
+        <text class="ds" x="727" y="70" text-anchor="middle">files, images</text>
+        <!-- Monitor -->
+        <rect class="db ext" x="672" y="140" width="110" height="44" rx="3"/>
+        <text class="dl" x="727" y="159" text-anchor="middle">MONITORING</text>
+        <text class="ds" x="727" y="175" text-anchor="middle">metrics, alerts, traces</text>
+        <path class="da dash" d="M614 162 H 666" marker-end="url(#av6)"/>
+        <!-- labels -->
+        <text class="dn" x="10" y="290">GREEN PATH: static assets served from CDN — never hits origin</text>
+        <text class="dn" x="10" y="310">BLUE PATH: API requests → LB → stateless app pool → cache or DB</text>
+        <text class="dn" x="10" y="330">DASHED: async / background work — off the critical path</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ===== S11: 20 QUESTIONS ===== -->
+<section class="sec" id="s11">
+  <div class="sk">SECTION 11 — ARCHITECT THINKING</div>
+  <h2 class="sh2 rv">What Should I Ask Before Saying a System Can Handle 1 Million Users?</h2>
+  <p class="slead rv">Twenty questions. Each one changes the design. In an interview, asking these tells the interviewer more than any answer could.</p>
+  <div class="qa-toolbar rv">
+    <button class="btn" id="qaOpen">EXPAND ALL</button>
+    <button class="btn" id="qaClose">COLLAPSE ALL</button>
+  </div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">01</span><span class="qa-t">How many registered users vs daily active vs concurrent?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">These three numbers are completely different design problems. Designing for registered users as if they are all concurrent is the most expensive and common mistake in system sizing. The chain registered → active → concurrent → RPS is the calculation you must always perform before drawing the first box.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">02</span><span class="qa-t">What is the peak traffic — and when does it happen?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Average load is for cost planning. Peak load is for capacity planning. A system that handles the average but collapses at the peak is not a working system — it is a scheduled outage. Ask when the peak is (dinner time, salary day, sale events) and design for 2–3× that peak for safety margin.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">03</span><span class="qa-t">What is the required response time — and for which actions?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Not all actions need the same speed. Product page: under 1 second. Search: under 500ms. Report generation: 30 seconds acceptable. Payment status: instant. Each target changes the design — caching for fast reads, queues for slow operations, synchronous paths only for critical exact operations.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">04</span><span class="qa-t">What is the read/write ratio?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">A 90:10 read-heavy system screams for caching and read replicas. A 50:50 write-heavy system (trading platform, messaging) needs to focus on write throughput, queueing, and consistency. The same "1 million users" can mean completely different architectures depending on this ratio.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">05</span><span class="qa-t">What is the total data volume — and how fast does it grow?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">A system with 10 GB of data and one with 10 TB need fundamentally different storage strategies, index strategies, and backup strategies. Growth rate matters too — a system that will have 10× the data in 2 years needs to be designed with that growth path already modelled.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">06</span><span class="qa-t">What is the acceptable downtime — in minutes per year?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">99.9% = ~8.7 hours/year. 99.99% = ~53 minutes/year. These are not minor differences — achieving 99.99% costs roughly 10× more than 99.9% and requires redundancy at every layer (load balancer, app, DB, network). The business must choose this number, not the engineer.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">07</span><span class="qa-t">What happens when the database is unavailable?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Does the entire site go down? Or can you serve read-only from cache? Can you accept writes into a queue and replay them when DB recovers? Answering this defines your recovery plan: RTO (how fast do you recover) and RPO (how much data can you lose). These drive the need for replicas, failover clusters, and backup strategies.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">08</span><span class="qa-t">What external dependencies does the system have?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Payment gateways, SMS providers, email services, mapping APIs, identity providers. Each one is a potential outage that is outside your control. For each: what is the timeout, what is the retry strategy, what is the fallback? External dependencies are often the actual cause of incidents that look like your system's failures.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">09</span><span class="qa-t">Is the traffic predictable, or does it spike suddenly?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Predictable traffic (monthly payroll run, end-of-day reports) allows scheduled scaling. Unpredictable spikes (a product goes viral, a news link sends traffic) require autoscaling, rate limiting, and queue-based load shedding. The architecture is different for each — you can't plan for a viral moment if you have designed for a flat curve.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">10</span><span class="qa-t">Where are the users geographically?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">All users in one country: one region, CDN for static assets. Users spread globally: multi-region deployment (latency), CDN everywhere, data residency compliance per region. A banking app with users only in the UK needs a very different geographic architecture than a global SaaS product.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">11</span><span class="qa-t">What is the security classification of the data?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Card data (PCI-DSS), health records (HIPAA), personal data (GDPR), financial records (SOX). Each classification adds compliance requirements that change the architecture: where data can live, how it is encrypted, who can access it, what audit logs are required. Ignoring this until after launch is expensive.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">12</span><span class="qa-t">What is the budget for infrastructure?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">A $5,000/month budget and a $50,000/month budget are completely different design constraints. High-availability with multiple regions costs money. Managed services cost money. Autoscaling costs money at peak. An architect who designs without cost constraints is not designing — they are dreaming.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">13</span><span class="qa-t">How many teams will build and operate this system?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">One team of five people does not need microservices. Five teams of ten people might — because team boundaries need to map to deployment boundaries. Conway's Law: the architecture will mirror the organization structure. Understanding the team size determines how the system should be split (or not split).</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">14</span><span class="qa-t">What is the expected growth over the next 2–3 years?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Design for today + a clear growth path to tomorrow. Not for 10 years from now. If the product is expected to grow 3× in a year, the architecture needs a defined plan for each scale milestone — not a full-scale rewrite at each milestone.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">15</span><span class="qa-t">What must be exactly consistent — and what can be eventually consistent?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Payment processing: must be exact. Stock quantity at checkout: must be exact. Product description on a browsing page: can be 5 minutes old. Dashboard totals: can be a few minutes delayed. Distinguishing these unlocks a huge set of architectural options (caching, read replicas, async processing) that are only safe for the "eventually consistent" category.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">16</span><span class="qa-t">What does failure look like for the business — in financial or reputational terms?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">1 hour of downtime for a company that processes £50,000 of orders per hour has a direct financial cost. For a social platform it is reputational. Understanding the actual cost of failure helps the business decide how much to invest in reliability — and helps you prioritize which failures to design against first.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">17</span><span class="qa-t">Does the system have heavy batch processing needs?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">Nightly payroll runs, monthly billing, bulk report generation. Batch workloads compete with live traffic for DB and CPU resources. They need to be designed separately — either scheduled at low-traffic times, or run on separate infrastructure that does not share resources with the live system.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">18</span><span class="qa-t">What observability is required — logging, metrics, tracing?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">At 1 million users, "something is slow" is not actionable. You need: request traces to find which service is slow, metrics to know when to scale, alerts to know before users complain, and logs to debug what happened. Observability is not optional at scale — it is how you find bottlenecks before they become incidents.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">19</span><span class="qa-t">What are the disaster recovery requirements?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">RTO (Recovery Time Objective): how long until you are back up? RPO (Recovery Point Objective): how much data can you afford to lose? A banking system might require RTO 15 min and RPO 0 seconds. A product catalogue app might accept RTO 4 hours and RPO 1 hour. These numbers directly determine backup frequency, replication, and failover design.</div></div></div></div>
+
+  <div class="qa rv"><button class="qa-head" type="button"><span class="qa-no">20</span><span class="qa-t">Have you measured the current bottleneck — or are you assuming?</span><span class="qa-ic"></span></button><div class="qa-ans"><div class="qa-ans-in"><div class="qa-ans-pad">The most important question. All the previous nineteen questions produce assumptions. Before spending money on infrastructure, <b>measure</b>: load test the system, watch what saturates first, then fix that specific thing. Optimizing the wrong thing — even brilliantly — makes no difference. Measure. Then design. Always.</div></div></div></div>
+
+</section>
+
+<!-- ===== S12: MISTAKES ===== -->
+<section class="sec" id="s12">
+  <div class="sk">SECTION 12 — HONEST EDITION</div>
+  <h2 class="sh2 rv">Common Scaling Mistakes</h2>
+  <p class="slead rv">These are not junior mistakes. Senior engineers and technical leads make every one of them. The difference after today is that you will see them before they become incidents.</p>
+
+  <div class="mistake rv"><div class="m-n">01</div><div>
+    <h4>Assuming registered users equal concurrent users</h4>
+    <p class="m-why">The number "1 million users" feels real and urgent. The brain skips the calculation and assumes the worst — that all of them want something right now. This leads to massively over-engineered and over-expensive architecture from day one.</p>
+    <p class="m-fix">Always complete the chain: registered → daily active → peak concurrent → RPS. The final number is what you design for. Show this calculation in every interview and every design review.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">02</div><div>
+    <h4>Adding more app servers when the bottleneck is the database</h4>
+    <p class="m-why">Adding servers is easy and feels like progress. But if the DB is already at 90% CPU, six new app servers will not help — they will create six times more pressure on the already-maxed DB. The site will not get faster; it will get worse.</p>
+    <p class="m-fix">Identify the bottleneck first. If the DB is the bottleneck, fix the DB (indexes, cache, replica). Only then consider adding app servers — when the app tier is actually the constraint.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">03</div><div>
+    <h4>Caching everything indiscriminately</h4>
+    <p class="m-why">Caching feels like a free win. So engineers cache user-specific data, stale financial data, per-request unique data — and then users start seeing wrong prices, other users' data, or ghost orders that should not exist.</p>
+    <p class="m-fix">Cache only data that is: read many times more than written, safe to be slightly stale, shared across users (not user-specific sensitive data). Cache with explicit TTL and intentional invalidation on write.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">04</div><div>
+    <h4>Ignoring what happens when cache fails</h4>
+    <p class="m-why">The cache is "just a performance optimization" — so nobody plans for it failing. Then Redis goes down for 3 minutes during peak sale and the database, which was sized assuming 80% cache hits, instantly collapses under full load.</p>
+    <p class="m-fix">Design the fallback: in-process L1 cache, circuit breaker that degrades gracefully, Redis HA, and staggered TTLs to prevent stampede. The cache is now part of the critical path — treat it accordingly.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">05</div><div>
+    <h4>Keeping application state in server memory</h4>
+    <p class="m-why">It works perfectly on one server. Then you add a second server and users start getting mysteriously logged out. Session data on Server 1 is invisible to Server 2. The fix is always the same — but it is always discovered by the first outage after horizontal scaling.</p>
+    <p class="m-fix">Externalize all session state to Redis or use stateless JWT from day one, before you have more than one server. Retrofitting this on a running system is painful and risky.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">06</div><div>
+    <h4>Jumping to microservices because the system is "large"</h4>
+    <p class="m-why">Large systems do not need microservices — large <em>teams</em> may need them. A well-structured monolith serving 10 million users is a success story. Splitting it into 30 microservices because it "feels more scalable" adds network calls, distributed tracing complexity, and service coordination overhead that a team of 4 cannot manage.</p>
+    <p class="m-fix">Scale justifies microservices only when the load on a specific part demands independent scaling, or when team boundaries require independent deployment. Not before.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">07</div><div>
+    <h4>Optimizing before measuring</h4>
+    <p class="m-why">An engineer "knows" the DB is slow — so they spend two weeks adding caching. The real bottleneck was a synchronous email call that blocked the thread pool. Two weeks wasted, problem still present, customers still complaining.</p>
+    <p class="m-fix">Measure first. Load test. Watch CPU, memory, DB connections, response time per endpoint, thread pool saturation. Find the actual bottleneck. Fix that one. Repeat.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">08</div><div>
+    <h4>Designing for average traffic instead of peak traffic</h4>
+    <p class="m-why">The system handles 500 RPS easily all day. Then a flash sale starts, traffic hits 4,000 RPS for 20 minutes — and the system is down for the most commercially important period of the month. Average performance is the worst metric for capacity planning.</p>
+    <p class="m-fix">Design for peak × 2–3 safety factor. Know when the peak is. Have a tested plan for load shedding (what to switch off first) if the peak exceeds design capacity anyway.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">09</div><div>
+    <h4>Ignoring external API dependencies as a risk</h4>
+    <p class="m-why">The payment gateway has 99.9% uptime — that's fine, right? But 99.9% means 8.7 hours per year down. And when it is down at dinner time on a Friday, your entire checkout is down too, even though your system is perfectly healthy. The external vendor's SLA is the ceiling for your own availability, unless you design around it.</p>
+    <p class="m-fix">For every external dependency: define timeout, retry policy, fallback behaviour (second vendor, queue-and-retry, graceful degradation message to user). The design must assume every external service will fail at the worst possible time.</p>
+  </div></div>
+
+  <div class="mistake rv"><div class="m-n">10</div><div>
+    <h4>Designing for unrealistic scale — the "we might get on the news" fallacy</h4>
+    <p class="m-why">The team designs for 10 million users on day one because "what if we go viral?" The result: Kubernetes clusters, 15 microservices, event sourcing, CQRS — for a product with 200 users and no confirmed market fit. The operational complexity kills velocity and the company burns its budget on infrastructure before the product is proven.</p>
+    <p class="m-fix">Design for 3× your realistic near-term load, with a clear and cheap path to 10×. The architecture for "maybe someday" should not cost the same as the architecture for "definitely now."</p>
+  </div></div>
+
+  <div class="co key rv">
+    <span class="co-lbl">THE THREAD RUNNING THROUGH ALL TEN</span>
+    <p><b>Measure first. Fix the actual bottleneck. Add complexity only when load demands it.</b> Every mistake above is a variation of "we skipped one of those three steps."</p>
+  </div>
+</section>
+
+<!-- ===== S13: ASSIGNMENT ===== -->
+<section class="sec" id="s13">
+  <div class="sk">SECTION 13 — PRACTICE</div>
+  <h2 class="sh2 rv">Day 2 Practical Assignment</h2>
+  <p class="slead rv">No answer key. This is where Day 2 becomes yours. Complete all 15 deliverables before reading the interview Q&amp;A. The thinking matters more than the answer.</p>
+
+  <h3 class="rv">The System: Online Shopping Platform</h3>
+  <div class="asg-spec rv">
+    <div><b>REGISTERED USERS</b><span>1,000,000</span></div>
+    <div><b>DAILY ACTIVE</b><span>100,000</span></div>
+    <div><b>CONCURRENT PEAK</b><span>10,000</span></div>
+    <div><b>PEAK RPS</b><span>2,000 req/sec</span></div>
+    <div><b>FEATURES</b><span>Browse products</span></div>
+    <div><b>FEATURES</b><span>Product search</span></div>
+    <div><b>FEATURES</b><span>Cart management</span></div>
+    <div><b>FEATURES</b><span>Order creation</span></div>
+    <div><b>FEATURES</b><span>Payment processing</span></div>
+    <div><b>FEATURES</b><span>Notifications (email/SMS)</span></div>
+    <div><b>FEATURES</b><span>Reporting &amp; analytics</span></div>
+    <div><b>CONSTRAINT</b><span>Global users, budget-conscious</span></div>
+  </div>
+
+  <div class="asg-bar-wrap rv">
+    <div class="asg-bar"><i id="asgFill"></i></div>
+    <span class="asg-cnt" id="asgCount">0 / 15 DONE</span>
+  </div>
+
+  <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 1</b>User traffic assumptions — calculate registered → daily active → concurrent → RPS chain with your reasoning for each percentage used</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 2</b>Expected peak traffic — define the peak scenario (flash sale? dinner time?), estimate the peak multiplier, and state your design ceiling in RPS</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 3</b>Basic architecture diagram — hand-drawn or digital. All major components labelled with their single job. Must fit one page.</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 4</b>Number of app servers and reasoning — show the calculation: peak RPS ÷ per-server capacity + redundancy = total servers</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 5</b>Load balancing approach — which algorithm, how sessions are handled, what happens when a server fails</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 6</b>Database approach — single DB or replicas, what reads go where, what is the expected read/write ratio, how orders and payments are protected</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 7</b>Caching approach — what is cached, what TTL, what is explicitly NOT cached and why, and what happens when cache goes down</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 8</b>Static file approach — where are images, CSS, JS served from, CDN configuration, cache headers strategy</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 9</b>Failure handling — what happens when: DB is down, cache is down, payment gateway is down, one app server dies, queue worker crashes</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 10</b>Scaling approach — which parts scale horizontally, which scale vertically, and what triggers a scaling event</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 11</b>Top 5 bottlenecks — in order from most likely to appear first, with reasoning for each</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 12</b>Top 5 risks — things that could cause the system to fail in ways the architecture does not yet handle</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 13 + 14</b>5 architecture decisions — each in "Problem → Options → Decision → Why" format (one decision per decision point, not just a list of technology choices)</span></label>
+  <label class="asg-item rv"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 15</b>What changes at 10× growth — if users grow to 10M and RPS to 20,000, which of your decisions breaks first, and what is the next step?</span></label>
+
+  <div class="co tip rv">
+    <span class="co-lbl">HOW TO APPROACH THIS</span>
+    <p>Start with the numbers (Deliverable 1 and 2). The numbers drive all other decisions. Do not start by choosing technologies — choose the shape first. A hand-drawn diagram with clear labels and honest reasoning beats a polished diagram with unexplained choices every time in an interview.</p>
+  </div>
+  <div class="co warn rv">
+    <span class="co-lbl">REMINDER</span>
+    <p>There is no answer key here. There is no single correct design. The interviewer wants to hear your thinking, your trade-offs, and your "this breaks first at 10× growth." That sentence — more than any technology choice — shows architect-level thinking.</p>
+  </div>
+</section>
+
+<!-- ===== S14: INTERVIEW Q&A ===== -->
+<section class="sec" id="s14">
+  <div class="sk">SECTION 14 — INTERVIEW PREPARATION</div>
+  <h2 class="sh2 rv">10 Technical Architect Interview Questions</h2>
+  <p class="slead rv">Read the question. Write or say your answer out loud. <b>Then</b> open the model answer. Compare your direction — not your exact words.</p>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 01</span><span>"How would you design a system for 1 million users?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">First clarify: "1 million registered, or 1 million concurrent?" Then walk through the estimation chain to arrive at realistic concurrent users and RPS. Then outline the progressive architecture: (1) start with one server + DB for small load, (2) add LB + multiple stateless app servers as the app tier saturates, (3) add caching for read-heavy traffic, (4) add read replicas when the DB becomes the bottleneck, (5) add async queue for slow work. At each step explain the trigger that causes the change and the trade-off it introduces. End with: "At 1 million registered users and the numbers I calculated, this is the design — and this is where the next bottleneck will appear if we grow 10×."</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 02</span><span>"How do you estimate capacity for a new system?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">Start from what you know: registered users × activity rate = daily active. Apply peak factor and session duration to get concurrent users. Multiply by actions per minute ÷ 60 = RPS. Then estimate per-server capacity (based on similar systems or load tests) and divide. Add 2–3× safety margin for unexpected spikes. For storage: daily writes × record size × 365 × retention years. Show the calculation explicitly — the interviewer wants the thinking, not just the final number.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 03</span><span>"What happens when traffic suddenly becomes 10×?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">First layer of response: autoscaling adds app servers automatically (if the app is stateless and autoscaling is configured). Second layer: the cache absorbs the read spike (if the cache hit rate is high and the cache is healthy). Third layer: the load balancer rate-limits to protect the system from accepting more than it can handle. Fourth layer: the primary DB write throughput is the likely breaking point — for a planned 10× scenario, I would pre-scale the DB tier (bigger primary, more read replicas) and ensure the queue is absorbing non-critical writes. Fifth: have a runbook — which features can be disabled first (recommendations off, detailed analytics off) to protect core checkout.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 04</span><span>"What becomes the bottleneck first as you scale?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">The order is almost always: (1) the database — specifically slow queries and connection count; (2) the app server — usually CPU or thread pool exhaustion from blocking calls; (3) external dependencies — payment and notification vendors that are slow or unreliable under load; (4) network/bandwidth — once you're serving millions of large responses; (5) the cache — when it becomes a bottleneck from too many connections or when it fails and the DB gets stampeded. But — always measure first. The actual bottleneck in your specific system may be different from the general pattern.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 05</span><span>"Why do you prefer horizontal scaling over vertical?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">Vertical scaling has a hard ceiling (maximum machine size), is expensive at the top, and still has a single point of failure. Horizontal scaling has no practical ceiling, scales cost linearly, enables zero-downtime deploys (rolling), and provides HA (other servers keep running when one dies). However — horizontal scaling requires stateless application design, which is a non-trivial engineering requirement. I prefer horizontal for the app tier once the app is stateless. For the database I use vertical scaling first, then read replicas, before considering horizontal DB scaling (sharding).</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 06</span><span>"How does caching help scalability?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">Caching breaks the linear relationship between traffic and DB load. Without cache, 2× traffic = 2× DB queries. With an 80% cache hit rate, 2× traffic = only 40% more DB queries. This is not just a performance optimization — it is the mechanism that makes 1 million users manageable on a reasonably-sized database. Cache also reduces response time dramatically (2ms vs 200ms for the same data), which improves user experience and reduces server thread occupancy. The trade-off is data freshness — and the architect must decide which data can be slightly stale and which cannot.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 07</span><span>"What happens if Redis (your cache) goes down?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">If the cache goes down unexpectedly and there is no fallback, every request that was previously a cache hit now hits the database simultaneously — a thundering herd. If the database was never sized for that load (because the cache was protecting it), the DB collapses, causing a total outage. My mitigation: (1) Redis HA (Sentinel or Cluster) to prevent clean failure, (2) in-process L1 cache as a short-term fallback, (3) circuit breaker pattern — if cache is unreachable, degrade gracefully (serve slightly stale or simplified responses) rather than hammering the DB, (4) staggered TTLs to prevent mass simultaneous expiry.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 08</span><span>"How do you scale a database?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">In strict order: (1) Add proper indexes — this is free and often 10–100× improvement on slow queries; (2) Add caching — serve hot reads from cache, dramatically reducing DB load; (3) Add a read replica — separate read and write traffic, replicas absorb reporting and browse queries; (4) Vertical scale the primary — bigger machine, more RAM, faster disk — simple with no code change; (5) Connection pooling tuning; (6) Query optimization — fix N+1, reduce large joins; (7) Sharding — only when genuinely needed, because it adds significant complexity. Most systems at 1 million users need only steps 1–4.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 09</span><span>"Why do you need a load balancer?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">Three reasons: (1) Traffic distribution — without it, multiple servers are pointless because users don't know which server to call; (2) High availability — health checks detect a failed server and route around it in seconds, giving users a seamless experience even during a partial failure; (3) Zero-downtime deploys — take one server out of rotation, deploy to it, health-check passes, put it back, repeat. Without a load balancer, a deploy means downtime. Secondary benefits: SSL termination (offloads crypto from app servers), rate limiting, and DDoS protection at the edge.</div></div></div>
+  </div>
+
+  <div class="iq rv"><div class="iq-q"><span class="iq-no">IQ 10</span><span>"How do you know whether scaling is actually required?"</span></div>
+    <button class="iq-show" type="button">SHOW MODEL ANSWER</button>
+    <div class="iq-ans"><div class="iq-ans-in"><div class="iq-ans-pad">By measuring. Specifically: (1) Application server CPU consistently above 70–80% during normal load (not just brief spikes); (2) Response time at p95 exceeding the defined SLA; (3) Database connection pool exhaustion or query wait time increasing; (4) Error rate increasing — timeouts, 500s, circuit breaker triggers; (5) Thread pool saturation. If none of these are happening, you do not have a scaling problem — you have a performance anxiety problem. Scale when measured pain appears, not when the user count reaches a round number.</div></div></div>
+  </div>
+</section>
+
+<!-- ===== S15: SUCCESS ===== -->
+<section class="sec" id="s15">
+  <div class="sk">SECTION 15 — CHECKPOINT</div>
+  <h2 class="sh2 rv">Day 2 Success Criteria</h2>
+  <p class="slead rv">Close the page. Say each of these out loud. If you can say it clearly in your own words, you are ready for tomorrow.</p>
+  <div class="success rv">
+    <h4>BY THE END OF DAY 2, YOU SHOULD BE ABLE TO:</h4>
+    <ul>
+      <li>Explain what scalability means — in one sentence, without jargon</li>
+      <li>Estimate basic system load using the registered → active → concurrent → RPS chain</li>
+      <li>Distinguish registered users from concurrent users — and explain why this distinction matters</li>
+      <li>Identify the most likely bottleneck in a described scenario (DB, app server, external API, cache)</li>
+      <li>Explain vertical vs horizontal scaling, their trade-offs, and when to use each</li>
+      <li>Explain what a load balancer does and why it is essential for horizontal scaling</li>
+      <li>Explain caching — what to cache, what NOT to cache, and what happens when the cache fails</li>
+      <li>Explain basic database scaling: indexing → caching → read replicas → vertical scale → sharding</li>
+      <li>Explain why stateless application design is required for horizontal scaling</li>
+      <li>Explain what a CDN does and when it is useful</li>
+      <li>Design a basic architecture for 1 million users — walking through all 6 versions from simple to complete</li>
+      <li>Defend your architecture decisions: this bottleneck, this fix, this trade-off, this trigger to revisit</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+</div>
+
+<!-- MINDSET -->
+<section class="mindset" id="mindset">
+  <div class="mindset-in">
+    <div class="sk" style="margin-bottom:16px">FINAL — DAY 2 PRINCIPLES</div>
+    <h2 class="sh2 rv" style="margin-bottom:12px">Architect Mindset, Day 2</h2>
+    <p class="slead rv" style="margin-bottom:4px">Five rules. Short on purpose. You will use each one in every system design conversation for the rest of your career.</p>
+
+    <div class="rule rv"><div class="rule-n">01</div><div>
+      <h3>Understand the load before drawing any box</h3>
+      <p>Registered users are not concurrent users. The RPS is not the user count. Calculate the chain every single time — registered → active → concurrent → RPS. The diagram you draw from the wrong number is the wrong diagram, no matter how good it looks.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-n">02</div><div>
+      <h3>Find the bottleneck before adding infrastructure</h3>
+      <p>Adding servers to a database bottleneck makes things worse. Adding cache to a CPU bottleneck does nothing. Measure first — CPU, memory, DB query time, thread pool saturation, external API latency. Then fix the actual constraint. The bottleneck will move when you fix it. That is progress, not failure.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-n">03</div><div>
+      <h3>Every component can fail — design the failure, not just the success</h3>
+      <p>The cache will go down. The payment gateway will time out. One app server will crash. Design the failure scenario for every component: what does the user see, does the system degrade gracefully, does it recover automatically? The happy path is the easy part. The failure path is the architecture.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-n">04</div><div>
+      <h3>Simple first, complex only when load demands it</h3>
+      <p>The right architecture for 100 users is one server and one database. The right architecture for 10 million users is fundamentally different. Do not design 10 million from day one — design 100 with a clear, cheap path to 10 million. Complexity is earned, not assumed.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-n">05</div><div>
+      <h3>Name your trade-offs before someone else names them for you</h3>
+      <p>Caching introduces stale data. Read replicas introduce replication lag. Async queues introduce eventual consistency. Know your trade-offs. State them out loud in the design review and in the interview. An architect who hides trade-offs is not an architect — they are a salesperson. An architect who names them earns trust.</p>
+    </div></div>
+
+    <p class="main-rule rv">"Do not start by choosing technologies. Start by understanding the load, finding the bottleneck, and then choosing the simplest solution that can handle the expected growth."</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-in">
+    <span class="fl">30-DAY TECHNICAL ARCHITECT TRACK · DAY 02 / 30 — SCALABILITY &amp; LOAD DESIGN</span>
+    <span class="fr">COMPLETE THE ASSIGNMENT BEFORE DAY 3 · <b>PRINT WITH CTRL+P</b></span>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="Back to top">
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+/* Minimal offline jQuery shim */
+(function(){
+  if(window.jQuery)return;
+  function Q(l){this.el=Array.prototype.slice.call(l||[]);this.length=this.el.length}
+  Q.prototype={
+    each:function(f){this.el.forEach(function(e,i){f.call(e,i,e)});return this},
+    on:function(ev,fn){return this.each(function(i,e){ev.split(' ').forEach(function(t){e.addEventListener(t,fn)})})},
+    addClass:function(c){return this.each(function(i,e){c.split(' ').forEach(function(x){e.classList.add(x)})})},
+    removeClass:function(c){return this.each(function(i,e){c.split(' ').forEach(function(x){e.classList.remove(x)})})},
+    toggleClass:function(c,f){return this.each(function(i,e){f===undefined?e.classList.toggle(c):e.classList.toggle(c,f)})},
+    hasClass:function(c){return this.el[0]?this.el[0].classList.contains(c):false},
+    text:function(v){if(v===undefined)return this.el[0]?this.el[0].textContent:'';return this.each(function(i,e){e.textContent=v})},
+    closest:function(s){var r=[];this.el.forEach(function(e){var c=e.closest(s);if(c)r.push(c)});return new Q(r)},
+    find:function(s){var r=[];this.el.forEach(function(e){r.push.apply(r,e.querySelectorAll(s))});return new Q(r)},
+    prop:function(k,v){if(v===undefined)return this.el[0]?this.el[0][k]:undefined;return this.each(function(i,e){e[k]=v})}
+  };
+  function $(s){
+    if(typeof s==='function'){if(document.readyState!=='loading')s();else document.addEventListener('DOMContentLoaded',s);return}
+    if(s instanceof Element||s===window||s===document)return new Q([s]);
+    if(Array.isArray(s)||s instanceof NodeList)return new Q(s);
+    return new Q(document.querySelectorAll(s));
+  }
+  window.jQuery=window.$=$;
+})();
+</script>
+<script>
+$(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+  /* --- progress bar + to-top + scrollspy --- */
+  var pb = document.getElementById('progBar');
+  var tt = document.getElementById('toTop');
+  var spyIds = ['s1','s2','s3','s4','s5','s6','s7','s8','s9','s10','s11','s12','s13','s14','s15','mindset'];
+  var tocLinks = document.querySelectorAll('.tn[data-spy]');
+  var ticking = false;
+  function onScroll(){
+    if(ticking)return;
+    ticking=true;
+    requestAnimationFrame(function(){
+      var doc=document.documentElement;
+      var max=doc.scrollHeight-window.innerHeight;
+      var y=window.scrollY||doc.scrollTop;
+      if(pb)pb.style.transform='scaleX('+(max>0?y/max:0)+')';
+      if(tt)tt.classList.toggle('show',y>800);
+      var cur='';
+      spyIds.forEach(function(id){var el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<=140)cur=id});
+      tocLinks.forEach(function(a){a.classList.toggle('on',a.getAttribute('data-spy')===cur)});
+      ticking=false;
+    });
+  }
+  $(window).on('scroll resize',onScroll);
+  onScroll();
+  $(tt).on('click',function(){window.scrollTo({top:0,behavior:reduced?'auto':'smooth'})});
+
+  /* --- reveal on scroll --- */
+  var rvs = document.querySelectorAll('.rv');
+  if(reduced||!('IntersectionObserver' in window)){
+    rvs.forEach(function(el){el.classList.add('in')});
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){if(en.isIntersecting){en.target.classList.add('in');io.unobserve(en.target)}});
+    },{threshold:0.07,rootMargin:'0px 0px -36px 0px'});
+    rvs.forEach(function(el){io.observe(el)});
+  }
+
+  /* --- theme --- */
+  var thBtn = document.getElementById('themeBtn');
+  function applyTheme(dark){
+    document.body.classList.toggle('dark',dark);
+    var m=thBtn.querySelector('.ic-moon'),s=thBtn.querySelector('.ic-sun');
+    if(m&&s){m.style.display=dark?'none':'';s.style.display=dark?'':'none'}
+  }
+  var saved=null;try{saved=localStorage.getItem('arch-d2-theme')}catch(e){}
+  applyTheme(saved==='dark');
+  $(thBtn).on('click',function(){
+    var d=document.body.classList.toggle('dark');
+    try{localStorage.setItem('arch-d2-theme',d?'dark':'light')}catch(e){}
+    var m=thBtn.querySelector('.ic-moon'),s=thBtn.querySelector('.ic-sun');
+    if(m&&s){m.style.display=d?'none':'';s.style.display=d?'':'none'}
+  });
+
+  /* --- mobile TOC --- */
+  var toc=document.getElementById('toc');
+  var scrim=document.getElementById('scrim');
+  function closeToc(){toc.classList.remove('open');scrim.classList.remove('on')}
+  $('#tocBtn').on('click',function(){var o=toc.classList.toggle('open');scrim.classList.toggle('on',o)});
+  $(scrim).on('click',closeToc);
+  $(toc).on('click',function(e){if(e.target&&e.target.tagName==='A')closeToc()});
+
+  /* --- print --- */
+  $('#printBtn').on('click',function(){window.print()});
+
+  /* --- bottleneck quiz accordion --- */
+  $('.bnq-head').on('click',function(){$(this).closest('.bnq').toggleClass('open')});
+
+  /* --- 20 questions accordion --- */
+  $('.qa-head').on('click',function(){$(this).closest('.qa').toggleClass('open')});
+  $('#qaOpen').on('click',function(){$('.qa').addClass('open')});
+  $('#qaClose').on('click',function(){$('.qa').removeClass('open')});
+
+  /* --- interview Q&A --- */
+  $('.iq-show').on('click',function(){$(this).closest('.iq').toggleClass('open')});
+
+  /* --- version tabs --- */
+  $('.vtab').on('click',function(){
+    var v=$(this).attr('data-v');
+    $('.vtab').removeClass('on');
+    $(this).addClass('on');
+    $('.vpanel').removeClass('on');
+    $('#'+v).addClass('on');
+  });
+
+  /* --- assignment checklist (persisted) --- */
+  var asgBoxes = document.querySelectorAll('.asg-item input[type=checkbox]');
+  var asgFill = document.getElementById('asgFill');
+  var asgCount = document.getElementById('asgCount');
+  var savedAsg=[];try{savedAsg=JSON.parse(localStorage.getItem('arch-d2-asg')||'[]')}catch(e){}
+  function updateAsg(){
+    var done=0;
+    asgBoxes.forEach(function(cb){if(cb.checked)done++});
+    if(asgFill)asgFill.style.width=Math.round((done/asgBoxes.length)*100)+'%';
+    if(asgCount)asgCount.textContent=done+' / '+asgBoxes.length+' DONE';
+  }
+  asgBoxes.forEach(function(cb){
+    var id=cb.getAttribute('data-asg');
+    if(savedAsg.indexOf(id)!==-1)cb.checked=true;
+    cb.addEventListener('change',function(){
+      var state=[];asgBoxes.forEach(function(x){if(x.checked)state.push(x.getAttribute('data-asg'))});
+      try{localStorage.setItem('arch-d2-asg',JSON.stringify(state))}catch(e){}
+      updateAsg();
+    });
+  });
+  updateAsg();
+});
+</script>
+</body>
+</html>

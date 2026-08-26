@@ -1,0 +1,1670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Day 1 of the 30-Day Technical Architect Track: learn to think like an architect — reliability, performance, scalability, security, maintainability, decision making and real case studies." />
+<title>Day 1 — Think Like an Architect · 30-Day Technical Architect Track</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --paper:#F6F2E9; --paper2:#EFE9DB; --card:#FBF8F1; --card2:#F3EEE1;
+  --ink:#20293A; --ink2:#5A637A; --ink3:#8A90A3;
+  --line:#DCD3BF; --line2:#CBC0A5;
+  --accent:#C2571B; --accent-d:#9E4312; --accent-tint:rgba(194,87,27,.08);
+  --reliability:#2F6D5C; --performance:#C2571B; --scalability:#2C5D77; --security:#8C2F39; --maintainability:#7A6416;
+  --ok:#2F6D5C; --warnbg:rgba(140,47,57,.07); --tipbg:rgba(44,93,119,.07); --keybg:rgba(32,41,58,.05);
+  --shadow:0 18px 40px -24px rgba(32,41,58,.35);
+  --grid:rgba(32,41,58,.055);
+  --mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --disp:'Fraunces',Georgia,'Times New Roman',serif;
+  --body:'Source Sans 3','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+body.dark{
+  --paper:#141924; --paper2:#10141D; --card:#1B2231; --card2:#181F2C;
+  --ink:#E8E3D5; --ink2:#A7AEC2; --ink3:#79819a;
+  --line:#2A3348; --line2:#39435C;
+  --accent:#E57A36; --accent-d:#F09255; --accent-tint:rgba(229,122,54,.1);
+  --reliability:#5FA98F; --performance:#E57A36; --scalability:#6FA3C4; --security:#D97A86; --maintainability:#C9B45E;
+  --warnbg:rgba(217,122,134,.1); --tipbg:rgba(111,163,196,.1); --keybg:rgba(232,227,213,.05);
+  --shadow:0 18px 40px -24px rgba(0,0,0,.7);
+  --grid:rgba(232,227,213,.045);
+}
+/* ============ BASE ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.66;-webkit-font-smoothing:antialiased}
+::selection{background:var(--accent);color:#F6F2E9}
+a{color:inherit}
+button{font-family:inherit;cursor:pointer}
+img,svg{display:block;max-width:100%}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:200;opacity:.05;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E");}
+/* ============ PROGRESS ============ */
+.progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:120;background:transparent}
+.progress i{display:block;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:left}
+/* ============ TOPBAR ============ */
+.topbar{position:sticky;top:0;z-index:100;background:var(--paper);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-between;gap:14px;padding:12px 26px}
+.brand{display:flex;align-items:center;gap:14px;min-width:0}
+.brand .b-mark{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--ink2);white-space:nowrap}
+.day-badge{font-family:var(--mono);font-size:11px;letter-spacing:.14em;background:var(--ink);color:var(--paper);padding:4px 10px;border-radius:3px;white-space:nowrap}
+.tb-actions{display:flex;gap:8px;align-items:center}
+.btn{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;border:1px solid var(--line2);
+  background:transparent;color:var(--ink);padding:8px 14px;border-radius:3px;transition:all .25s}
+.btn:hover{border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px}
+#tocToggle{display:none}
+/* ============ HERO ============ */
+.hero{position:relative;overflow:hidden;border-bottom:1px solid var(--line)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:30px 30px;animation:gridDrift 70s linear infinite}
+@keyframes gridDrift{to{background-position:300px 300px}}
+.hero-in{position:relative;max-width:1240px;margin:0 auto;padding:74px 28px 58px;display:grid;grid-template-columns:1.06fr .94fr;gap:56px;align-items:center}
+.hero-kicker{font-family:var(--mono);font-size:11.5px;letter-spacing:.26em;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:26px}
+.hero-kicker::before{content:"";width:38px;height:1px;background:var(--accent)}
+.hero-title{font-family:var(--disp);font-weight:900;font-size:clamp(40px,5.6vw,74px);line-height:1.02;letter-spacing:-.015em}
+.hero-title .mask{display:block;overflow:hidden;padding-bottom:.06em}
+.hero-title .line{display:block;transform:translateY(112%);animation:rise 1s cubic-bezier(.19,.74,.22,1) forwards}
+.hero-title .line.d1{animation-delay:.12s}
+.hero-title .line.d2{animation-delay:.26s}
+@keyframes rise{to{transform:translateY(0)}}
+.hero-title em{font-style:italic;color:var(--accent);font-weight:700}
+.hero-sub{margin-top:24px;max-width:560px;font-size:18px;color:var(--ink2)}
+.hero-sub b{color:var(--ink)}
+.hero-meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:26px}
+.chip{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;border:1px solid var(--line2);padding:6px 11px;border-radius:3px;color:var(--ink2);background:var(--card)}
+.howto{margin-top:34px;border:1px solid var(--line);background:var(--card);border-radius:6px;padding:18px 20px;max-width:580px}
+.howto h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--ink3);margin-bottom:12px}
+.howto ol{list-style:none;display:grid;gap:9px}
+.howto li{display:flex;gap:12px;align-items:baseline;font-size:15px;color:var(--ink2)}
+.howto li b{font-family:var(--mono);color:var(--accent);font-weight:600;font-size:12px;min-width:22px}
+.hero-stats{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;color:var(--ink3);margin-top:26px}
+/* blueprint sketch */
+.sketch{position:relative;border:1px solid var(--line2);background:var(--card);border-radius:4px;padding:14px;box-shadow:var(--shadow)}
+.sketch svg{width:100%;height:auto}
+.sketch svg text{font-family:var(--mono)}
+.sketch .s-tblock{font-family:var(--mono)}
+.sketch .fr{fill:none;stroke:var(--line2)}
+.sketch .tick{stroke:var(--ink3);fill:none}
+.sketch .thin{stroke:var(--ink3);fill:none}
+.sketch .dash{stroke:var(--ink3);fill:none;stroke-dasharray:4 3}
+.sketch .box{fill:var(--card);stroke:var(--ink)}
+.sketch .dashb{stroke-dasharray:5 4}
+.sketch .bnd{fill:none;stroke:var(--ink)}
+.sketch .t1{fill:var(--ink)} .sketch .t3{fill:var(--ink3)} .sketch .ta{fill:var(--accent)}
+.flow{stroke-dasharray:7 6;animation:ants 1.4s linear infinite;stroke:var(--accent)}
+#arw path{fill:var(--accent)} #carw path{fill:var(--ink3)} #sarr path{fill:var(--ink3)}
+@keyframes ants{to{stroke-dashoffset:-26}}
+/* pillar strip */
+.pillars-strip{position:relative;max-width:1240px;margin:0 auto;padding:0 28px 54px;display:grid;grid-template-columns:repeat(5,1fr);gap:12px}
+.pstrip{display:flex;align-items:center;gap:12px;border:1px solid var(--line);background:var(--card);border-radius:5px;padding:14px 15px;text-decoration:none;transition:all .28s}
+.pstrip:hover{transform:translateY(-3px);border-color:var(--pc);box-shadow:var(--shadow)}
+.pstrip .p-ico{color:var(--pc);flex:none}
+.pstrip .p-nm{font-weight:700;font-size:14.5px;line-height:1.2}
+.pstrip .p-tg{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:var(--ink3);margin-top:3px}
+/* ============ SHELL / TOC ============ */
+.shell{max-width:1240px;margin:0 auto;padding:0 28px;display:grid;grid-template-columns:248px minmax(0,1fr);gap:56px}
+.toc{position:sticky;top:70px;align-self:start;max-height:calc(100vh - 90px);overflow:auto;padding:34px 0 30px}
+.toc-title{font-family:var(--mono);font-size:10px;letter-spacing:.24em;color:var(--ink3);margin-bottom:14px}
+.tn{display:flex;gap:10px;align-items:baseline;text-decoration:none;font-size:13.5px;color:var(--ink2);padding:6px 10px;border-left:2px solid transparent;transition:all .22s;line-height:1.4}
+.tn span{font-family:var(--mono);font-size:10.5px;color:var(--ink3);min-width:22px;letter-spacing:.05em}
+.tn:hover{color:var(--ink);border-left-color:var(--line2)}
+.tn.on{color:var(--accent);border-left-color:var(--accent);background:var(--accent-tint)}
+.tn.on span{color:var(--accent)}
+.tn.sub{font-size:12.5px;padding-left:24px}
+/* ============ DOC SECTIONS ============ */
+.doc{min-width:0;padding-bottom:40px}
+.sec{padding:74px 0 10px;border-top:1px solid var(--line)}
+.sec:first-child{border-top:0;padding-top:56px}
+.sec-kicker{font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.sec-kicker::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec-title{font-family:var(--disp);font-weight:700;font-size:clamp(32px,3.8vw,48px);line-height:1.06;letter-spacing:-.01em;max-width:820px}
+.sec-lead{margin-top:18px;font-size:19px;color:var(--ink2);max-width:760px}
+.sec-lead b{color:var(--ink)}
+.sec h3{font-family:var(--disp);font-size:24px;font-weight:700;margin:44px 0 14px}
+.sec p{margin:14px 0;max-width:820px}
+.sec p b{font-weight:700}
+.doc .lead-q{font-family:var(--disp);font-style:italic;font-size:20px;color:var(--ink)}
+/* reveal */
+.rv{opacity:0;transform:translateY(24px);transition:opacity .7s ease,transform .7s ease}
+.rv.in{opacity:1;transform:none}
+/* ============ CALLOUTS ============ */
+.callout{border-left:3px solid var(--accent);background:var(--accent-tint);padding:18px 22px;border-radius:0 6px 6px 0;margin:26px 0;max-width:840px}
+.callout .co-label{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--accent);display:block;margin-bottom:8px}
+.callout p{margin:4px 0;font-size:15.5px}
+.co-warn{border-left-color:var(--security);background:var(--warnbg)} .co-warn .co-label{color:var(--security)}
+.co-tip{border-left-color:var(--scalability);background:var(--tipbg)} .co-tip .co-label{color:var(--scalability)}
+.co-key{border-left-color:var(--ink);background:var(--keybg)} .co-key .co-label{color:var(--ink)}
+/* ============ TABLES ============ */
+.tblwrap{overflow-x:auto;margin:26px 0;border:1px solid var(--line);border-radius:6px;background:var(--card)}
+table.t{width:100%;border-collapse:collapse;font-size:14.5px;min-width:640px}
+.t th{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;text-align:left;padding:14px 18px;border-bottom:2px solid var(--ink);color:var(--ink);background:var(--card2)}
+.t td{padding:14px 18px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink2)}
+.t tr:last-child td{border-bottom:0}
+.t td b{color:var(--ink)}
+.t th.role-d{border-bottom:3px solid var(--ink3)} .t th.role-l{border-bottom:3px solid var(--scalability)} .t th.role-a{border-bottom:3px solid var(--accent)}
+.t td .role-tag{font-family:var(--mono);font-size:10px;letter-spacing:.1em;display:block;margin-bottom:4px;color:var(--ink3)}
+/* ============ PILLARS ============ */
+.pillar{background:var(--card);border:1px solid var(--line);border-radius:6px;margin:38px 0;overflow:hidden;box-shadow:0 8px 26px -22px rgba(32,41,58,.4)}
+.pillar-head{display:flex;gap:20px;align-items:center;padding:26px 30px;border-bottom:1px dashed var(--line2);background:var(--card2)}
+.p-num{font-family:var(--disp);font-weight:900;font-size:44px;line-height:1;color:var(--pc);opacity:.9}
+.pillar-head h3{font-family:var(--disp);font-size:clamp(24px,2.4vw,31px);font-weight:700;margin:0}
+.pillar-head .p-tag{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--pc);margin-top:6px;text-transform:uppercase}
+.p-head-ico{margin-left:auto;color:var(--pc);flex:none;opacity:.85}
+.pillar-body{display:grid}
+.prow{display:grid;grid-template-columns:210px 1fr;border-top:1px solid var(--line)}
+.prow:first-child{border-top:0}
+.plabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink3);padding:20px 24px 20px 30px;border-right:1px solid var(--line);display:flex;align-items:flex-start}
+.pcontent{padding:20px 28px;font-size:15.5px;color:var(--ink2)}
+.pcontent b{color:var(--ink)}
+.pcontent ul,.pcontent ol{margin:6px 0 0 18px}
+.pcontent li{margin:7px 0}
+.prow.warn .pcontent{background:var(--warnbg);border-left:3px solid var(--security)}
+.prow.warn .plabel{color:var(--security);background:var(--warnbg)}
+.topic-grid{display:grid;grid-template-columns:1fr 1fr;gap:0}
+.topic{border-top:1px solid var(--line);padding:16px 28px 16px 0}
+.topic:nth-child(odd){border-right:1px solid var(--line);padding-right:22px}
+.topic:nth-child(even){padding-left:22px}
+.topic:nth-child(-n+2){border-top:0}
+.topic b{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--pc);margin-bottom:7px}
+.topic span{font-size:14.5px;color:var(--ink2)}
+.asks{counter-reset:ask;list-style:none;margin:0!important;padding-left:0!important}
+.asks li{counter-increment:ask;position:relative;padding-left:34px}
+.asks li::before{content:counter(ask,decimal-leading-zero);position:absolute;left:0;top:1px;font-family:var(--mono);font-size:11px;color:var(--pc)}
+/* ============ SCALE TABS ============ */
+.scale-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:30px 0 18px}
+.scale-tab{font-family:var(--mono);font-size:12px;letter-spacing:.08em;border:1px solid var(--line2);background:transparent;color:var(--ink2);padding:11px 18px;border-radius:4px;transition:all .25s}
+.scale-tab:hover{border-color:var(--scalability);color:var(--scalability);transform:translateY(-1px)}
+.scale-tab.on{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.scale-panel{display:none;grid-template-columns:420px 1fr;gap:30px;align-items:stretch}
+.scale-panel.on{display:grid;animation:fadeUp .5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.scale-fig{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:14px}
+.scale-fig svg{width:100%;height:auto}
+.s-box{fill:var(--card);stroke:var(--ink);stroke-width:1.3}
+.s-box.ext{stroke-dasharray:5 4}
+.s-box.hot{fill:var(--accent-tint);stroke:var(--accent)}
+.s-lab{font-family:var(--mono);font-size:10.5px;fill:var(--ink);letter-spacing:.05em}
+.s-sub{font-family:var(--mono);font-size:8.5px;fill:var(--ink3)}
+.s-note{font-family:var(--mono);font-size:9.5px;fill:var(--accent);letter-spacing:.06em}
+.s-line{stroke:var(--ink3);stroke-width:1.2;fill:none}
+.scale-text{border:1px solid var(--line);border-top:3px solid var(--scalability);background:var(--card);border-radius:0 6px 6px 6px;padding:22px 26px}
+.scale-text h4{font-family:var(--disp);font-size:20px;margin-bottom:8px}
+.scale-text p{font-size:15px;color:var(--ink2);margin:0 0 14px}
+.scale-text ul{margin:0 0 0 18px;font-size:14.5px;color:var(--ink2)}
+.scale-text li{margin:6px 0}
+.scale-text li b{color:var(--ink)}
+/* ============ 20 QUESTIONS ============ */
+.qa-tools{display:flex;gap:10px;margin:24px 0 18px}
+.qa{border:1px solid var(--line);border-radius:6px;background:var(--card);margin-bottom:10px;overflow:hidden;transition:border-color .25s}
+.qa:hover{border-color:var(--line2)}
+.qa.open{border-color:var(--accent)}
+.qa-head{width:100%;display:flex;gap:16px;align-items:baseline;background:none;border:0;text-align:left;padding:17px 22px;color:var(--ink)}
+.qa-num{font-family:var(--mono);font-size:12px;color:var(--accent);min-width:26px;font-weight:600}
+.qa-t{font-size:16.5px;font-weight:600;flex:1;line-height:1.35}
+.qa-ic{flex:none;width:22px;height:22px;border:1px solid var(--line2);border-radius:3px;position:relative;align-self:center;transition:transform .35s}
+.qa-ic::before,.qa-ic::after{content:"";position:absolute;background:var(--ink2);top:50%;left:50%}
+.qa-ic::before{width:10px;height:1.5px;transform:translate(-50%,-50%)}
+.qa-ic::after{width:1.5px;height:10px;transform:translate(-50%,-50%)}
+.qa.open .qa-ic{transform:rotate(45deg);border-color:var(--accent)}
+.qa.open .qa-ic::before,.qa.open .qa-ic::after{background:var(--accent)}
+.qa-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s ease}
+.qa.open .qa-a{grid-template-rows:1fr}
+.qa-a-in{overflow:hidden;min-height:0}
+.qa-a-pad{padding:0 22px 20px 64px;font-size:15px;color:var(--ink2);max-width:840px}
+.qa-a-pad::before{content:"WHY IT MATTERS — ";font-family:var(--mono);font-size:10px;letter-spacing:.16em;color:var(--ink3)}
+/* ============ CASE STUDY ============ */
+.cs-spec{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:24px 28px;margin:28px 0}
+.cs-spec h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--ink3);margin-bottom:14px}
+.cs-spec ol{margin:0 0 0 20px;font-size:15.5px}
+.cs-spec li{margin:8px 0;color:var(--ink2)}
+.cs-spec li b{color:var(--ink);font-family:var(--mono);font-size:12px;letter-spacing:.05em}
+.risk-list{margin:10px 0 0 18px;max-width:820px}
+.risk-list li{margin:9px 0;color:var(--ink2);font-size:15.5px}
+.risk-list li b{color:var(--ink);font-family:var(--mono);font-size:12px}
+.think-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:28px 0}
+.tc{border:1px solid var(--line);border-top:3px solid var(--pc);background:var(--card);border-radius:0 6px 6px 0;padding:20px 22px;transition:transform .25s,box-shadow .25s}
+.tc:hover{transform:translateY(-3px);box-shadow:var(--shadow)}
+.tc h4{font-family:var(--disp);font-size:19px;margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.tc h4 .tc-ico{color:var(--pc)}
+.tc p{font-size:14.5px;color:var(--ink2);margin:0}
+/* case diagram */
+.csdiagram{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:18px;margin:28px 0}
+.csdiagram svg{width:100%;height:auto}
+.n-box{fill:var(--card);stroke:var(--ink);stroke-width:1.3;transition:stroke .2s,fill .2s}
+.n-box.ext{stroke-dasharray:6 4}
+.n-box.hl{stroke:var(--accent);stroke-width:2.2;fill:var(--accent-tint)}
+.n-lab{font-family:var(--mono);font-size:11px;fill:var(--ink);letter-spacing:.06em;font-weight:600}
+.n-sub{font-family:var(--mono);font-size:8.8px;fill:var(--ink3)}
+.n-line{stroke:var(--ink3);stroke-width:1.1;fill:none;opacity:.75}
+.node{cursor:pointer;outline:none}
+.node:focus{outline:none}
+.node:focus .n-box{stroke:var(--accent);stroke-width:2.2}
+.node-detail{border:1px solid var(--line);border-left:3px solid var(--accent);background:var(--card2);border-radius:0 6px 6px 0;padding:18px 22px;margin:0 0 26px;min-height:96px}
+.node-detail h4{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--accent);margin-bottom:6px}
+.node-detail p{font-size:15px;color:var(--ink2);margin:0;max-width:none}
+.not-do{border:1px dashed var(--line2);border-radius:6px;padding:20px 24px;margin:24px 0;max-width:840px}
+.not-do h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.22em;color:var(--security);margin-bottom:10px}
+.not-do ul{margin:0 0 0 18px;color:var(--ink2);font-size:15px}
+.not-do li{margin:6px 0}
+/* ============ ADR ============ */
+.adr{border:1px solid var(--line);border-top:3px solid var(--accent);background:var(--card);border-radius:0 6px 6px 0;margin:30px 0;padding:26px 30px;box-shadow:0 8px 26px -24px rgba(32,41,58,.5)}
+.adr-head{display:flex;gap:16px;align-items:baseline;margin-bottom:6px}
+.adr-no{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--accent)}
+.adr-head h3{font-family:var(--disp);font-size:clamp(20px,2vw,25px);font-weight:700;margin:0}
+.adr-problem{font-size:15.5px;color:var(--ink2);margin:8px 0 18px;max-width:820px}
+.adr-problem b{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--ink3)}
+.adr .t{min-width:560px}
+.adr td .pros{color:var(--ok)} .adr td .cons{color:var(--security)}
+.adr-dec{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.adr-dec>div{border:1px dashed var(--line2);border-radius:5px;padding:16px 18px;background:var(--card2)}
+.adr-dec h5{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--accent);margin-bottom:8px}
+.adr-dec .why h5{color:var(--ink)}
+.adr-dec p{font-size:14.5px;color:var(--ink2);margin:0}
+/* ============ MISTAKES ============ */
+.mistake{display:grid;grid-template-columns:74px 1fr;gap:20px;padding:24px 0;border-bottom:1px dashed var(--line)}
+.mistake:last-of-type{border-bottom:0}
+.m-num{font-family:var(--disp);font-weight:900;font-size:40px;color:var(--accent);line-height:1;opacity:.85}
+.mistake h4{font-family:var(--disp);font-size:20px;font-weight:700;margin-bottom:8px}
+.m-why{font-size:15px;color:var(--ink2);margin:0 0 8px;max-width:800px}
+.m-why::before{content:"WHY IT HAPPENS — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ink3)}
+.m-fix{font-size:15px;color:var(--ink2);margin:0;max-width:800px}
+.m-fix::before{content:"FIX — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--ok)}
+/* ============ ASSIGNMENT ============ */
+.asg-spec{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--line);background:var(--card);border-radius:6px;overflow:hidden;margin:28px 0}
+.asg-spec>div{padding:18px 22px;border-top:1px solid var(--line)}
+.asg-spec>div:nth-child(-n+3){border-top:0}
+.asg-spec>div:nth-child(3n+1){border-right:1px solid var(--line)}
+.asg-spec>div:nth-child(3n+2){border-right:1px solid var(--line)}
+.asg-spec b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink3);margin-bottom:6px}
+.asg-spec span{font-size:15px;color:var(--ink)}
+.asg-progress{display:flex;align-items:center;gap:16px;margin:26px 0 14px;max-width:840px}
+.asg-bar{flex:1;height:8px;border:1px solid var(--line2);border-radius:99px;overflow:hidden;background:var(--card)}
+.asg-bar i{display:block;height:100%;width:0%;background:var(--accent);transition:width .5s ease}
+.asg-count{font-family:var(--mono);font-size:12px;color:var(--ink2);letter-spacing:.1em}
+.asg-item{display:flex;gap:16px;align-items:flex-start;border:1px solid var(--line);background:var(--card);border-radius:5px;padding:15px 18px;margin-bottom:9px;cursor:pointer;transition:all .25s;max-width:840px}
+.asg-item:hover{border-color:var(--accent);transform:translateX(3px)}
+.asg-item input{position:absolute;opacity:0;pointer-events:none}
+.asg-cb{flex:none;width:22px;height:22px;border:1.5px solid var(--line2);border-radius:4px;margin-top:2px;position:relative;transition:all .25s;background:var(--paper)}
+.asg-item input:checked ~ .asg-cb{background:var(--accent);border-color:var(--accent)}
+.asg-item input:checked ~ .asg-cb::after{content:"";position:absolute;left:6px;top:2.5px;width:5px;height:10px;border:solid var(--paper);border-width:0 2px 2px 0;transform:rotate(43deg)}
+.asg-item .asg-tx{font-size:15.5px;color:var(--ink2)}
+.asg-item .asg-tx b{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.06em;display:block;margin-bottom:2px}
+.asg-item input:checked ~ .asg-tx{color:var(--ink3);text-decoration:line-through;text-decoration-color:var(--line2)}
+.asg-item input:checked{ }
+.asg-item.done{border-color:var(--line)}
+/* ============ SELF ASSESSMENT ============ */
+.sa{border:1px solid var(--line);background:var(--card);border-radius:6px;padding:20px 24px;margin-bottom:12px;max-width:880px}
+.sa-q{font-size:16.5px;font-weight:600;line-height:1.45;display:flex;gap:14px}
+.sa-q .sa-no{font-family:var(--mono);font-size:11.5px;color:var(--accent);min-width:24px;padding-top:3px}
+.sa-show{margin-top:14px;font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;border:1px solid var(--line2);background:transparent;color:var(--ink2);padding:8px 14px;border-radius:3px;transition:all .25s}
+.sa-show:hover{border-color:var(--accent);color:var(--accent)}
+.sa.open .sa-show{border-color:var(--accent);color:var(--accent)}
+.sa-a{display:grid;grid-template-rows:0fr;transition:grid-template-rows .45s ease}
+.sa.open .sa-a{grid-template-rows:1fr}
+.sa-a-in{overflow:hidden;min-height:0}
+.sa-a-pad{margin-top:16px;border-top:1px dashed var(--line);padding-top:14px;font-size:15px;color:var(--ink2);max-width:800px}
+.sa-a-pad::before{content:"MODEL THINKING — ";font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;color:var(--scalability)}
+/* success */
+.success{border:1px solid var(--line);border-top:3px solid var(--ok);background:var(--card);border-radius:0 6px 6px 0;padding:24px 28px;margin:34px 0;max-width:880px}
+.success h4{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--ok);margin-bottom:14px}
+.success ul{list-style:none}
+.success li{display:flex;gap:14px;align-items:baseline;padding:8px 0;border-bottom:1px dashed var(--line);font-size:15.5px;color:var(--ink2)}
+.success li:last-child{border-bottom:0}
+.success li::before{content:"✓";font-family:var(--mono);color:var(--ok);font-weight:600}
+/* ============ RULES / MINDSET ============ */
+.mindset{background:var(--paper2);border-top:2px solid var(--ink);margin-top:80px}
+.mindset-in{max-width:1240px;margin:0 auto;padding:80px 28px 70px}
+.rule{display:grid;grid-template-columns:120px 1fr;gap:30px;padding:34px 0;border-top:1px solid var(--line2);align-items:start}
+.rule:first-of-type{border-top:2px solid var(--ink)}
+.rule-num{font-family:var(--disp);font-weight:900;font-size:64px;line-height:.9;color:var(--accent)}
+.rule h3{font-family:var(--disp);font-size:clamp(22px,2.4vw,29px);font-weight:700;margin:0 0 8px}
+.rule p{font-size:16px;color:var(--ink2);max-width:720px;margin:0}
+.mind-close{font-family:var(--disp);font-style:italic;font-size:21px;color:var(--ink);margin-top:44px;max-width:720px}
+/* ============ FOOTER ============ */
+.foot{border-top:2px solid var(--ink);margin-top:0}
+.foot-in{max-width:1240px;margin:0 auto;padding:34px 28px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:center}
+.foot .f-l{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;color:var(--ink3)}
+.foot .f-r{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink3)}
+.foot .f-r b{color:var(--accent)}
+/* ============ TO TOP / SCRIM ============ */
+#toTop{position:fixed;right:24px;bottom:24px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line2);background:var(--card);color:var(--ink);z-index:110;opacity:0;pointer-events:none;transform:translateY(12px);transition:all .35s;box-shadow:var(--shadow)}
+#toTop.show{opacity:1;pointer-events:auto;transform:none}
+#toTop:hover{border-color:var(--accent);color:var(--accent)}
+.scrim{position:fixed;inset:0;background:rgba(20,25,36,.45);z-index:90;opacity:0;pointer-events:none;transition:opacity .3s}
+.scrim.on{opacity:1;pointer-events:auto}
+/* ============ RESPONSIVE ============ */
+@media (max-width:1100px){
+  .hero-in{grid-template-columns:1fr;gap:40px}
+  .sketch{max-width:560px}
+  .pillars-strip{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:920px){
+  .shell{grid-template-columns:1fr;gap:0}
+  #tocToggle{display:inline-flex}
+  .toc{position:fixed;top:0;left:0;height:100%;width:300px;max-height:none;background:var(--paper);z-index:95;transform:translateX(-105%);transition:transform .35s ease;padding:80px 22px 30px;border-right:1px solid var(--line)}
+  .toc.open{transform:none}
+  .brand .b-mark{display:none}
+}
+@media (max-width:720px){
+  body{font-size:15.5px}
+  .hero-in{padding:50px 20px 40px}
+  .pillars-strip{grid-template-columns:1fr 1fr}
+  .prow{grid-template-columns:1fr}
+  .plabel{border-right:0;border-bottom:1px dashed var(--line);padding:14px 22px 8px}
+  .pcontent{padding:14px 22px 18px}
+  .topic-grid{grid-template-columns:1fr}
+  .topic{border-right:0!important;padding-left:0!important;padding-right:0!important}
+  .topic:nth-child(-n+2){border-top:1px solid var(--line)}
+  .topic:first-child{border-top:0}
+  .scale-panel{grid-template-columns:1fr}
+  .think-grid{grid-template-columns:1fr}
+  .asg-spec{grid-template-columns:1fr}
+  .asg-spec>div{border-right:0!important;border-top:1px solid var(--line)}
+  .asg-spec>div:first-child{border-top:0}
+  .adr-dec{grid-template-columns:1fr}
+  .mistake{grid-template-columns:52px 1fr}
+  .m-num{font-size:30px}
+  .rule{grid-template-columns:64px 1fr;gap:16px}
+  .rule-num{font-size:42px}
+  .qa-a-pad{padding-left:22px}
+  .toc-title{margin-top:40px}
+}
+/* ============ REDUCED MOTION ============ */
+@media (prefers-reduced-motion: reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation:none!important;transition:none!important}
+  .hero-title .line{transform:none}
+  .rv{opacity:1;transform:none}
+}
+/* ============ PRINT ============ */
+@media print{
+  .topbar,.progress,#toTop,.scrim,.qa-tools,.sa-show,.asg-progress,.tb-actions{display:none!important}
+  body{background:#fff;color:#111;font-size:12px}
+  body::after{display:none}
+  .hero::before{display:none}
+  .rv{opacity:1!important;transform:none!important}
+  .qa-a,.sa-a{grid-template-rows:1fr!important}
+  .sec{page-break-inside:avoid;padding:30px 0}
+  .pillar,.adr,.callout,.sketch{box-shadow:none}
+  .toc{display:none}
+  .shell{grid-template-columns:1fr}
+  .scale-panel{display:none}
+  .scale-panel.on{display:grid}
+  a{color:#111;text-decoration:none}
+}
+</style>
+</head>
+<body>
+<div class="progress"><i id="progressBar"></i></div>
+
+<header class="topbar">
+  <div class="brand">
+    <button class="btn icon-btn" id="tocToggle" aria-label="Open contents">
+      <svg width="15" height="13" viewBox="0 0 15 13" fill="none"><path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+    <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+    <span class="day-badge">DAY 01 / 30</span>
+  </div>
+  <div class="tb-actions">
+    <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode" title="Toggle dark mode">
+      <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+      <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none"><circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+    </button>
+    <button class="btn" id="printBtn">
+      <svg width="13" height="14" viewBox="0 0 24 24" fill="none" style="vertical-align:-2px;margin-right:7px"><path d="M6 8V3h12v5M6 17H4a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 4 8h16a1.5 1.5 0 0 1 1.5 1.5v6A1.5 1.5 0 0 1 20 17h-2M6 14h12v7H6v-7Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>PRINT
+    </button>
+  </div>
+</header>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- ================= HERO ================= -->
+<section class="hero">
+  <div class="hero-in">
+    <div>
+      <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 01 / 30</div>
+      <h1 class="hero-title">
+        <span class="mask"><span class="line d1">Think like an</span></span>
+        <span class="mask"><span class="line d2"><em>architect.</em> Before</span></span>
+        <span class="mask"><span class="line d2" style="animation-delay:.38s">you pick a single tool.</span></span>
+      </h1>
+      <p class="hero-sub">You already know <b>.NET, ASP.NET Core, SQL Server, Redis, RabbitMQ, Docker and Azure</b>. Day 1 is not about adding another tool. It is about the <b>five decisions</b> every architecture lives or dies on — and how an architect reasons about them.</p>
+      <div class="hero-meta">
+        <span class="chip">≈ 90 MIN READ</span>
+        <span class="chip">SENIOR .NET → ARCHITECT</span>
+        <span class="chip">NO NEW TECH TO LEARN</span>
+        <span class="chip">OUTPUT: YOUR OWN DESIGN</span>
+      </div>
+      <div class="howto">
+        <h4>HOW TO USE THIS PAGE</h4>
+        <ol>
+          <li><b>01</b> Skim the whole page first (30 min) — get the shape before the details.</li>
+          <li><b>02</b> Keep the 5 pillars close. They are your lens for the next 29 days.</li>
+          <li><b>03</b> Do the Day 1 assignment <i>before</i> reading the model answers in the self-assessment.</li>
+        </ol>
+      </div>
+      <div class="hero-stats">5 PILLARS · 20 QUESTIONS · 1 CASE STUDY · 5 DECISIONS · 10 MISTAKES · 1 ASSIGNMENT</div>
+    </div>
+    <div class="sketch" aria-hidden="true">
+      <svg viewBox="0 0 520 420" fill="none">
+        <rect class="fr" x="10" y="10" width="500" height="400" stroke-width="1"/>
+        <path class="tick" d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 394h12M26 410v-12M510 394h-12M494 410v-12" stroke-width="1"/>
+        <path class="tick" d="M60 78h8M64 74v8M250 78h8M254 74v8M60 258h8M64 254v8M420 300h8M424 296v8" stroke-width="1"/>
+        <!-- title block -->
+        <g class="s-tblock">
+          <rect class="fr" x="330" y="342" width="180" height="60"/>
+          <path class="fr" d="M330 362h180M330 382h180M420 342v60"/>
+          <text x="338" y="357" font-size="8.5" class="t3">DWG: ARCH-001 · REV A</text>
+          <text x="338" y="377" font-size="8.5" class="t3">TITLE: THINK BEFORE BUILD</text>
+          <text x="338" y="397" font-size="8.5" class="t3">SCALE 1:1 · SHEET 01/01</text>
+        </g>
+        <!-- users -->
+        <g>
+          <rect class="box" x="42" y="120" width="92" height="44" stroke-width="1.3"/>
+          <text x="88" y="140" font-size="10" class="t1" text-anchor="middle">USERS</text>
+          <text x="88" y="154" font-size="8" class="t3" text-anchor="middle">the real problem</text>
+        </g>
+        <path class="flow" d="M134 142 H 196" stroke-width="1.6" marker-end="url(#arw)"/>
+        <!-- system box -->
+        <g>
+          <rect class="bnd" x="208" y="88" width="176" height="204" stroke-width="1.3"/>
+          <text x="220" y="106" font-size="8.5" class="t3">SYSTEM BOUNDARY</text>
+          <rect class="box" x="228" y="120" width="136" height="40" stroke-width="1.2"/>
+          <text x="296" y="139" font-size="9.5" class="t1" text-anchor="middle">WEB + API</text>
+          <text x="296" y="152" font-size="8" class="t3" text-anchor="middle">stateless</text>
+          <rect class="box" x="228" y="184" width="62" height="34" stroke-width="1.2"/>
+          <text x="259" y="205" font-size="8.5" class="t1" text-anchor="middle">DB</text>
+          <rect class="box" x="306" y="184" width="58" height="34" stroke-width="1.2"/>
+          <text x="335" y="205" font-size="8.5" class="t1" text-anchor="middle">CACHE</text>
+          <rect class="box dashb" x="228" y="240" width="136" height="34" stroke-width="1.2"/>
+          <text x="296" y="261" font-size="8.5" class="t1" text-anchor="middle">QUEUE → SLOW WORK</text>
+          <path class="thin" d="M296 160 V 184 M296 218 V 240" stroke-width="1"/>
+          <path class="thin" d="M259 160 H 335" stroke-width="1"/>
+        </g>
+        <path class="flow" d="M384 142 H 446" stroke-width="1.6" marker-end="url(#arw)"/>
+        <g>
+          <rect class="dash" x="458" y="120" width="44" height="44"/>
+          <text x="480" y="139" font-size="7.5" class="t3" text-anchor="middle">WHAT</text>
+          <text x="480" y="151" font-size="7.5" class="t3" text-anchor="middle">IF IT</text>
+          <text x="480" y="163" font-size="7.5" class="t3" text-anchor="middle">FAILS?</text>
+        </g>
+        <!-- dimensions -->
+        <path class="thin" d="M208 320 v 10 M384 320 v 10 M208 325 H 384" stroke-width="1"/>
+        <text x="296" y="345" font-size="8.5" class="t3" text-anchor="middle">the boundary you will defend in every interview</text>
+        <text x="42" y="60" font-size="9" class="ta">DECIDE THE SHAPE FIRST. BUY THE BRAND LATER.</text>
+        <defs>
+          <marker id="arw" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z"/></marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+  <div class="pillars-strip">
+    <a class="pstrip" href="#p-reliability" style="--pc:var(--reliability)">
+      <svg class="p-ico" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9.3C8 18.7 5 15.6 5 11V6l7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.3 12h2.1l1.4-2.8 2 5.6 1.4-2.8h2.1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span><span class="p-nm">Reliability</span><span class="p-tg">KEEP WORKING WHEN THINGS BREAK</span></span>
+    </a>
+    <a class="pstrip" href="#p-performance" style="--pc:var(--performance)">
+      <svg class="p-ico" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 15a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M12 15l4-4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/><path d="M6 19.5h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span><span class="p-nm">Performance</span><span class="p-tg">HOW FAST IS ENOUGH?</span></span>
+    </a>
+    <a class="pstrip" href="#p-scalability" style="--pc:var(--scalability)">
+      <svg class="p-ico" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M4 20V14M9.3 20V9.5M14.6 20V5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M3 20h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M15 8l4.5-3.5L18 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span><span class="p-nm">Scalability</span><span class="p-tg">100 → 10K → 1M USERS</span></span>
+    </a>
+    <a class="pstrip" href="#p-security" style="--pc:var(--security)">
+      <svg class="p-ico" width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M11.4 12H21M17.5 12v3.2M21 12v2.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      <span><span class="p-nm">Security</span><span class="p-tg">WHO MAY DO WHAT?</span></span>
+    </a>
+    <a class="pstrip" href="#p-maintainability" style="--pc:var(--maintainability)">
+      <svg class="p-ico" width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a4.1 4.1 0 0 0-5.2 5.2L4 17l3 3 5.5-5.5a4.1 4.1 0 0 0 5.2-5.2L15 11.8l-2.8-2.8 2.5-2.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+      <span><span class="p-nm">Maintainability</span><span class="p-tg">HOW EASY IS CHANGE?</span></span>
+    </a>
+  </div>
+</section>
+
+<div class="shell">
+  <aside class="toc" id="toc" aria-label="Contents">
+    <div class="toc-title">ON THIS PAGE</div>
+    <a class="tn" href="#s1" data-spy="s1"><span>01</span> What is architecture</a>
+    <a class="tn" href="#s2" data-spy="s2"><span>02</span> The 5 pillars</a>
+    <a class="tn sub" href="#p-reliability">Reliability</a>
+    <a class="tn sub" href="#p-performance">Performance</a>
+    <a class="tn sub" href="#p-scalability">Scalability</a>
+    <a class="tn sub" href="#p-security">Security</a>
+    <a class="tn sub" href="#p-maintainability">Maintainability</a>
+    <a class="tn" href="#s3" data-spy="s3"><span>03</span> 20 design questions</a>
+    <a class="tn" href="#s4" data-spy="s4"><span>04</span> Case: online shop</a>
+    <a class="tn" href="#s5" data-spy="s5"><span>05</span> 5 decision examples</a>
+    <a class="tn" href="#s6" data-spy="s6"><span>06</span> Beginner mistakes</a>
+    <a class="tn" href="#s7" data-spy="s7"><span>07</span> Day 1 assignment</a>
+    <a class="tn" href="#s8" data-spy="s8"><span>08</span> Self-assessment</a>
+    <a class="tn" href="#mindset" data-spy="mindset"><span>★</span> Architect mindset</a>
+  </aside>
+
+  <main class="doc">
+  <!-- ============ SECTION 1 ============ -->
+  <section class="sec" id="s1">
+    <div class="sec-kicker">SECTION 01 — FOUNDATION</div>
+    <h2 class="sec-title rv">What is Software Architecture?</h2>
+    <p class="sec-lead rv">Simple words first: <b>architecture is the set of decisions that are expensive to change later.</b></p>
+    <p class="rv">A developer makes decisions that are easy to undo — a variable name, a helper method, a split class. An architect makes decisions that are <b>hard to undo</b>: how the data is owned, where the boundaries are, what talks to what, and what happens when a part fails.</p>
+    <p class="rv">Every project contains both kinds of decisions. The difference is not skill. The difference is <b>which decisions you treat as decisions</b> — and which you leave to instinct.</p>
+    <div class="callout co-key rv">
+      <span class="co-label">PLAIN ENGLISH — THE HOUSE</span>
+      <p>Painting a wall is a developer decision — cheap to redo. Moving a <b>load-bearing wall</b> is an architecture decision — expensive, and it must be planned before the roof goes on. Most architecture pain is load-bearing walls moved after the roof is up.</p>
+    </div>
+    <h3 class="rv">Same problem, three lenses</h3>
+    <p class="rv">The project: an online shop. Someone says — <span class="lead-q">"the checkout is slow."</span> Watch three roles hear the same sentence and think different thoughts.</p>
+    <div class="tblwrap rv">
+      <table class="t">
+        <thead><tr><th style="width:18%">&nbsp;</th><th class="role-d">DEVELOPER</th><th class="role-l">TECHNICAL LEAD</th><th class="role-a">ARCHITECT</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>First thought</b></td>
+            <td>"Which part of the code is slow?"</td>
+            <td>"Which request is slow, for how many users, and since when?"</td>
+            <td>"What should 'fast' be — and does this design even allow it?"</td>
+          </tr>
+          <tr>
+            <td><b>What they do</b></td>
+            <td>Profile the code, add an index, optimize the query, ship the fix.</td>
+            <td>Set up monitoring, fix the top 3 hotspots, plan tests and rollback, split the work across the team.</td>
+            <td>Question the requirement (fast for <i>which</i> action?), find the structural cause (synchronous chain? DB bottleneck? no cache?), pick a shape change — and decide what <b>not</b> to change.</td>
+          </tr>
+          <tr>
+            <td><b>Time horizon</b></td>
+            <td>This bug, this sprint.</td>
+            <td>The team's delivery, the next quarter.</td>
+            <td>The next 3 years: cost, change, failure, risk.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="tblwrap rv">
+      <table class="t">
+        <thead><tr><th style="width:18%">&nbsp;</th><th class="role-d">DEVELOPER</th><th class="role-l">TECHNICAL LEAD</th><th class="role-a">ARCHITECT</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>"Add a discount rule to checkout."</b></td>
+            <td>Which endpoint, which model, which screen.</td>
+            <td>Which team owns it, how we test it, when we ship it.</td>
+            <td>Discount rules change weekly. Where does this logic live so a new rule touches <b>one place</b>? Can it be configured without a deploy? What breaks if two rules conflict?</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout rv">
+      <span class="co-label">ONE-LINE VERSION — MEMORIZE THIS</span>
+      <p><b>Developer:</b> "How do I build this?" · <b>Technical Lead:</b> "How do we ship this well?" · <b>Architect:</b> "What <i>should</i> we build — and what will we regret in two years?"</p>
+    </div>
+    <p class="rv">Notice: the architect is not coding faster. The architect is deciding <b>what is worth deciding</b>. That is the skill the next 30 days are about.</p>
+    <div class="callout co-tip rv">
+      <span class="co-label">INTERVIEW ANGLE</span>
+      <p>The moment you start asking before answering — <i>"how many users? what counts as fast? what breaks if this fails?"</i> — you are signalling architect thinking. In that room, the question is worth more than the answer.</p>
+    </div>
+    <p class="rv">From today on, every system you look at gets filtered through <b>five lenses</b>. Here they are.</p>
+  </section>
+
+  <!-- ============ SECTION 2 ============ -->
+  <section class="sec" id="s2">
+    <div class="sec-kicker">SECTION 02 — THE FIVE LENSES</div>
+    <h2 class="sec-title rv">The 5 Things Every Architect Must Think About</h2>
+    <p class="sec-lead rv">Reliability, Performance, Scalability, Security, Maintainability. Learn them as <b>questions, not definitions</b>. Each one has the same shape: what it is, why it matters, what problem it solves, what happens when you ignore it, and two examples you should be able to tell in one breath.</p>
+
+    <!-- RELIABILITY -->
+    <div class="pillar rv" id="p-reliability" style="--pc:var(--reliability)">
+      <div class="pillar-head">
+        <div class="p-num">01</div>
+        <div>
+          <h3>Reliability</h3>
+          <div class="p-tag">Does it keep working when things break?</div>
+        </div>
+        <svg class="p-head-ico" width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9.3C8 18.7 5 15.6 5 11V6l7-3Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M8.3 12h2.1l1.4-2.8 2 5.6 1.4-2.8h2.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pillar-body">
+        <div class="prow"><div class="plabel">What is it?</div><div class="pcontent">Reliability is the promise that the system keeps delivering <b>when parts of it fail</b> — because parts <i>will</i> fail. A server. A disk. A network cable. A bug in your code. A third-party API. Reliability is not "it works when the demo works." It is "it still works on the worst day."</div></div>
+        <div class="prow"><div class="plabel">Why it matters</div><div class="pcontent">Users do not forgive twice. In banking, a 10-minute outage is money lost, customers furious, and regulators watching. In food delivery, one evening of downtime is dinner that never arrives.</div></div>
+        <div class="prow"><div class="plabel">Problem it solves</div><div class="pcontent">The <b>domino problem</b>. Without reliability thinking, one small failure — one dead service, one full disk — travels through the system and takes down everything. Reliability design stops the dominoes.</div></div>
+        <div class="prow"><div class="plabel">Four things you design</div><div class="pcontent" style="padding:0"><div class="topic-grid" style="display:block;padding:20px 28px 22px">
+          <div class="topic"><b>Failures</b><span>Assume every part fails: your code (bugs), your servers, your network, your database, and every API you call. For each one, ask: <i>when it fails, what does the user actually see?</i> An error? A degraded feature? Nothing?</span></div>
+          <div class="topic"><b>Backup</b><span>A copy of your data that you can bring back. Servers hold state, but the <i>data</i> lives in the database. No backup plan means one corrupted table can delete months of orders, forever.</span></div>
+          <div class="topic"><b>Recovery</b><span>Two honest questions: <b>how much data can we lose</b> (minutes of orders — or zero?) and <b>how fast must we be back</b> (5 minutes or 5 hours?). Your answers <i>are</i> the architecture — they decide replicas, queues and failover.</span></div>
+          <div class="topic"><b>Dependency failure</b><span>Payment gateways, email providers, map services — they go down without notice. Design for it: timeouts (never wait forever), retries with delay, a fallback (offer another payment option), and a queue so work is not lost when the provider comes back.</span></div>
+        </div></div></div>
+        <div class="prow warn"><div class="plabel">If you ignore it</div><div class="pcontent">One bad deploy — or one dead vendor — and the whole site is down. Worse: users learn that your system is "the one that is always down." That reputation is almost impossible to remove.</div></div>
+        <div class="prow"><div class="plabel">Real-world example</div><div class="pcontent">A hospital runs its critical rooms on <b>backup generators</b>. The power can fail; the patients do not feel it. The generator is boring until the single day it saves the hospital. That is exactly what redundancy is — boring by design.</div></div>
+        <div class="prow"><div class="plabel">Software example</div><div class="pcontent">A food delivery app: the <b>ratings service is down</b>. Drivers still deliver, orders still move. Only the star ratings are hidden for a while. The outage is small and quiet — because someone designed for it to be.</div></div>
+        <div class="prow"><div class="plabel">What an architect asks</div><div class="pcontent"><ol class="asks">
+          <li>Which parts can fail — one by one?</li>
+          <li>If each one fails, what does the user actually see?</li>
+          <li>Which features must keep working at all costs, and which may go down?</li>
+          <li>How much data can we lose, and how fast must we recover?</li>
+          <li>Where are the single points of failure — and can I remove them?</li>
+        </ol></div></div>
+      </div>
+    </div>
+    <div class="callout co-tip rv">
+      <span class="co-label">INTERVIEW ANGLE</span>
+      <p>Reliability is not one number for the whole system. It is a number <b>per feature</b>: payments 99.95%, the marketing page 99%. Saying that out loud in an interview shows real experience.</p>
+    </div>
+
+    <!-- PERFORMANCE -->
+    <div class="pillar rv" id="p-performance" style="--pc:var(--performance)">
+      <div class="pillar-head">
+        <div class="p-num">02</div>
+        <div>
+          <h3>Performance</h3>
+          <div class="p-tag">How fast should it respond — and who decides?</div>
+        </div>
+        <svg class="p-head-ico" width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M4 15a8 8 0 1 1 16 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 15l4-4.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/><path d="M6 19.5h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="pillar-body">
+        <div class="prow"><div class="plabel">What is it?</div><div class="pcontent">Performance is how quickly the system responds and how much load it can absorb. The trap: treating "fast" as a <i>goal</i>. It is not. It is a <b>requirement</b> — and requirements have numbers. <i>"The product page loads in under 1 second for 95% of users"</i> — that sentence changes the design. "It should be fast" changes nothing.</div></div>
+        <div class="prow"><div class="plabel">Why it matters</div><div class="pcontent">Users leave a web page that takes more than 2–3 seconds. In e-commerce, every extra second of page load measurably cuts conversions. Slow does not feel like "slow." It feels like <i>"I'll try again later"</i> — and later never comes.</div></div>
+        <div class="prow"><div class="plabel">Problem it solves</div><div class="pcontent">Most web apps die the same death: one slow database query on a hot path, or one long chain of synchronous calls. Performance design finds the bottleneck <b>before launch</b>, not at 2 a.m. during the outage.</div></div>
+        <div class="prow"><div class="plabel">Four things you design</div><div class="pcontent" style="padding:0"><div class="topic-grid" style="display:block;padding:20px 28px 22px">
+          <div class="topic"><b>Response time</b><span>Set a target per <i>action</i>, not per system. Checkout under 1s, search under 500ms, report generation under 30s. And decide what you measure: 95% of requests (<b>p95</b>), not the average — the average hides the users who suffer.</span></div>
+          <div class="topic"><b>Slow database</b><span>The most common bottleneck in your world: N+1 queries, missing indexes, heavy joins on hot paths. The DB is also the most expensive part to fix at runtime — so it gets decided at design time: what is cached, what is denormalized, what is pre-computed.</span></div>
+          <div class="topic"><b>Slow API</b><span>A checkout that waits on five services one after another takes the <i>sum</i> of all five. The fixes: call them in parallel where it is safe, cache what is stable, and never wait on a slow side-task in the request path.</span></div>
+          <div class="topic"><b>Too many requests</b><span>A flash sale sends 50× the normal traffic. Design for it: rate limits to protect the core, a queue to absorb the spike, and a plan for what to switch off first (recommendations go, checkout stays).</span></div>
+        </div></div></div>
+        <div class="prow warn"><div class="plabel">If you ignore it</div><div class="pcontent">Launch day brings 3× the expected traffic. The site "works" for ten minutes, then every request waits 20 seconds, then it is down. You spent the whole weekend fixing a design you skipped on the whiteboard.</div></div>
+        <div class="prow"><div class="plabel">Real-world example</div><div class="pcontent">A coffee shop with one barista: ten customers are fine, fifty is a queue, one hundred is a riot. Performance is the <b>barista's speed</b>. Scaling is <b>more baristas</b>. The owner must know which problem he actually has before he spends money on the wrong fix.</div></div>
+        <div class="prow"><div class="plabel">Software example</div><div class="pcontent">An e-commerce product page: target under 1 second. Product data is <b>cached</b> (it changes rarely). Recommendations may be an hour old — nobody checks. But order creation is exact: no stale stock, no double charge. <b>Different rules for different actions.</b></div></div>
+        <div class="prow"><div class="plabel">What an architect asks</div><div class="pcontent"><ol class="asks">
+          <li>Which actions must be fast, and how fast exactly?</li>
+          <li>For what share of users — the average, or the slowest 5%?</li>
+          <li>Where is the real bottleneck — and have we measured it?</li>
+          <li>Which reads can be cached or delayed without anyone noticing?</li>
+          <li>Which operations must stay exact and synchronous?</li>
+        </ol></div></div>
+      </div>
+    </div>
+    <div class="callout co-tip rv">
+      <span class="co-label">INTERVIEW ANGLE</span>
+      <p>Asked "how would you make it faster?", a senior first answers: <i>"which action, for which percentile?"</i> That one question tells the interviewer you have measured real systems before.</p>
+    </div>
+
+    <!-- SCALABILITY -->
+    <div class="pillar rv" id="p-scalability" style="--pc:var(--scalability)">
+      <div class="pillar-head">
+        <div class="p-num">03</div>
+        <div>
+          <h3>Scalability</h3>
+          <div class="p-tag">What happens when the users increase?</div>
+        </div>
+        <svg class="p-head-ico" width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M4 20V14M9.3 20V9.5M14.6 20V5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M3 20h18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M15 8l4.5-3.5L18 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pillar-body">
+        <div class="prow"><div class="plabel">What is it?</div><div class="pcontent">Scalability is the ability to handle more load <b>without a rebuild</b>. Two levers: <b>scale up</b> (one bigger machine) and <b>scale out</b> (many small machines). Scale up is easy until it is not. Scale out is the shape of every system that keeps growing.</div></div>
+        <div class="prow"><div class="plabel">Why it matters</div><div class="pcontent">Growth surprises you. A product that works at 1,000 users can die at 10,000 — not because of a bug, but because the shape was drawn for 1,000. Scalability thinking means deciding <b>where you can add machines</b> instead of redrawing the system.</div></div>
+        <div class="prow"><div class="plabel">Problem it solves</div><div class="pcontent">The bottleneck moves as you grow: first the app server, then the database, then disk, then the network. Scalability is knowing <i>where each one is sitting</i> so you can act before the outage, not during it.</div></div>
+        <div class="prow"><div class="plabel">The 100 → 10,000 → 1,000,000 ladder</div><div class="pcontent">Press the buttons. Watch the shape change — not the ambition, the <b>shape</b>.</div>
+          <div class="scale-tabs" style="margin:14px 0 4px">
+            <button class="scale-tab on" data-scale="s100">100 USERS</button>
+            <button class="scale-tab" data-scale="s10k">10,000 USERS</button>
+            <button class="scale-tab" data-scale="s1m">1,000,000 USERS</button>
+          </div>
+        </div></div>
+        <div class="prow"><div class="plabel" style="border:0;padding:0">The shape at each rung</div><div class="pcontent" style="padding:0 0 4px">
+          <div class="scale-panel on" id="s100">
+            <div class="scale-fig"><svg viewBox="0 0 420 220" fill="none">
+              <defs><marker id="sarr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z"/></marker></defs>
+              <path d="M40 100h96" class="s-line" marker-end="url(#sarr)"/>
+              <path d="M236 100h52" class="s-line" marker-end="url(#sarr)"/>
+              <rect x="16" y="78" width="100" height="44" class="s-box"/>
+              <text x="66" y="97" class="s-lab" text-anchor="middle">USERS ×100</text>
+              <text x="66" y="111" class="s-sub" text-anchor="middle">one office, one store</text>
+              <rect x="188" y="70" width="148" height="60" class="s-box"/>
+              <text x="262" y="94" class="s-lab" text-anchor="middle">WEB + API</text>
+              <text x="262" y="109" class="s-sub" text-anchor="middle">ONE box · monolith</text>
+              <rect x="340" y="78" width="64" height="44" class="s-box"/>
+              <text x="372" y="97" class="s-lab" text-anchor="middle">SQL DB</text>
+              <text x="372" y="111" class="s-sub" text-anchor="middle">one copy</text>
+              <text x="16" y="170" class="s-note">ONE MACHINE. ONE DATABASE. THIS IS THE CORRECT DESIGN.</text>
+              <text x="16" y="188" class="s-sub">deploy whenever · logs = a file · backup = a nightly script</text>
+            </svg></div>
+            <div class="scale-text">
+              <h4>100 users — keep it simple</h4>
+              <p>One box, one database, and you sleep well. The monolith takes a direct call to the DB. Every request is synchronous, and that is fine. <b>The correct architecture at 100 users is simple</b> — anything more is waste.</p>
+              <ul>
+                <li><b>App:</b> one server. State may even live in memory — nobody notices.</li>
+                <li><b>Data:</b> one database, nightly backup, one restore drill a year.</li>
+                <li><b>Monitoring:</b> a log file and a prayer. A simple uptime alert is enough.</li>
+                <li><b>Cost:</b> small. That is a feature, not a compromise.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="scale-panel" id="s10k">
+            <div class="scale-fig"><svg viewBox="0 0 420 260" fill="none">
+              <path d="M40 120h64" class="s-line" marker-end="url(#sarr)"/>
+              <path d="M150 120h40 M190 120v-34 M190 86h14 M204 86v44 M190 120v34 M190 154h14 M204 154v-30" class="s-line"/>
+              <rect x="16" y="98" width="100" height="44" class="s-box"/>
+              <text x="66" y="117" class="s-lab" text-anchor="middle">USERS ×10K</text>
+              <text x="66" y="131" class="s-sub" text-anchor="middle">growing product</text>
+              <path d="M150 106l16 14-16 14-16-14Z" class="s-box"/>
+              <text x="166" y="96" class="s-sub" text-anchor="middle">LB</text>
+              <rect x="218" y="52" width="94" height="40" class="s-box"/>
+              <text x="265" y="69" class="s-lab" text-anchor="middle">APP #1</text>
+              <text x="265" y="82" class="s-sub" text-anchor="middle">stateless</text>
+              <rect x="218" y="128" width="94" height="40" class="s-box"/>
+              <text x="265" y="145" class="s-lab" text-anchor="middle">APP #2</text>
+              <text x="265" y="158" class="s-sub" text-anchor="middle">stateless</text>
+              <path d="M312 72h30 M312 148h30" class="s-line"/>
+              <rect x="342" y="52" width="62" height="38" class="s-box hot"/>
+              <text x="373" y="68" class="s-lab" text-anchor="middle">DB</text>
+              <text x="373" y="81" class="s-sub" text-anchor="middle">+ READER</text>
+              <rect x="342" y="104" width="62" height="34" class="s-box"/>
+              <text x="373" y="124" class="s-lab" text-anchor="middle">CACHE</text>
+              <path d="M265 168v28" class="s-line" marker-end="url(#sarr)"/>
+              <rect x="218" y="196" width="94" height="34" class="s-box"/>
+              <text x="265" y="216" class="s-lab" text-anchor="middle">QUEUE + WORKER</text>
+              <text x="16" y="250" class="s-note">CACHE THE READS. QUEUE THE SLOW WORK. SPLIT DB READS.</text>
+            </svg></div>
+            <div class="scale-text">
+              <h4>10,000 users — the app server chokes first</h4>
+              <p>Add a second app server behind a load balancer — but only if the app is <b>stateless</b> (no session in memory). Then the database starts to hurt: cache the hot reads, add a read replica. Move slow work (emails, reports) onto a queue so the web tier stops waiting.</p>
+              <ul>
+                <li><b>App:</b> two+ stateless servers, a load balancer in front.</li>
+                <li><b>Data:</b> write to one DB, serve some reads from a replica.</li>
+                <li><b>Cache:</b> introduced for the hottest reads.</li>
+                <li><b>Async:</b> queue + worker for background jobs. The request path gets shorter.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="scale-panel" id="s1m">
+            <div class="scale-fig"><svg viewBox="0 0 420 280" fill="none">
+              <path d="M40 130h58" class="s-line" marker-end="url(#sarr)"/>
+              <path d="M136 130h24 M160 130v-52 M160 78h8 M168 78v36 M160 130v0 M160 130h8 M168 130v-8 M160 130v52 M160 182h8 M168 182v-36" class="s-line"/>
+              <rect x="16" y="108" width="100" height="44" class="s-box"/>
+              <text x="66" y="127" class="s-lab" text-anchor="middle">USERS ×1M</text>
+              <text x="66" y="141" class="s-sub" text-anchor="middle">spikes, regions</text>
+              <rect x="184" y="60" width="66" height="28" class="s-box"/><text x="217" y="78" class="s-lab" text-anchor="middle" font-size="9">APP</text>
+              <rect x="184" y="96" width="66" height="28" class="s-box"/><text x="217" y="114" class="s-lab" text-anchor="middle" font-size="9">APP</text>
+              <rect x="184" y="132" width="66" height="28" class="s-box"/><text x="217" y="150" class="s-lab" text-anchor="middle" font-size="9">APP</text>
+              <text x="217" y="176" class="s-sub" text-anchor="middle">POOL ×N · AUTO-SCALE</text>
+              <path d="M250 146h44" class="s-line" marker-end="url(#sarr)"/>
+              <rect x="294" y="120" width="110" height="40" class="s-box"/>
+              <text x="349" y="137" class="s-lab" text-anchor="middle">QUEUE BUS</text>
+              <text x="349" y="151" class="s-sub" text-anchor="middle">absorbs every spike</text>
+              <path d="M217 146v64 M217 210h130" class="s-line"/>
+              <rect x="294" y="192" width="52" height="36" class="s-box"/>
+              <text x="320" y="212" class="s-lab" text-anchor="middle" font-size="8.5">SHARD 1</text>
+              <rect x="352" y="192" width="52" height="36" class="s-box"/>
+              <text x="378" y="212" class="s-lab" text-anchor="middle" font-size="8.5">SHARD 2</text>
+              <rect x="294" y="52" width="110" height="34" class="s-box"/>
+              <text x="349" y="68" class="s-lab" text-anchor="middle">CACHE CLUSTER</text>
+              <text x="349" y="80" class="s-sub" text-anchor="middle">+ CDN at the edge</text>
+              <text x="16" y="262" class="s-note">STATELESS POOLS · STATE IN DB + CACHE · QUEUES DECOUPLE BURSTS</text>
+            </svg></div>
+            <div class="scale-text">
+              <h4>1,000,000 users — every layer is a pool</h4>
+              <p>Many app servers that the cloud adds and removes by itself. A cache cluster in front of the data. A queue bus that absorbs every spike. And the database <b>splits</b>: read/write separated, then sharded by a key like customer or tenant.</p>
+              <ul>
+                <li><b>App:</b> an autoscaling pool. Stateless, always. State lives in the DB and the cache.</li>
+                <li><b>Data:</b> sharded or heavily split. Per-tenant or per-region isolation.</li>
+                <li><b>Async:</b> all slow work on the queue. The request path is short by design.</li>
+                <li><b>Discipline:</b> everything measured. You never scale blind again.</li>
+              </ul>
+            </div>
+          </div>
+        </div></div></div>
+        <div class="prow warn"><div class="plabel">If you ignore it</div><div class="pcontent">Two faces of the same failure. <b>Face one:</b> the launch-day crash — built for 1,000 users, hit by 100,000. <b>Face two, quieter and deadlier:</b> built for 1,000,000 on day one. The bill is 10×, the complexity is 10×, and the business has 2,000 users. Both are architecture failures.</div></div>
+        <div class="prow"><div class="plabel">Real-world example</div><div class="pcontent">A parking lot. Ten spots for a new shop is correct. Ten thousand spots is bankruptcy. But the lot must be <b>drawn so it can be extended</b>. That is scalability: not the size today, but the room to grow tomorrow.</div></div>
+        <div class="prow"><div class="plabel">Software example</div><div class="pcontent">An employee-management SaaS with 50 companies: one instance, one DB. At 500 companies, reporting queries start slowing down the CRUD app — reporting moves to a replica. At 5,000 companies, tenants get split across shards. <b>Three different architectures — for the same product.</b></div></div>
+        <div class="prow"><div class="plabel">What an architect asks</div><div class="pcontent"><ol class="asks">
+          <li>How many users today, in 1 year, in 3 years — and what is the spike factor?</li>
+          <li>Which parts can scale by adding machines — and can I make them stateless?</li>
+          <li>Where does state live, and what happens to it on a new machine?</li>
+          <li>What do we measure before we scale, so we scale the right thing?</li>
+        </ol></div></div>
+      </div>
+    </div>
+    <div class="callout co-key rv">
+      <span class="co-label">KEY TAKEAWAY</span>
+      <p>Scale is not a feature you design for on day one. It is a <b>sequence of small decisions</b> you take as load arrives. The architect draws the 100 → 10,000 → 1,000,000 path — and keeps every step cheap.</p>
+    </div>
+
+    <!-- SECURITY -->
+    <div class="pillar rv" id="p-security" style="--pc:var(--security)">
+      <div class="pillar-head">
+        <div class="p-num">04</div>
+        <div>
+          <h3>Security</h3>
+          <div class="p-tag">How do we protect users and business data?</div>
+        </div>
+        <svg class="p-head-ico" width="34" height="34" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="3.4" stroke="currentColor" stroke-width="1.5"/><path d="M11.4 12H21M17.5 12v3.2M21 12v2.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </div>
+      <div class="pillar-body">
+        <div class="prow"><div class="plabel">What is it?</div><div class="pcontent">Security is <b>control</b>: who can do what, and how hard it is for someone to do what they should not. Two foundations — <b>authentication</b> (proving who you are) and <b>authorization</b> (deciding what that person may do). Almost every "security incident" you will hear about is one of these two, missing or misplaced.</div></div>
+        <div class="prow"><div class="plabel">Why it matters</div><div class="pcontent">A data breach is not an IT incident. It is fines, lawsuits, a news story, and lost customer trust that marketing can't buy back. And breaches are rarely fancy: they are an endpoint that forgot to check the role, or a password stored in plain text.</div></div>
+        <div class="prow"><div class="plabel">Problem it solves</div><div class="pcontent">Trust crosses boundaries. The user's browser is <b>untrusted</b>. The internal service is <b>untrusted</b>. The "temporary" copy of card data is <b>untrusted</b>. Security design draws those boundaries and makes crossing them expensive.</div></div>
+        <div class="prow"><div class="plabel">Five things you design</div><div class="pcontent" style="padding:0"><div class="topic-grid" style="display:block;padding:20px 28px 22px">
+          <div class="topic"><b>Authentication</b><span>Who is this? Identity plus proof: strong passwords stored as <b>salted hashes</b> (never plain text), sessions or short-lived tokens, and MFA where the data is valuable. Decide the session length and what "logged out" really means.</span></div>
+          <div class="topic"><b>Authorization</b><span>What may they do? Roles and permissions, checked <b>on the server, on every request, for every endpoint</b>. Hiding a button in the UI is not authorization — it is decoration.</span></div>
+          <div class="topic"><b>Sensitive data</b><span>Find the crown jewels: card numbers, national IDs, salaries. Rules: encrypt in transit and at rest; <b>store the minimum</b> — a shop never needs the full card number, the payment gateway holds it; and log without leaking — never log what you are protecting.</span></div>
+          <div class="topic"><b>Access control</b><span>Least privilege: every service, account and human gets only what their job needs. Admin APIs are not public. The email-sending worker cannot delete orders. Network boundaries keep the database off the public internet.</span></div>
+          <div class="topic" style="grid-column:1/-1"><b>Common mistakes</b><span>Checks only in the UI · secrets in code or config files · "temporary" copies of sensitive data that become permanent · no audit trail, so nobody can say who changed a salary · unlimited login attempts · trusting any input that came from the client.</span></div>
+        </div></div></div>
+        <div class="prow warn"><div class="plabel">If you ignore it</div><div class="pcontent">Day one: a user opens the API and reads every other user's data by changing one ID. Now there is a breach, a legal team, and a company that must explain itself to the press. <b>"We'll secure it after launch"</b> is the most expensive sentence in software.</div></div>
+        <div class="prow"><div class="plabel">Real-world example</div><div class="pcontent">A bank. You show ID to open the account — <b>authentication</b>. You can only withdraw from your own account — <b>authorization</b>. The cash sits in the vault — <b>encryption</b>. Every cash movement is recorded — <b>audit</b>. None of it is optional, and none of it is "after launch."</div></div>
+        <div class="prow"><div class="plabel">Software example</div><div class="pcontent">A multi-tenant SaaS: <b>tenant A must never see tenant B's data</b> — not by mistake, not by a guessed URL, not by a tired developer. Every query is scoped by tenant, and the rule is enforced in <i>one place</i>, so no future endpoint can forget it.</div></div>
+        <div class="prow"><div class="plabel">What an architect asks</div><div class="pcontent"><ol class="asks">
+          <li>Where are the trust boundaries — and who may cross them?</li>
+          <li>If the whole database was stolen tonight, what could the attacker read?</li>
+          <li>Which actions are irreversible — and what proof do they require?</li>
+          <li>Can we answer "who did this, and when?" for any change?</li>
+          <li>What do we deliberately <b>not</b> store — and why?</li>
+        </ol></div></div>
+      </div>
+    </div>
+    <div class="callout co-tip rv">
+      <span class="co-label">INTERVIEW ANGLE</span>
+      <p>For any feature, draw the data flow out loud: <i>browser → API → DB → vendor</i>. Then say: "here is the boundary, here is what we check, and here is what we never store." That mini-talk <i>is</i> the security answer.</p>
+    </div>
+
+    <!-- MAINTAINABILITY -->
+    <div class="pillar rv" id="p-maintainability" style="--pc:var(--maintainability)">
+      <div class="pillar-head">
+        <div class="p-num">05</div>
+        <div>
+          <h3>Maintainability</h3>
+          <div class="p-tag">How easy is the system to change?</div>
+        </div>
+        <svg class="p-head-ico" width="34" height="34" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a4.1 4.1 0 0 0-5.2 5.2L4 17l3 3 5.5-5.5a4.1 4.1 0 0 0 5.2-5.2L15 11.8l-2.8-2.8 2.5-2.7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>
+      </div>
+      <div class="pillar-body">
+        <div class="prow"><div class="plabel">What is it?</div><div class="pcontent">Software <b>must</b> change. The business changes. The team changes. The law changes. Maintainability is the <b>cost of that change</b>: how long it takes, how risky it is, and how many people are brave enough to touch it. Architecture is mostly about keeping this number low.</div></div>
+        <div class="prow"><div class="plabel">Why it matters</div><div class="pcontent">In year one, everyone can read your code. In year three, the original author works at another company, the rules have doubled, and a one-hour fix takes a week because nobody knows where the logic lives. <b>That gap is where projects die.</b></div></div>
+        <div class="prow"><div class="plabel">Problem it solves</div><div class="pcontent">Change spreads. Logic that lives in three places needs three edits and two bugs. A module that touches everything becomes the place where "one small change" takes the system down. Maintainability design keeps change <b>local</b>.</div></div>
+        <div class="prow"><div class="plabel">Four things you design</div><div class="pcontent" style="padding:0"><div class="topic-grid" style="display:block;padding:20px 28px 22px">
+          <div class="topic"><b>Clean structure</b><span>A layout you can explain in one breath: who calls whom, where data enters, where it leaves. If a new engineer needs a week to find where orders are created, the structure has already failed.</span></div>
+          <div class="topic"><b>Clear responsibilities</b><span>One job per part. A component that "handles orders, billing and notifications" is three jobs wearing one coat — change billing and you risk orders. <b>Responsibility is the cheapest insurance in architecture.</b></span></div>
+          <div class="topic"><b>Reducing tight coupling</b><span>Components that touch each other everywhere are one component with extra steps. Prefer clear contracts — an API, a message — so both sides can change their internals without breaking the other.</span></div>
+          <div class="topic"><b>Technical debt</b><span>Shortcuts taken today, charged with interest every time you touch that code again. Some debt is fine — a prototype must be fast. The failure is not taking debt; it is taking it <i>unknowingly</i> and never repaying it. Name it, time-box it, schedule the payoff.</span></div>
+        </div></div></div>
+        <div class="prow warn"><div class="plabel">If you ignore it</div><div class="pcontent">Every release takes 3× longer. One person becomes the only one who can touch the core. Small changes cause outages. New hires are slow. And the business starts saying: <i>"Why is this so hard? Maybe we should rebuild."</i> Rebuilding is what unmaintainable systems pay at the end.</div></div>
+        <div class="prow"><div class="plabel">Real-world example</div><div class="pcontent">A restaurant kitchen. The grill station does only grill; desserts does only desserts. When the grill breaks, one line stops. Now imagine a kitchen where every chef does a little of everything: one person gets sick and dinner collapses. <b>The kitchen layout is the architecture.</b></div></div>
+        <div class="prow"><div class="plabel">Software example</div><div class="pcontent">An employee-management system. A new payroll rule arrives (a tax change). If the rule lives in <b>one module</b>, it is a day of work with a clear test. If it is spread through 12 screens and reports, it is a month — and a bug in a report nobody opens.</div></div>
+        <div class="prow"><div class="plabel">What an architect asks</div><div class="pcontent"><ol class="asks">
+          <li>Who will maintain this in 2 years — and how fast can they get up to speed?</li>
+          <li>If we must replace the queue or the database, how many places break?</li>
+          <li>Where are the contracts — and who owns them?</li>
+          <li>Where is the duplicated logic, and who pays for it?</li>
+          <li>What does the smallest change cost right now? If it is high, something is already wrong.</li>
+        </ol></div></div>
+      </div>
+    </div>
+
+    <div class="callout co-key rv">
+      <span class="co-label">THE ARCHITECT'S REAL JOB</span>
+      <p>None of these five is optional, and none of them is free. A fast system that is unreliable is a liability. A secure one that nobody can change dies in three years. Architecture is not maxing out one pillar — it is <b>choosing the balance the business can afford</b>, and knowing which pillar you are deliberately sacrificing.</p>
+    </div>
+  </section>
+  <!-- ============ SECTION 3 ============ -->
+  <section class="sec" id="s3">
+    <div class="sec-kicker">SECTION 03 — BEFORE ANY DIAGRAM</div>
+    <h2 class="sec-title rv">Questions I Should Ask Before Designing Any System</h2>
+    <p class="sec-lead rv">Twenty questions, in order. An architect who asks these in the first meeting will out-design a genius who starts drawing boxes. Read the <b>"why it matters"</b> — the question is only half the skill.</p>
+    <div class="qa-tools rv">
+      <button class="btn" id="qaExpandAll">EXPAND ALL</button>
+      <button class="btn" id="qaCollapseAll">COLLAPSE ALL</button>
+    </div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">01</span><span class="qa-t">Who will use it?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">External customers, your own staff, or partners? Customers demand reliability and speed; staff will tolerate a slow page; partners demand a stable API. This answer sets the <b>whole bar</b> for quality — design for the wrong user and every other decision inherits the mistake.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">02</span><span class="qa-t">What business problem does it solve?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">If you build the wrong thing perfectly, you have failed. Ask: <i>what does the business earn, save, or learn from this system?</i> If nobody can answer in two sentences, stop and ask — the design target is wrong no matter how good the architecture is.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">03</span><span class="qa-t">How many users — now, in 1 year, in 3 years?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Size decides shape. 1,000 users and 1,000,000 users are different architectures (see the ladder in Section 2). Guessing wrong in either direction wastes money: under-sizing breaks you, over-sizing bankrupts you.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">04</span><span class="qa-t">What is the peak — and how does it spike?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Average load sizes the system; <b>peak load sizes the survival plan</b>. Flash sales, salary day, a viral post — a 10× spike changes everything: queues, autoscaling, rate limits. Systems that die usually die at the peak, never at the average.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">05</span><span class="qa-t">How many requests per second — and how many are reads vs writes?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">A system that is 95% reads is a <b>caching problem</b>. A system that is mostly writes is a <b>database and queueing problem</b>. Same word, "load" — opposite designs. This ratio is one of the cheapest and most powerful facts in the room.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">06</span><span class="qa-t">How much downtime can we afford?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">99.9% is about 8.7 hours of downtime per year. 99.99% is about 53 minutes. The price difference between them is often <b>10×</b>. The business must choose the number — not the engineer, not the interviewer's expectation.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">07</span><span class="qa-t">What happens if the database stops?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">The database is the heart. Ask: is data lost? How long until it is back? What does the app do in the meantime — fail fast, or serve read-only? The answers <b>design your recovery plan</b>: backups, replicas, failover, and the honest "we will lose N minutes of writes."</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">08</span><span class="qa-t">What happens if an external service stops?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Payment, email, maps, SMS — none of it is under your control. Design the fallback for each: <b>timeouts, retries with delay, a queue, and a degraded mode</b> the user can live with. Every external dependency is a future outage you get to plan for now.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">09</span><span class="qa-t">What data is sensitive?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Card numbers, national IDs, salaries, health data. The list decides encryption, access rules, compliance (PCI-DSS, GDPR) and how hard a breach would hit you. Naming the crown jewels early makes "do we need PCI?" a 10-minute answer instead of a 3-month discovery.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">10</span><span class="qa-t">Which features must be fast?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Not everything. Name the hot actions and give them numbers. The rest is allowed to be 5× slower — and that is a <b>design decision, not an accident</b>. Trying to make everything fast is how budgets and designs both die.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">11</span><span class="qa-t">Which work can be delayed?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Emails, reports, search indexes, analytics — all of it can wait from seconds to minutes. Moving it off the critical path is the <b>cheapest performance win you will ever get</b>, and the most common one architects miss.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">12</span><span class="qa-t">How exact must the result be?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">A notification sent twice is annoying. A payment processed twice is a scandal. Decide per operation: <b>at most once, at least once, or exactly once</b>. That choice changes the whole write path — idempotency keys, deduplication, retries — so ask it before you draw the queue.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">13</span><span class="qa-t">How many teams will build it?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">One team, one deployable. Five teams need clear boundaries or they will step on each other. The organization shapes the architecture as much as the load does — a famous truth, and the reason "microservices for 2 people" is a mistake.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">14</span><span class="qa-t">How often does the business change?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">If discount rules change weekly, that logic must live in <b>one configurable place</b>. If the workflow never changes, hard-code it confidently and stop worrying. Volatility decides where you invest in flexibility — and where you shouldn't.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">15</span><span class="qa-t">What must it talk to — today, and soon?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">An existing ERP, a payment vendor, a data warehouse. Every integration is a <b>contract</b>: who owns it, what breaks when it changes, and what happens when it is slow. Underestimated integrations are the number-one cause of "small" project overruns.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">16</span><span class="qa-t">Where will it run?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Cloud, on-prem, or hybrid. It decides how you scale (autoscaling or not), who patches things, how you fail over — and sometimes which technologies are even allowed in the building. A design drawn for the wrong room never fits.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">17</span><span class="qa-t">How much can the business spend?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">The number that kills most architectures. 99.99% is expensive. Sharding is expensive. Redundant regions are expensive. A small budget is not a reason for a bad design — it is a <b>constraint that makes the design honest</b>. Name it in week one.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">18</span><span class="qa-t">What rules do the law and compliance add?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">GDPR, PCI-DSS, data residency ("data must stay in this country"). These are not IT features you toggle on. They are <b>architecture requirements with fines attached</b> — and they change where data lives, not just how it is encrypted.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">19</span><span class="qa-t">What happens at 10× load — and at 1/10?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Everyone asks about the top; almost nobody asks about the bottom. At 1/10 load, is the system cheap to run — or are you paying for 10× you never use? <b>Both ends are design answers</b>, and the bottom one is usually where the waste hides.</div></div></div></div>
+
+    <div class="qa rv"><button class="qa-head" type="button"><span class="qa-num">20</span><span class="qa-t">What would we regret most if we chose wrong?</span><span class="qa-ic"></span></button>
+      <div class="qa-a"><div class="qa-a-in"><div class="qa-a-pad">Find the decisions that are <b>hard to change later</b>: data ownership, the boundaries between parts, the consistency rules, the tenant model. Those are the real architecture. Everything else is detail you can fix — so spend your thinking time where the regret would be deepest.</div></div></div></div>
+
+    <div class="callout co-key rv">
+      <span class="co-label">THE PATTERN</span>
+      <p>People, numbers, failures, money, law. An architect's first meeting is 80% listening. If you can work these twenty into your next project kickoff, you are already thinking differently — no new technology required.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 4 ============ -->
+  <section class="sec" id="s4">
+    <div class="sec-kicker">SECTION 04 — CASE STUDY</div>
+    <h2 class="sec-title rv">Designing a Simple Online Shopping System</h2>
+    <p class="sec-lead rv">No technology yet. First the <b>problem</b>, then the <b>decisions</b>, then the <b>shape</b>. That is the order an architect works in — and the order you will repeat in interviews.</p>
+
+    <div class="cs-spec rv">
+      <h4>THE REQUIREMENTS — ALL OF THEM</h4>
+      <ol>
+        <li><b>R1</b> Users can register.</li>
+        <li><b>R2</b> Users can browse products.</li>
+        <li><b>R3</b> Users can place orders.</li>
+        <li><b>R4</b> Users can make payments.</li>
+        <li><b>R5</b> Users can receive notifications (order status by email / SMS).</li>
+      </ol>
+    </div>
+
+    <p class="rv">Before drawing anything, the architect reads those five lines and hears the <b>risks hiding in each one</b>:</p>
+    <ul class="risk-list rv">
+      <li><b>R1 —</b> Accounts mean passwords, and passwords mean a target. Sensitive data starts here.</li>
+      <li><b>R2 —</b> Browsing is read-heavy. This is the part that must be <i>fast and cheap</i>.</li>
+      <li><b>R3 —</b> The order is the promise. Losing an order is worse than a slow page.</li>
+      <li><b>R4 —</b> Payment is external, exact, and expensive. One mistake costs real money.</li>
+      <li><b>R5 —</b> Notifications are the least important — and the most common cause of blocking the main flow.</li>
+    </ul>
+
+    <h3 class="rv">The architect's five lenses on this system</h3>
+    <div class="think-grid">
+      <div class="tc rv" style="--pc:var(--reliability)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 9.3C8 18.7 5 15.6 5 11V6l7-3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Reliability</h4>
+        <p>Browsing (R2) must keep working even if payment (R4) has a problem. Orders (R3) must <b>never be lost</b> — write to the database first, notify later. Payment failures are <i>expected</i>: retry, offer a fallback, never crash the checkout. If email (R5) dies, the order still stands.</p>
+      </div>
+      <div class="tc rv" style="--pc:var(--performance)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 15a8 8 0 1 1 16 0M12 15l4-4.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="15" r="1.4" fill="currentColor"/></svg> Performance</h4>
+        <p>Product pages (R2) are hot and almost static → <b>cache them</b>. Checkout (R3+R4) must be short and exact → a few fast calls, never a long chain. Notifications (R5) leave the critical path entirely. Search may be a little slow; the order cannot be.</p>
+      </div>
+      <div class="tc rv" style="--pc:var(--scalability)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M4 20V14M9.3 20V9.5M14.6 20V5M3 20h18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Scalability</h4>
+        <p>Start with <b>one deployable</b> — a two-team shop does not need ten services. When load grows: app servers scale out (they are stateless), catalog reads go to the cache, the DB gains a read replica, and notifications already run on the queue. Every step is additive — none is a rewrite.</p>
+      </div>
+      <div class="tc rv" style="--pc:var(--security)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="8" cy="12" r="3.4" stroke="currentColor" stroke-width="1.6"/><path d="M11.4 12H21M17.5 12v3.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg> Security</h4>
+        <p>Card data <b>never touches our database</b> — the payment gateway holds it. Passwords are salted hashes. Every order belongs to an authenticated user. Admin screens are a separate boundary. Login and payment attempts are rate-limited. Every order is logged: who ordered what, when.</p>
+      </div>
+      <div class="tc rv" style="--pc:var(--maintainability)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M14.7 6.3a4.1 4.1 0 0 0-5.2 5.2L4 17l3 3 5.5-5.5a4.1 4.1 0 0 0 5.2-5.2L15 11.8l-2.8-2.8 2.5-2.7Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg> Maintainability</h4>
+        <p>Five responsibilities, five boxes: catalog, orders, payments, notifications, identity. Each owns one job. Payment sits behind a <b>thin adapter</b> — swap the gateway and only the adapter changes. Discount rules, which change often, live in the catalog module — one place, not five.</p>
+      </div>
+      <div class="tc rv" style="--pc:var(--ink)">
+        <h4><svg class="tc-ico" width="20" height="20" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5M12 7.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg> What this is NOT</h4>
+        <p>Notice what is missing so far: no product list, no framework, no cloud region. <b>The decisions above are the architecture.</b> Technology is the last 10% — it fills this shape; it does not create it. That is the whole point of Day 1.</p>
+      </div>
+    </div>
+
+    <div class="callout co-tip rv">
+      <span class="co-label">FOR YOUR STACK</span>
+      <p>The diagram below is, for you, SQL Server + Redis + RabbitMQ + ASP.NET Core. But look at what the decisions <i>actually</i> were: state vs stateless, sync vs async, who owns which data, where the external risk sits. <b>The brands came last.</b> That is the habit to build.</p>
+    </div>
+
+    <div class="csdiagram rv">
+      <svg viewBox="0 0 960 640" fill="none" role="img" aria-label="Simple online shopping system diagram">
+        <defs>
+          <marker id="carw" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 Z" fill="var(--ink3)"/></marker>
+        </defs>
+        <!-- edges -->
+        <path class="n-line" d="M176 298 H 218" marker-end="url(#carw)"/>
+        <path class="n-line" d="M376 288 C 424 288 418 118 448 118" marker-end="url(#carw)"/>
+        <path class="n-line" d="M376 298 H 448" marker-end="url(#carw)"/>
+        <path class="n-line" d="M376 310 C 424 310 418 478 448 478" marker-end="url(#carw)"/>
+        <path class="n-line" d="M606 114 H 672" marker-end="url(#carw)"/>
+        <path class="n-line" d="M606 130 C 730 130 790 205 830 246" marker-end="url(#carw)"/>
+        <path class="n-line" d="M606 298 H 808" marker-end="url(#carw)"/>
+        <path class="n-line" d="M606 312 C 640 312 640 474 652 474" marker-end="url(#carw)"/>
+        <path class="n-line" d="M606 326 C 740 326 800 330 838 298" marker-end="url(#carw)"/>
+        <path class="n-line" d="M790 474 H 808" marker-end="url(#carw)"/>
+        <path class="n-line" d="M886 502 V 552" marker-end="url(#carw)"/>
+        <path class="n-line" d="M531 506 V 552" marker-end="url(#carw)"/>
+        <!-- nodes -->
+        <g class="node" data-node="client" tabindex="0">
+          <rect class="n-box" x="36" y="270" width="140" height="56" rx="4"/>
+          <text class="n-lab" x="106" y="294" text-anchor="middle">WEB APP</text>
+          <text class="n-sub" x="106" y="311" text-anchor="middle">user's browser</text>
+        </g>
+        <g class="node" data-node="gateway" tabindex="0">
+          <rect class="n-box" x="226" y="270" width="150" height="56" rx="4"/>
+          <text class="n-lab" x="301" y="294" text-anchor="middle">API GATEWAY</text>
+          <text class="n-sub" x="301" y="311" text-anchor="middle">auth · limits · routing</text>
+        </g>
+        <g class="node" data-node="catalog" tabindex="0">
+          <rect class="n-box" x="456" y="90" width="150" height="56" rx="4"/>
+          <text class="n-lab" x="531" y="114" text-anchor="middle">CATALOG</text>
+          <text class="n-sub" x="531" y="131" text-anchor="middle">products · read-heavy</text>
+        </g>
+        <g class="node" data-node="orders" tabindex="0">
+          <rect class="n-box" x="456" y="270" width="150" height="56" rx="4"/>
+          <text class="n-lab" x="531" y="294" text-anchor="middle">ORDERS</text>
+          <text class="n-sub" x="531" y="311" text-anchor="middle">write path · the promise</text>
+        </g>
+        <g class="node" data-node="payment" tabindex="0">
+          <rect class="n-box" x="456" y="450" width="150" height="56" rx="4"/>
+          <text class="n-lab" x="531" y="474" text-anchor="middle">PAYMENTS</text>
+          <text class="n-sub" x="531" y="491" text-anchor="middle">thin adapter · retries</text>
+        </g>
+        <g class="node" data-node="cache" tabindex="0">
+          <rect class="n-box" x="680" y="90" width="130" height="48" rx="4"/>
+          <text class="n-lab" x="745" y="111" text-anchor="middle">CACHE</text>
+          <text class="n-sub" x="745" y="127" text-anchor="middle">hot catalog reads</text>
+        </g>
+        <g class="node" data-node="db" tabindex="0">
+          <rect class="n-box" x="816" y="240" width="140" height="56" rx="4"/>
+          <text class="n-lab" x="886" y="264" text-anchor="middle">PRIMARY DB</text>
+          <text class="n-sub" x="886" y="281" text-anchor="middle">orders · users · stock</text>
+        </g>
+        <g class="node" data-node="queue" tabindex="0">
+          <rect class="n-box" x="660" y="450" width="130" height="48" rx="4"/>
+          <text class="n-lab" x="725" y="471" text-anchor="middle">QUEUE</text>
+          <text class="n-sub" x="725" y="487" text-anchor="middle">the shock absorber</text>
+        </g>
+        <g class="node" data-node="notify" tabindex="0">
+          <rect class="n-box" x="816" y="450" width="140" height="52" rx="4"/>
+          <text class="n-lab" x="886" y="472" text-anchor="middle">NOTIFY WORKER</text>
+          <text class="n-sub" x="886" y="489" text-anchor="middle">async · retries</text>
+        </g>
+        <g class="node" data-node="pgw" tabindex="0">
+          <rect class="n-box ext" x="456" y="560" width="150" height="48" rx="4"/>
+          <text class="n-lab" x="531" y="581" text-anchor="middle">PAYMENT GATEWAY</text>
+          <text class="n-sub" x="531" y="597" text-anchor="middle">EXTERNAL · not ours</text>
+        </g>
+        <g class="node" data-node="email" tabindex="0">
+          <rect class="n-box ext" x="816" y="560" width="140" height="48" rx="4"/>
+          <text class="n-lab" x="886" y="581" text-anchor="middle">EMAIL / SMS</text>
+          <text class="n-sub" x="886" y="597" text-anchor="middle">EXTERNAL · fallible</text>
+        </g>
+        <text x="36" y="40" class="n-sub" style="font-size:10px;fill:var(--ink3)">HOVER A COMPONENT — THE ARCHITECT'S NOTE FOR EACH ONE</text>
+      </svg>
+      <div class="node-detail" id="nodeDetail">
+        <h4>SYSTEM VIEW</h4>
+        <p>Eleven boxes, one job each. Two are external — and you design <i>around</i> them, not with them. Note what is <b>absent</b>: no sharding, no service-per-team, no second region. Simple until proven otherwise.</p>
+      </div>
+    </div>
+
+    <h3 class="rv">Decisions made so far</h3>
+    <div class="tblwrap rv">
+      <table class="t">
+        <thead><tr><th style="width:8%">#</th><th style="width:40%">DECISION</th><th>WHY</th></tr></thead>
+        <tbody>
+          <tr><td><b>1</b></td><td>One deployable at the start, with clear modules inside</td><td>Two teams, one product. The cost of separate services (deploy, monitor, trace) is not earned yet. Modules keep the door open to split later.</td></tr>
+          <tr><td><b>2</b></td><td>The order is written to the database <b>before</b> the notification is queued</td><td>A lost notification is an email you send later. A lost order is a customer who paid and got nothing. The order is the promise.</td></tr>
+          <tr><td><b>3</b></td><td>Notifications run async, through the queue</td><td>Email is slow and sometimes down. The checkout must not wait for it — or die with it.</td></tr>
+          <tr><td><b>4</b></td><td>Payment goes through a thin adapter to the gateway</td><td>Gateways change contracts and go down. The adapter isolates the swap and the fallback (a second gateway, or "pay later").</td></tr>
+          <tr><td><b>5</b></td><td>Catalog is cached; stock and price are verified at order time</td><td>Cached products may be a minute old — nobody notices. Stock and price at checkout must be exact. <b>Cache the read, verify the write.</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="not-do rv">
+      <h4>DELIBERATELY NOT DOING (DAY ONE)</h4>
+      <ul>
+        <li>No sharding. No per-service databases. No event sourcing.</li>
+        <li>No microservice per team. No Kubernetes. No second region.</li>
+        <li>Every one of these has a <b>trigger</b> — a number or a pain — and none of the triggers has arrived yet.</li>
+        <li>An architecture that has every answer before the questions are asked is not architecture. <b>It is decoration.</b></li>
+      </ul>
+    </div>
+
+    <div class="callout co-tip rv">
+      <span class="co-label">INTERVIEW ANGLE</span>
+      <p>Interviewers do not want the fanciest shop design. They want to hear you say what you are <b>not</b> doing — and why. The sentence <i>"I would not do X until I see Y"</i> is the most senior sentence in this field. Say it often.</p>
+    </div>
+  </section>
+  <!-- ============ SECTION 5 ============ -->
+  <section class="sec" id="s5">
+    <div class="sec-kicker">SECTION 05 — DECISION PATTERNS</div>
+    <h2 class="sec-title rv">Architecture Decision Examples</h2>
+    <p class="sec-lead rv">Five real decision patterns, in the format you will use in interviews and in life: <b>Problem → Options → Pros → Cons → Decision → Why</b>. The "why" is the architecture. The technology is just what the why happens to pick.</p>
+
+    <div class="adr rv">
+      <div class="adr-head"><span class="adr-no">DECISION 01</span><h3>One database, or many?</h3></div>
+      <p class="adr-problem"><b>PROBLEM —</b> A shop grows: catalog, orders and users all live in one SQL Server. Orders need strong consistency; the catalog is nothing but reads. Should the data split?</p>
+      <div class="tblwrap" style="margin:0 0 18px">
+        <table class="t">
+          <thead><tr><th style="width:30%">OPTION</th><th>PROS</th><th>CONS</th></tr></thead>
+          <tbody>
+            <tr><td><b>A · One database</b>, well-organized schemas</td><td class="pros">Simplest to run; one backup, one restore drill; an order + stock update is a natural local transaction.</td><td class="cons">One hotspot; a heavy reporting query can slow the checkout; one backup window for everything.</td></tr>
+            <tr><td><b>B · A database per module</b> (catalog DB, orders DB)</td><td class="pros">They scale and fail independently; teams can move independently.</td><td class="cons">Cross-module consistency becomes messages and retries — hard; two backups; roughly double the operations.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="adr-dec">
+        <div><h5>DECISION</h5><p>Start with <b>A</b>. Split only when a measured problem appears — and the first split is usually reporting to its own database or replica, not the catalog.</p></div>
+        <div class="why"><h5>WHY</h5><p>Order + stock consistency is the heart of the business. You do not pay the message-complexity tax before the load demands it. The split stays cheap <i>later</i> because the modules already have clean boundaries — which is the real asset.</p></div>
+      </div>
+    </div>
+
+    <div class="adr rv">
+      <div class="adr-head"><span class="adr-no">DECISION 02</span><h3>Send the email in the request — or through a queue?</h3></div>
+      <p class="adr-problem"><b>PROBLEM —</b> Order placed → confirmation email. The email provider takes up to 5 seconds and fails more often than anyone likes.</p>
+      <div class="tblwrap" style="margin:0 0 18px">
+        <table class="t">
+          <thead><tr><th style="width:30%">OPTION</th><th>PROS</th><th>CONS</th></tr></thead>
+          <tbody>
+            <tr><td><b>A · Call the provider inside the request</b></td><td class="pros">Dead simple; one code path; nothing extra to operate.</td><td class="cons">Every checkout is 5 seconds slower; when the provider dies, the checkout dies with it.</td></tr>
+            <tr><td><b>B · Queue + background worker</b></td><td class="pros">Checkout returns in milliseconds; provider failures are retried; spikes are absorbed.</td><td class="cons">One more component to run; messages can be delayed — or lost, if designed badly.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="adr-dec">
+        <div><h5>DECISION</h5><p><b>B.</b> The email goes to the queue; a worker sends it and retries the failures.</p></div>
+        <div class="why"><h5>WHY</h5><p>An email that is ten seconds late is invisible to the user. A checkout that dies when the email provider sneezes is an outage. <b>Move the slow, fallible thing off the critical path</b> — this single rule pays rent every month.</p></div>
+      </div>
+    </div>
+
+    <div class="adr rv">
+      <div class="adr-head"><span class="adr-no">DECISION 03</span><h3>Cache the catalog — or hit the database every time?</h3></div>
+      <p class="adr-problem"><b>PROBLEM —</b> Product pages: 50,000 hits a day, and the data changes a few times a week. The database feels a little guilty.</p>
+      <div class="tblwrap" style="margin:0 0 18px">
+        <table class="t">
+          <thead><tr><th style="width:30%">OPTION</th><th>PROS</th><th>CONS</th></tr></thead>
+          <tbody>
+            <tr><td><b>A · No cache</b>, a fast database</td><td class="pros">Always fresh; nothing to invalidate.</td><td class="cons">The DB pays for reads that never change; the page gets slower as traffic grows.</td></tr>
+            <tr><td><b>B · In-process memory cache</b> per server</td><td class="pros">Fastest possible; zero network hop; zero new components.</td><td class="cons">Every server keeps its own copy — after a price change, server 1 is new and server 2 is old for a while.</td></tr>
+            <tr><td><b>C · A shared cache</b> (one copy for all servers)</td><td class="pros">One consistent copy; clean invalidation; survives app restarts.</td><td class="cons">Another component; it can fail (fall back to the DB — by design).</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="adr-dec">
+        <div><h5>DECISION</h5><p><b>C</b> for a multi-server shop. A is fine for a single-instance app — pick the option that matches the shape, not the prestige.</p></div>
+        <div class="why"><h5>WHY</h5><p>With several app servers, a stale price on one of them is a support call and a trust problem. A shared copy makes invalidation one decision. And notice: the decision is about the <b>shape</b> (one shared copy) — the brand in your world is simply Redis, which you already know.</p></div>
+      </div>
+    </div>
+
+    <div class="adr rv">
+      <div class="adr-head"><span class="adr-no">DECISION 04</span><h3>Monolith or microservices — two teams, one new product</h3></div>
+      <p class="adr-problem"><b>PROBLEM —</b> The company loves microservices. The product is new, the team is two developers, and the first release is in six weeks.</p>
+      <div class="tblwrap" style="margin:0 0 18px">
+        <table class="t">
+          <thead><tr><th style="width:30%">OPTION</th><th>PROS</th><th>CONS</th></tr></thead>
+          <tbody>
+            <tr><td><b>A · Modular monolith</b> — one deployable, strict module boundaries</td><td class="pros">One deploy, one trace, local transactions, a small operations bill; teams move fast.</td><td class="cons">One release train; modules can creep into each other without discipline.</td></tr>
+            <tr><td><b>B · Microservices from day one</b></td><td class="pros">Independent deploys; tech freedom per service; impressive on a slide.</td><td class="cons">Network calls everywhere; distributed tracing; deploys multiplied; consistency problems arrive before product-market fit.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="adr-dec">
+        <div><h5>DECISION</h5><p><b>A</b>, with hard module boundaries — and a written trigger for extracting a service: different scale, different owner, or a release cadence the monolith cannot give.</p></div>
+        <div class="why"><h5>WHY</h5><p>Microservices buy <b>independence</b>. Two people on one product do not need independence yet — they need speed. The boundaries are the real asset; the process walls can wait for the day the team, scale, or cadence demands them.</p></div>
+      </div>
+    </div>
+
+    <div class="adr rv">
+      <div class="adr-head"><span class="adr-no">DECISION 05</span><h3>Multi-tenant SaaS: one shared database, or one per tenant?</h3></div>
+      <p class="adr-problem"><b>PROBLEM —</b> 100 companies (tenants) on one product. Tenant A must never see tenant B. (Yes — this is your Day 1 assignment. The decision, not the answer, is what you are practicing.)</p>
+      <div class="tblwrap" style="margin:0 0 18px">
+        <table class="t">
+          <thead><tr><th style="width:30%">OPTION</th><th>PROS</th><th>CONS</th></tr></thead>
+          <tbody>
+            <tr><td><b>A · Shared DB</b>, every table carries a tenant ID, every query scoped</td><td class="pros">One backup; cheap per tenant; adding a tenant is instant; global reporting is easy.</td><td class="cons">One noisy tenant can slow the others; the scoping rule must <i>never</i> be broken — it is a single line of defense.</td></tr>
+            <tr><td><b>B · A database per tenant</b></td><td class="pros">Total isolation; per-tenant backup and deletion are easy; a noisy tenant cannot hurt anyone.</td><td class="cons">100 connections, 100 backups; migrations ×100; cost grows linearly with tenants.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="adr-dec">
+        <div><h5>DECISION</h5><p><b>A at 100 tenants</b>, with tenant scoping enforced in <b>one place</b> (a base data layer / global query filter). Written trigger: a large tenant that demands isolation moves to its own database — B for the whales, A for everyone else.</p></div>
+        <div class="why"><h5>WHY</h5><p>At 100 tenants, the shared model is cheaper and simpler, and isolation is a coding discipline you can guarantee in one enforced place. Per-tenant databases are the answer to a <b>different scale</b> — and the decision stays open because the trigger to revisit it is already written down.</p></div>
+      </div>
+    </div>
+
+    <div class="callout co-key rv">
+      <span class="co-label">THE MAIN LESSON — SAY THIS IN EVERY INTERVIEW</span>
+      <p><b>There is rarely one perfect technology.</b> Every option above "works." The architect does not find the perfect one — the architect reads the problem and the constraints (team, budget, consistency, growth), chooses the option <b>whose cost the business can pay</b>, and writes down the trigger that will make them revisit it. That is the entire job.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 6 ============ -->
+  <section class="sec" id="s6">
+    <div class="sec-kicker">SECTION 06 — HONEST EDITION</div>
+    <h2 class="sec-title rv">Common Beginner Mistakes</h2>
+    <p class="sec-lead rv">These are not "I wrote a bad loop" mistakes. They are the mistakes that cost <b>senior developers</b> the architect conversation. Read them slowly — you will recognize at least two of them in your own past.</p>
+
+    <div class="mistake rv"><div class="m-num">01</div><div>
+      <h4>Choosing technology before understanding the problem</h4>
+      <p class="m-why">It feels productive. Picking a tool is easy; questioning the problem is not. But the tool answers a question you may not even have yet — and you will drag it through every later decision.</p>
+      <p class="m-fix">Answer the 20 questions first. The technology is the last 10% of the decision — never the first.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">02</div><div>
+      <h4>Using microservices everywhere</h4>
+      <p class="m-why">It looks senior and it looks great on a slide. In reality it costs 5× the operations, and a two-person team cannot carry that bill while still shipping the product.</p>
+      <p class="m-fix">Modular monolith with clear boundaries. Split only when a real trigger arrives — and say the trigger out loud.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">03</div><div>
+      <h4>Ignoring failure scenarios</h4>
+      <p class="m-why">The happy path is the easy part and the fun part. Everything else feels like anxiety, so it gets skipped. Then the first real outage arrives as a <i>surprise</i>.</p>
+      <p class="m-fix">For every box in the diagram, ask: <b>"when this one dies, what does the user see?"</b> That single question doubles the quality of any design.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">04</div><div>
+      <h4>Ignoring cost</h4>
+      <p class="m-why">The architecture is "free" to the architect — the bill goes to the CFO. So the design floats, and one day reality invoices it: a $50k/month infrastructure for a $5k/month business.</p>
+      <p class="m-fix">Ask question 17 in every project. Name the rough monthly cost of your design <b>before</b> it is built, not in the post-mortem.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">05</div><div>
+      <h4>Treating security as an afterthought</h4>
+      <p class="m-why">It is invisible when it works, expensive to retrofit, so it is always "the last thing." That is exactly when it becomes the most expensive thing in the project.</p>
+      <p class="m-fix">Draw the trust boundaries in the first sketch. Decide what you <b>never store</b> before you store anything at all.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">06</div><div>
+      <h4>Designing for unrealistic scale</h4>
+      <p class="m-why">A million users sounds senior. It is also a sharding cluster, a queueing fabric, and a team of SREs — for a product with 3,000 users and no roadmap past the pilot.</p>
+      <p class="m-fix">Design for the real numbers and keep the path open. The 100 → 10,000 → 1,000,000 ladder is the answer: each rung paid for by the previous one's growth.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">07</div><div>
+      <h4>Overengineering</h4>
+      <p class="m-why">Event sourcing, CQRS, sagas — every one is a real tool for a real problem. And every one is a tax when the problem is not there. Complexity that nobody has asked for is just weight.</p>
+      <p class="m-fix">A tool earns its place with a <b>measured pain</b>. "In case we need it later" is not a requirement — it is a wish, and wishes do not pay the maintenance bill.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">08</div><div>
+      <h4>Copying an architecture from another project or company</h4>
+      <p class="m-why">Netflix's architecture assumes Netflix's team, budget, and 200 million users. Yours assumes your team, your budget, and your users. Copying the diagram imports all three assumptions silently.</p>
+      <p class="m-fix">Copy the <b>principles</b> — stateless apps, queued slow work, measured scaling. Never copy the box diagram without re-asking the 20 questions.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">09</div><div>
+      <h4>Designing without numbers</h4>
+      <p class="m-why">"It should be fast and available" is not a requirement — it is a feeling. Two competent engineers will build two different systems from it, and both will be right, and both will be wrong.</p>
+      <p class="m-fix">Attach a number to every quality word: fast = <b>p95 under 300ms</b>; available = <b>99.9%</b>; scalable = <b>10× current load for 15 minutes</b>. If there is no number, there is no design yet.</p>
+    </div></div>
+
+    <div class="mistake rv"><div class="m-num">10</div><div>
+      <h4>Not writing down the "why"</h4>
+      <p class="m-why">Six months later nobody remembers why the queue exists. A new lead "simplifies" it away, and the outage the queue was preventing becomes real — in production, on a Friday.</p>
+      <p class="m-fix">A one-page decision note: problem, options, decision, why, and the trigger to revisit. Ten minutes of writing that has saved at least one incident per team that uses it.</p>
+    </div></div>
+
+    <div class="callout co-key rv">
+      <span class="co-label">THE PATTERN IN ALL TEN</span>
+      <p>None of these is a lack of technical knowledge — you have twelve years of it. Every one of them is a <b>skipped thinking step</b>. That is why this 30-day program is about questions, decisions, and trade-offs — not about learning more tools.</p>
+    </div>
+  </section>
+  <!-- ============ SECTION 7 ============ -->
+  <section class="sec" id="s7">
+    <div class="sec-kicker">SECTION 07 — PRACTICE</div>
+    <h2 class="sec-title rv">Day 1 Assignment: A Multi-Tenant SaaS</h2>
+    <p class="sec-lead rv">This is where Day 1 becomes real. <b>No answer key is given — that is on purpose.</b> The point is to make the decisions and be able to defend them. You will check your thinking against the model answers in the self-assessment <i>after</i> you finish.</p>
+
+    <div class="asg-spec rv">
+      <div><b>PRODUCT</b><span>A SaaS web app companies use to manage internal tasks and documents. You define the details.</span></div>
+      <div><b>TENANTS</b><span>100 companies on the same product.</span></div>
+      <div><b>USERS</b><span>10,000 total — roughly 100 per company.</span></div>
+      <div><b>PLATFORM</b><span>Web application (browser-based).</span></div>
+      <div><b>LOG-IN</b><span>Standard login; users belong to exactly one company.</span></div>
+      <div><b>ROLES</b><span>Role-based access: Owner / Admin / Member — with different permissions.</span></div>
+      <div><b>CORE</b><span>Basic CRUD on tasks and documents.</span></div>
+      <div><b>REPORTING</b><span>Reports per company (e.g., activity, storage, progress).</span></div>
+      <div><b>NOTIFICATIONS</b><span>Email + in-app notifications.</span></div>
+    </div>
+
+    <div class="asg-progress rv">
+      <div class="asg-bar"><i id="asgFill"></i></div>
+      <span class="asg-count" id="asgCount">0 / 9 DONE</span>
+    </div>
+
+    <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 1</b>A basic architecture diagram. Hand-drawn is fine — boxes, arrows, labels. It must fit on one page.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 2</b>The main components — and the <b>one job</b> of each, in one sentence each.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 3</b>The database approach — shared or per-tenant — and exactly how tenant isolation is guaranteed.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 4</b>The security approach — authentication, roles, what is stored, and what is <b>never</b> stored.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 5</b>The scaling approach — what breaks first at 100,000 users, and what you would do about it.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 6</b>Failure handling — database down, email provider down, and one noisy tenant hammering the API.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 7</b>Five architecture decisions, each in the <b>Problem → Options → Decision → Why</b> format.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 8</b>For each decision: why you chose it — in <b>one honest sentence</b> the business can understand.</span></label>
+    <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span class="asg-tx"><b>DELIVERABLE 9</b>Three alternatives you considered and rejected — and the trigger that would make you revisit each one.</span></label>
+
+    <div class="callout co-tip rv">
+      <span class="co-label">HOW TO PRESENT IT</span>
+      <p>One page per deliverable — A4 paper or a whiteboard photo. If a diagram does not fit on one page, the design is too big. Write it as if a skeptical interviewer will ask <b>"why is this box here?"</b> about every single one of them.</p>
+    </div>
+    <div class="callout co-warn rv">
+      <span class="co-label">BEFORE YOU LEAVE THIS PAGE</span>
+      <p>There is no solution on this page, and there is no point in looking for one elsewhere. Making ten small wrong decisions and <b>explaining them well</b> is the entire point of the exercise. That is the skill of the next 29 days.</p>
+    </div>
+  </section>
+
+  <!-- ============ SECTION 8 ============ -->
+  <section class="sec" id="s8">
+    <div class="sec-kicker">SECTION 08 — CHECK</div>
+    <h2 class="sec-title rv">Self-Assessment: Did Day 1 Land?</h2>
+    <p class="sec-lead rv">Ten questions. No memorization — they test the thinking. Close the page, answer out loud, <i>then</i> open the model answer and compare the <b>direction</b>, not the words.</p>
+
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q1</span><span>A client says "the system must be fast." What do you ask next?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">"Fast for <b>which action</b>? How fast, exactly — a number, and a percentile? For how many users, at what load? And what happens today when it is not?" Fast is not a requirement until it has a number and an action attached to it.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q2</span><span>What is the difference between reliability and performance, in one sentence each?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad"><b>Performance:</b> how quickly the system responds when it is working. <b>Reliability:</b> whether it keeps working at all when parts of it fail. One is about speed; the other is about survival.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q3</span><span>The payment provider is slow and sometimes times out. What do you design?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">A timeout (never wait forever), a retry with delay, and a fallback — a second gateway or "pay later." If the payment runs asynchronously, the work goes through a queue so the provider's failure becomes a delayed job, not a failed order. And the user is always told the real state: <b>paid, pending, or failed</b> — never "unknown."</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q4</span><span>Why is a monolith often the right first choice?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">One deploy, one trace, local transactions, one backup, a small operations bill — and a team that moves faster inside one codebase. The costs only appear when independent scale or independent releases become a <b>real</b> need. So: keep the modules cleanly bounded from day one, ready to split — the boundaries are the asset.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q5</span><span>The boss says "we need 99.99% uptime." What is your first answer?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">"That is about 53 minutes of downtime per year, and it costs roughly <b>10× more</b> than 99.9% (8.7 hours). Which features actually need 99.99% — and what is the business willing to pay for the difference?" An architect negotiates the number with data, not with pride.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q6</span><span>What is the difference between authentication and authorization?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad"><b>Authentication</b> proves who you are — login, tokens, MFA. <b>Authorization</b> decides what that identity may do — roles, permissions, checked on the server for every request. You can have one without the other — and having only authentication is a classic breach.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q7</span><span>A feature works fine at 1,000 users. How do you know when it will break?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">You cannot know by looking — <b>you measure</b>. Push it with a load test at 10×, watch where the response time bends, and find the first resource that saturates (CPU, database, connections). Then you have a number: <i>it breaks here, at this load, at this component</i> — and scaling becomes a plan instead of a fear.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q8</span><span>What is technical debt? Should you always avoid it?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad">Shortcuts taken now that cost extra every time you touch that code again. No — sometimes you take it <b>on purpose</b>: a prototype must be fast, and the "debt" is the plan to rebuild it later. The failure is taking debt unknowingly, or never repaying it. Name it, time-box it, schedule the payoff.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q9</span><span>Tenant A can see tenant B's data by changing the ID in the URL. Which pillar broke — and where?</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad"><b>Security</b> — specifically authorization: the check was "is a logged-in user?", not "is this the user's <i>tenant</i>?". It broke at the query layer: data was fetched without a tenant scope. The fix is a single enforcement point — a global query filter or a base data layer — so no future endpoint can ever forget the rule.</div></div></div>
+    </div>
+    <div class="sa rv"><div class="sa-q"><span class="sa-no">Q10</span><span>Name one decision that is cheap to change, and one that is hard to change.</span></div>
+      <button class="sa-show" type="button">SHOW MODEL THINKING</button>
+      <div class="sa-a"><div class="sa-a-in"><div class="sa-a-pad"><b>Cheap:</b> the UI framework, a helper library, the queue's message format (with care). <b>Hard:</b> how data is owned (which module owns which table), the consistency rules (what must be atomic), the tenant isolation model, public API contracts. The architect spends time on the hard ones — <b>because those are the real architecture.</b></div></div></div>
+    </div>
+
+    <div class="success rv">
+      <h4>DAY 1 SUCCESS CRITERIA — YOU SHOULD NOW BE ABLE TO:</h4>
+      <ul>
+        <li>Explain what software architecture means — in your own words, in two sentences.</li>
+        <li>Identify the important requirements of a system <b>before</b> touching any technology.</li>
+        <li>Identify the major risks of a design: failure, cost, lock-in, security.</li>
+        <li>Explain reliability, performance, scalability, security and maintainability — and what happens when each one is ignored.</li>
+        <li>Make a basic architecture decision and defend it in the Problem → Options → Why format.</li>
+        <li>Explain <b>why</b> you chose an option — in one honest sentence the business understands.</li>
+        <li>Explain <b>why</b> you rejected the other options — and what would change your mind.</li>
+      </ul>
+    </div>
+    <p class="rv">If you cannot do all seven, go back and reread the pillars section. If you can — the assignment in Section 7 is waiting for you.</p>
+  </section>
+  </main>
+</div>
+
+<!-- ============ MINDSET ============ -->
+<section class="mindset" id="mindset">
+  <div class="mindset-in">
+    <div class="sec-kicker">FINAL — CARRY THESE FOR 29 MORE DAYS</div>
+    <h2 class="sec-title rv" style="margin-bottom:14px">Architect Mindset for Day 1</h2>
+    <p class="sec-lead rv">Five rules. They are short on purpose. You will meet each one again — wearing a different costume — on every single day of this program.</p>
+
+    <div class="rule rv"><div class="rule-num">01</div><div>
+      <h3>Problem before technology</h3>
+      <p>The tool is the last 10% of the decision. If you cannot state the problem in two sentences, you are not ready to pick a tool — no matter how much you love that tool.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-num">02</div><div>
+      <h3>Everything fails. Design for the bad day</h3>
+      <p>Not "will it work?" but "when the disk dies, when the gateway sneezes, when the spike arrives — what does the user see?" The design that survives the bad day is the real design.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-num">03</div><div>
+      <h3>There is no perfect option. Choose the cost you can pay</h3>
+      <p>Every option works. The difference is what it costs — money, complexity, team effort. The architect picks the affordable cost and writes down the trigger that will make them revisit it.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-num">04</div><div>
+      <h3>Numbers, or it did not happen</h3>
+      <p>"Fast, reliable, scalable" are feelings. "p95 under 300ms, 99.9%, 10× for 15 minutes" are requirements. Attach a number to every quality word before you design anything at all.</p>
+    </div></div>
+    <div class="rule rv"><div class="rule-num">05</div><div>
+      <h3>Simple until proven otherwise</h3>
+      <p>The best design is the smallest one that meets the real constraints — with a clear, cheap path to grow. Complexity is earned, one measured pain at a time. Never in advance.</p>
+    </div></div>
+
+    <p class="mind-close rv">That is Day 1. You do not know a new tool today. You know how to <b>think</b> — and for the next 29 days, that is enough.</p>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="foot-in">
+    <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 01 / 30 — THINK LIKE AN ARCHITECT</div>
+    <div class="f-r">DAY 2 TOPICS ARE INTENTIONALLY NOT ON THIS PAGE · <b>FINISH THE ASSIGNMENT FIRST</b> · CTRL+P TO PRINT A CLEAN COPY</div>
+  </div>
+</footer>
+
+<button id="toTop" aria-label="Back to top">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+</button>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+/* ---- Tiny fallback: if the jQuery CDN is unreachable (offline), this minimal
+   shim provides the exact subset of APIs used below, so the page still works. ---- */
+(function(){
+  if (window.jQuery) return;
+  function Q(list){ this.el = Array.prototype.slice.call(list || []); this.length = this.el.length; }
+  Q.prototype = {
+    each: function(fn){ this.el.forEach(function(e,i){ fn.call(e,i,e); }); return this; },
+    on: function(evt, fn){ return this.each(function(i,e){ e.addEventListener(evt, fn); }); },
+    addClass: function(c){ return this.each(function(i,e){ (c.split(' ')).forEach(function(x){ e.classList.add(x); }); }); },
+    removeClass: function(c){ return this.each(function(i,e){ (c.split(' ')).forEach(function(x){ e.classList.remove(x); }); }); },
+    toggleClass: function(c){ return this.each(function(i,e){ e.classList.toggle(c); }); },
+    hasClass: function(c){ return this.el[0] ? this.el[0].classList.contains(c) : false; },
+    attr: function(k,v){ if (v === undefined) return this.el[0] ? this.el[0].getAttribute(k) : undefined; return this.each(function(i,e){ e.setAttribute(k,v); }); },
+    prop: function(k,v){ if (v === undefined) return this.el[0] ? this.el[0][k] : undefined; return this.each(function(i,e){ e[k] = v; }); },
+    val: function(v){ if (v === undefined) return this.el[0] ? this.el[0].value : undefined; return this.each(function(i,e){ e.value = v; }); },
+    text: function(v){ if (v === undefined) return this.el[0] ? this.el[0].textContent : ''; return this.each(function(i,e){ e.textContent = v; }); },
+    html: function(v){ if (v === undefined) return this.el[0] ? this.el[0].innerHTML : ''; return this.each(function(i,e){ e.innerHTML = v; }); },
+    find: function(sel){ var out = []; this.el.forEach(function(e){ out.push.apply(out, e.querySelectorAll(sel)); }); return new Q(out); },
+    closest: function(sel){ var e = this.el[0]; return new Q(e ? [e.closest(sel)] : []); },
+    first: function(){ return new Q(this.el.slice(0,1)); }
+  };
+  function $(sel){
+    if (typeof sel === 'function') {
+      if (document.readyState !== 'loading') sel(); else document.addEventListener('DOMContentLoaded', sel);
+      return;
+    }
+    if (sel instanceof Element || sel === window || sel === document) return new Q([sel]);
+    if (Array.isArray(sel) || sel instanceof NodeList) return new Q(sel);
+    return new Q(document.querySelectorAll(sel));
+  }
+  window.jQuery = window.$ = $;
+})();
+</script>
+<script>
+$(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* ---------- reading progress + to-top + scrollspy ---------- */
+  var bar = document.getElementById('progressBar');
+  var toTop = document.getElementById('toTop');
+  var spyIds = ['s1','s2','s3','s4','s5','s6','s7','s8','mindset'];
+  var tocLinks = document.querySelectorAll('.tn[data-spy]');
+  var ticking = false;
+  function onScroll(){
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(function(){
+      var doc = document.documentElement;
+      var max = doc.scrollHeight - window.innerHeight;
+      var y = window.scrollY || doc.scrollTop;
+      if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')';
+      if (toTop) toTop.classList.toggle('show', y > 900);
+      var current = '';
+      spyIds.forEach(function(id){
+        var el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top <= 150) current = id;
+      });
+      tocLinks.forEach(function(a){
+        a.classList.toggle('on', a.getAttribute('data-spy') === current);
+      });
+      ticking = false;
+    });
+  }
+  $(window).on('scroll resize', onScroll);
+  onScroll();
+  $(toTop).on('click', function(){ window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+
+  /* ---------- reveal on scroll ---------- */
+  var rvs = document.querySelectorAll('.rv');
+  if (reduced || !('IntersectionObserver' in window)) {
+    rvs.forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){
+        if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+    rvs.forEach(function(el){ io.observe(el); });
+  }
+
+  /* ---------- theme ---------- */
+  var themeBtn = document.getElementById('themeBtn');
+  function applyTheme(dark){
+    document.body.classList.toggle('dark', dark);
+    var moon = themeBtn.querySelector('.ic-moon');
+    var sun = themeBtn.querySelector('.ic-sun');
+    if (moon && sun) { moon.style.display = dark ? 'none' : ''; sun.style.display = dark ? '' : 'none'; }
+  }
+  var savedTheme = null;
+  try { savedTheme = localStorage.getItem('arch-day1-theme'); } catch(e){}
+  applyTheme(savedTheme === 'dark');
+  $(themeBtn).on('click', function(){
+    var dark = document.body.classList.toggle('dark');
+    try { localStorage.setItem('arch-day1-theme', dark ? 'dark' : 'light'); } catch(e){}
+  });
+
+  /* ---------- mobile TOC drawer ---------- */
+  var toc = document.getElementById('toc');
+  var scrim = document.getElementById('scrim');
+  function closeToc(){ toc.classList.remove('open'); scrim.classList.remove('on'); }
+  $('#tocToggle').on('click', function(){
+    var open = toc.classList.toggle('open');
+    scrim.classList.toggle('on', open);
+  });
+  $(scrim).on('click', closeToc);
+  $(toc).on('click', function(e){ if (e.target && e.target.tagName === 'A') closeToc(); });
+
+  /* ---------- print ---------- */
+  $('#printBtn').on('click', function(){ window.print(); });
+
+  /* ---------- scale ladder tabs ---------- */
+  $('.scale-tab').on('click', function(){
+    var key = this.getAttribute('data-scale');
+    $('.scale-tab').removeClass('on');
+    $(this).addClass('on');
+    $('.scale-panel').removeClass('on');
+    $('#' + key).addClass('on');
+  });
+
+  /* ---------- 20 questions accordion ---------- */
+  $('.qa-head').on('click', function(){
+    $(this).closest('.qa').toggleClass('open');
+  });
+  $('#qaExpandAll').on('click', function(){ $('.qa').addClass('open'); });
+  $('#qaCollapseAll').on('click', function(){ $('.qa').removeClass('open'); });
+
+  /* ---------- case study diagram ---------- */
+  var nodeInfo = {
+    client:  { t: 'WEB APP', d: 'The user\u2019s browser. Static files move to a CDN first \u2014 cheap, free performance. All real work goes through the API gateway; nothing in this box owns data.' },
+    gateway: { t: 'API GATEWAY', d: 'One door. Authentication happens here, rate limits live here, and routing decides which module answers. It is the shop\u2019s front gate \u2014 not the shop\u2019s logic.' },
+    catalog: { t: 'CATALOG', d: 'Products, prices, images. Read-heavy, changes rarely, so most hits are answered by the cache. If this gets slow, browsing suffers \u2014 it is the first thing users feel.' },
+    orders:  { t: 'ORDERS', d: 'The critical write path. Stock is checked and price is verified here. The order is written to the database FIRST \u2014 then a message goes to the queue. This module is the promise.' },
+    payment: { t: 'PAYMENTS', d: 'A thin adapter. It asks the gateway, handles timeouts and retries, and records the result. It never stores card data \u2014 that is the whole point of an adapter.' },
+    cache:   { t: 'CACHE', d: 'Hot reads: product pages, sessions. Losing it is a speed problem, never a correctness problem \u2014 exactly what a cache is allowed to be. The database is the truth; this is the shortcut.' },
+    db:      { t: 'PRIMARY DB', d: 'The source of truth: users, orders, stock. The most valuable asset in the system \u2014 so it is backed up, replicable, and never reachable from the public internet.' },
+    queue:   { t: 'QUEUE', d: 'The shock absorber. Spikes land here instead of on the database. Slow external work (email) leaves the request path entirely. If the worker dies, the work waits \u2014 it is never lost.' },
+    notify:  { t: 'NOTIFY WORKER', d: 'A background worker. Consumes the queue, sends email/SMS, retries the failures. It can fall behind for minutes \u2014 nobody notices, nobody cares, and the order is safe.' },
+    pgw:     { t: 'PAYMENT GATEWAY (EXTERNAL)', d: 'Not ours. Assume it is slow, assume it fails, assume it changes its API. The thin adapter above it is the price of that honesty \u2014 and it is cheap.' },
+    email:   { t: 'EMAIL / SMS PROVIDER (EXTERNAL)', d: 'Also not ours, also fallible. That is why notifications rank last in importance and first in asynchrony: the business never waits for a vendor.' }
+  };
+  var detail = document.getElementById('nodeDetail');
+  function showNode(key, el){
+    var info = nodeInfo[key];
+    if (!info) return;
+    $('.node .n-box').removeClass('hl');
+    $(el).find('.n-box').addClass('hl');
+    detail.innerHTML = '<h4>' + info.t + '</h4><p>' + info.d + '</p>';
+  }
+  $('.node').on('mouseenter', function(){ showNode(this.getAttribute('data-node'), this); });
+  $('.node').on('focusin', function(){ showNode(this.getAttribute('data-node'), this); });
+  $('.node').on('click', function(){ showNode(this.getAttribute('data-node'), this); });
+
+  /* ---------- self assessment ---------- */
+  $('.sa-show').on('click', function(){
+    $(this).closest('.sa').toggleClass('open');
+  });
+
+  /* ---------- assignment checklist (persisted) ---------- */
+  var asgBoxes = document.querySelectorAll('.asg-item input[type=checkbox]');
+  var asgFill = document.getElementById('asgFill');
+  var asgCount = document.getElementById('asgCount');
+  var savedAsg = [];
+  try { savedAsg = JSON.parse(localStorage.getItem('arch-day1-asg') || '[]'); } catch(e){}
+  function updateAsg(){
+    var done = 0;
+    asgBoxes.forEach(function(cb){
+      var item = cb.closest('.asg-item');
+      if (item) item.classList.toggle('done', cb.checked);
+      if (cb.checked) done++;
+    });
+    if (asgFill) asgFill.style.width = Math.round((done / asgBoxes.length) * 100) + '%';
+    if (asgCount) asgCount.textContent = done + ' / ' + asgBoxes.length + ' DONE';
+  }
+  asgBoxes.forEach(function(cb){
+    var id = cb.getAttribute('data-asg');
+    if (savedAsg.indexOf(id) !== -1) cb.checked = true;
+    cb.addEventListener('change', function(){
+      var state = [];
+      asgBoxes.forEach(function(x){ if (x.checked) state.push(x.getAttribute('data-asg')); });
+      try { localStorage.setItem('arch-day1-asg', JSON.stringify(state)); } catch(e){}
+      updateAsg();
+    });
+  });
+  updateAsg();
+});
+</script>
+</body>
+</html>

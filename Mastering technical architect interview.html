@@ -1,0 +1,2363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Technical Architecture &amp; System Design — Interview Guide</title>
+<style>
+/* ============ RESET & TOKENS ============ */
+*,*::before,*::after{box-sizing:border-box}
+:root{
+  --bg:#eef2f7; --card:#ffffff; --ink:#0f172a; --ink2:#334155; --muted:#64748b;
+  --line:#e2e8f0; --line2:#cbd5e1;
+  --blue:#2563eb; --blue-l:#eff6ff; --blue-d:#1e40af;
+  --indigo:#4f46e5; --violet:#8b5cf6; --violet-l:#f5f3ff;
+  --amber:#f59e0b; --amber-l:#fffbeb; --green:#10b981; --green-l:#ecfdf5;
+  --red:#ef4444; --red-l:#fef2f2; --cyan:#06b6d4; --cyan-l:#ecfeff;
+  --code-bg:#0b1221; --code-hd:#131c31;
+  --mono:'JetBrains Mono','SF Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,'Liberation Mono',monospace;
+  --sans:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --sh1:0 1px 2px rgba(15,23,42,.06),0 1px 3px rgba(15,23,42,.08);
+  --sh2:0 4px 6px -1px rgba(15,23,42,.07),0 10px 22px -6px rgba(15,23,42,.14);
+  --sh3:0 18px 44px -14px rgba(15,23,42,.28);
+  --nav:300px;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px;-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.65;
+  background-image:radial-gradient(circle at 12% -5%,#dbeafe 0,transparent 45%),radial-gradient(circle at 92% 4%,#ede9fe 0,transparent 40%);
+  background-attachment:fixed;}
+img,svg{max-width:100%}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* ============ PROGRESS ============ */
+#prog{position:fixed;top:0;left:0;height:3px;width:0;z-index:999;
+  background:linear-gradient(90deg,var(--blue),var(--violet),var(--cyan));box-shadow:0 0 10px rgba(37,99,235,.6);transition:width .1s linear}
+
+/* ============ SIDEBAR ============ */
+#nav{position:fixed;top:0;left:0;bottom:0;width:var(--nav);z-index:60;overflow-y:auto;
+  background:#0b1221;color:#cbd5e1;border-right:1px solid #1e293b;padding:22px 0 40px;scrollbar-width:thin}
+#nav::-webkit-scrollbar{width:7px}
+#nav::-webkit-scrollbar-thumb{background:#334155;border-radius:4px}
+.nav-brand{padding:0 22px 16px;border-bottom:1px solid #1e293b;margin-bottom:14px}
+.nav-brand .lg{display:flex;align-items:center;gap:10px;font-weight:800;color:#fff;font-size:15px;letter-spacing:-.01em}
+.nav-brand .lg .dot{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--blue),var(--violet));
+  display:grid;place-items:center;font-size:13px;color:#fff;box-shadow:0 4px 12px rgba(79,70,229,.5)}
+.nav-brand p{margin:8px 0 0;font-size:11.5px;color:#64748b;line-height:1.5}
+.nav-sec{padding:0 22px;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#475569;font-weight:700;margin:16px 0 8px}
+#nav ol{list-style:none;margin:0;padding:0 12px}
+#nav a{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;color:#94a3b8;font-size:12.8px;
+  line-height:1.45;transition:.16s;text-decoration:none;border-left:2px solid transparent}
+#nav a .n{flex:0 0 22px;font-family:var(--mono);font-size:11px;color:#475569;font-weight:700;padding-top:1px}
+#nav a:hover{background:#131c31;color:#e2e8f0}
+#nav a:hover .n{color:var(--cyan)}
+#nav a.on{background:linear-gradient(90deg,rgba(37,99,235,.22),transparent);color:#fff;border-left-color:var(--cyan)}
+#nav a.on .n{color:var(--cyan)}
+#navbtn{position:fixed;top:12px;left:12px;z-index:70;display:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);
+  background:#fff;box-shadow:var(--sh2);cursor:pointer;align-items:center;justify-content:center;font-size:19px;color:var(--ink)}
+#scrim{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:55;display:none;backdrop-filter:blur(2px)}
+
+/* ============ LAYOUT ============ */
+main{margin-left:var(--nav);padding:34px 34px 90px;max-width:1240px}
+section.q{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:30px 32px;margin:0 0 26px;
+  box-shadow:var(--sh1);transition:box-shadow .25s,transform .25s;scroll-margin-top:24px}
+section.q:hover{box-shadow:var(--sh2)}
+h1,h2,h3,h4,h5{line-height:1.25;letter-spacing:-.02em;color:var(--ink)}
+h2.qt{font-size:26px;margin:14px 0 6px;font-weight:800}
+h3{font-size:17.5px;margin:30px 0 12px;font-weight:750;display:flex;align-items:center;gap:9px}
+h3::before{content:"";width:4px;height:19px;border-radius:3px;background:linear-gradient(180deg,var(--blue),var(--violet));flex:none}
+h4{font-size:14.5px;margin:20px 0 10px;font-weight:700;color:var(--ink2);text-transform:none}
+p{margin:0 0 14px;color:var(--ink2)}
+ul,ol{margin:0 0 14px;padding-left:22px;color:var(--ink2)}
+li{margin:7px 0}
+li::marker{color:var(--blue);font-weight:700}
+strong{color:var(--ink);font-weight:700}
+code.inl{font-family:var(--mono);font-size:.855em;background:#eef2ff;color:#3730a3;padding:2px 6px;border-radius:5px;border:1px solid #e0e7ff;white-space:nowrap}
+hr.sep{border:0;height:1px;background:linear-gradient(90deg,transparent,var(--line2),transparent);margin:32px 0}
+
+/* ============ BADGES ============ */
+.badge{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase;color:#fff;background:linear-gradient(135deg,var(--blue),var(--indigo));padding:6px 14px;border-radius:999px;
+  box-shadow:0 6px 14px -5px rgba(37,99,235,.7)}
+.badge .hash{opacity:.65}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.05em;padding:4px 10px;border-radius:999px;
+  background:var(--blue-l);color:var(--blue-d);border:1px solid #dbeafe;margin:0 6px 6px 0}
+.tag.g{background:var(--green-l);color:#065f46;border-color:#d1fae5}
+.tag.a{background:var(--amber-l);color:#92400e;border-color:#fde68a}
+.tag.v{background:var(--violet-l);color:#5b21b6;border-color:#ede9fe}
+.tag.c{background:var(--cyan-l);color:#155e75;border-color:#cffafe}
+
+/* ============ CALLOUTS ============ */
+.note{border-left:4px solid var(--blue);background:linear-gradient(90deg,var(--blue-l),#fff 85%);padding:14px 18px;border-radius:0 12px 12px 0;margin:0 0 18px}
+.note.a{border-color:var(--amber);background:linear-gradient(90deg,var(--amber-l),#fff 85%)}
+.note.g{border-color:var(--green);background:linear-gradient(90deg,var(--green-l),#fff 85%)}
+.note.r{border-color:var(--red);background:linear-gradient(90deg,var(--red-l),#fff 85%)}
+.note p:last-child{margin-bottom:0}
+.note .hd{font-weight:800;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--blue-d);margin-bottom:5px}
+.note.a .hd{color:#92400e}.note.g .hd{color:#065f46}.note.r .hd{color:#991b1b}
+
+/* ============ TABLES ============ */
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px;box-shadow:var(--sh1);margin:0 0 20px;background:#fff}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13.6px}
+thead th{background:linear-gradient(180deg,#1e293b,#0f172a);color:#f1f5f9;text-align:left;padding:13px 16px;font-weight:700;
+  font-size:12px;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap;border-right:1px solid rgba(255,255,255,.07)}
+thead th:last-child{border-right:0}
+tbody td{padding:12px 16px;border-top:1px solid var(--line);color:var(--ink2);vertical-align:top}
+tbody tr:nth-child(even){background:#f8fafc}
+tbody tr:hover{background:var(--blue-l)}
+tbody td:first-child{color:var(--ink);font-weight:650}
+tbody td strong{color:var(--blue-d)}
+
+/* ============ CODE ============ */
+.code{margin:0 0 20px;border-radius:14px;overflow:hidden;border:1px solid #1e293b;box-shadow:var(--sh2);background:var(--code-bg)}
+.code-hd{display:flex;align-items:center;gap:10px;background:var(--code-hd);padding:9px 14px;border-bottom:1px solid #1e293b}
+.code-hd .dots{display:flex;gap:6px}
+.code-hd .dots i{width:10px;height:10px;border-radius:50%;display:block}
+.code-hd .lang{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#7dd3fc;font-weight:700;margin-left:4px}
+.code-hd .file{font-family:var(--mono);font-size:11px;color:#64748b;margin-left:auto;margin-right:10px}
+.cp{border:1px solid #334155;background:#0f172a;color:#94a3b8;font-size:11px;font-family:var(--mono);padding:4px 10px;border-radius:6px;cursor:pointer;transition:.15s}
+.cp:hover{background:#1e293b;color:#e2e8f0;border-color:#475569}
+.cp.ok{color:#34d399;border-color:#065f46}
+pre{margin:0;padding:16px 18px;overflow-x:auto;background:var(--code-bg)}
+pre code{font-family:var(--mono);font-size:12.9px;line-height:1.72;color:#d6deeb;white-space:pre;display:block;tab-size:2}
+pre::-webkit-scrollbar{height:9px}
+pre::-webkit-scrollbar-thumb{background:#1e293b;border-radius:5px}
+pre::-webkit-scrollbar-track{background:#0b1221}
+.tok-com{color:#5f7e97;font-style:italic}
+.tok-str{color:#ecc48d}
+.tok-num{color:#f78c6c}
+.tok-kw{color:#c792ea;font-weight:600}
+.tok-typ{color:#7fdbca}
+.tok-fn{color:#82aaff}
+.tok-pun{color:#89ddff}
+.tok-prop{color:#82aaff}
+.tok-bool{color:#ff5874}
+.tok-attr{color:#addb67}
+
+/* ============ FIGURES / SVG ============ */
+figure.fig{margin:0 0 22px;background:linear-gradient(180deg,#fbfdff,#f4f7fb);border:1px solid var(--line);border-radius:16px;
+  padding:18px 18px 12px;box-shadow:var(--sh1);transition:.25s}
+figure.fig:hover{box-shadow:var(--sh2);border-color:#bfdbfe}
+figure.fig figcaption{font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;
+  text-align:center;margin-top:10px;padding-top:9px;border-top:1px dashed var(--line2)}
+svg.dg{display:block;width:100%;height:auto;font-family:var(--sans);overflow:visible}
+svg.dg .box{fill:#eff6ff;stroke:#3b82f6;stroke-width:1.5}
+svg.dg .box.g{fill:#ecfdf5;stroke:#10b981}
+svg.dg .box.a{fill:#fffbeb;stroke:#f59e0b}
+svg.dg .box.r{fill:#fef2f2;stroke:#ef4444}
+svg.dg .box.v{fill:#f5f3ff;stroke:#8b5cf6}
+svg.dg .box.c{fill:#ecfeff;stroke:#06b6d4}
+svg.dg .box.s{fill:#f8fafc;stroke:#94a3b8}
+svg.dg .box.d{fill:#0f172a;stroke:#0f172a}
+svg.dg .db{fill:#f5f3ff;stroke:#8b5cf6;stroke-width:1.5}
+svg.dg text{font-size:12.5px;fill:#0f172a;font-weight:600}
+svg.dg text.t{font-weight:750;font-size:12.8px}
+svg.dg text.sub{font-size:11px;fill:#475569;font-weight:500}
+svg.dg text.lbl{font-size:10.5px;fill:#64748b;font-weight:650}
+svg.dg text.w{fill:#f8fafc}
+svg.dg text.mono{font-family:var(--mono);font-size:10.5px;fill:#475569;font-weight:500}
+svg.dg .ar{fill:none;stroke:#94a3b8;stroke-width:1.6;marker-end:url(#ah)}
+svg.dg .ar.b{stroke:#3b82f6;marker-end:url(#ahb)}
+svg.dg .ar.g{stroke:#10b981;marker-end:url(#ahg)}
+svg.dg .ar.r{stroke:#ef4444;marker-end:url(#ahr)}
+svg.dg .ar.a{stroke:#f59e0b;marker-end:url(#aha)}
+svg.dg .ar.v{stroke:#8b5cf6;marker-end:url(#ahv)}
+svg.dg .ar.dsh{stroke-dasharray:5 4}
+svg.dg .ar.nm{marker-end:none}
+svg.dg .zone{fill:none;stroke:#cbd5e1;stroke-width:1.3;stroke-dasharray:6 5;rx:12}
+
+/* ============ HERO ============ */
+.hero{background:linear-gradient(135deg,#0b1221 0%,#152344 55%,#1e2a5a 100%);color:#e2e8f0;border-radius:22px;padding:42px 40px;
+  margin-bottom:26px;box-shadow:var(--sh3);position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-90px;top:-90px;width:340px;height:340px;border-radius:50%;
+  background:radial-gradient(circle,rgba(56,189,248,.28),transparent 68%)}
+.hero::before{content:"";position:absolute;left:-60px;bottom:-120px;width:300px;height:300px;border-radius:50%;
+  background:radial-gradient(circle,rgba(139,92,246,.25),transparent 68%)}
+.hero .eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.24em;text-transform:uppercase;color:#7dd3fc;margin-bottom:14px}
+.hero h1{font-size:clamp(28px,4.4vw,44px);margin:0 0 14px;color:#fff;font-weight:850;line-height:1.12;max-width:19ch}
+.hero p.lede{color:#94a3b8;max-width:70ch;font-size:15.5px;margin:0}
+.hero .stats{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px;position:relative;z-index:2}
+.hero .stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:11px 18px;backdrop-filter:blur(6px)}
+.hero .stat b{display:block;font-size:20px;color:#fff}
+.hero .stat span{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:#94a3b8}
+
+/* ============ PROFILE ============ */
+.profile{display:grid;grid-template-columns:auto 1fr;gap:24px;align-items:start;background:#fff;border:1px solid var(--line);
+  border-radius:18px;padding:28px 30px;margin-bottom:26px;box-shadow:var(--sh1)}
+.avatar{width:78px;height:78px;border-radius:20px;background:linear-gradient(135deg,var(--blue),var(--violet));display:grid;place-items:center;
+  color:#fff;font-weight:800;font-size:26px;letter-spacing:-.02em;box-shadow:0 10px 24px -8px rgba(79,70,229,.8)}
+.profile h2{margin:0 0 2px;font-size:24px}
+.profile .role{color:var(--indigo);font-weight:700;font-style:italic;margin:0 0 10px}
+.stack{margin-top:12px;padding-top:14px;border-top:1px dashed var(--line2)}
+.stack .k{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:9px}
+
+/* ============ MISC ============ */
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;margin-bottom:20px}
+.mini{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px 20px;box-shadow:var(--sh1);transition:.22s}
+.mini:hover{transform:translateY(-2px);box-shadow:var(--sh2);border-color:#bfdbfe}
+.mini h5{margin:0 0 8px;font-size:14px;display:flex;align-items:center;gap:8px}
+.mini h5 .pip{width:9px;height:9px;border-radius:3px;background:var(--blue)}
+.mini.g h5 .pip{background:var(--green)}.mini.a h5 .pip{background:var(--amber)}
+.mini.r h5 .pip{background:var(--red)}.mini.v h5 .pip{background:var(--violet)}
+.mini p,.mini ul{font-size:13.6px;margin-bottom:0}
+.steps{counter-reset:s;list-style:none;padding:0;margin:0 0 20px}
+.steps li{counter-increment:s;position:relative;padding:12px 16px 12px 52px;background:#fff;border:1px solid var(--line);
+  border-radius:12px;margin-bottom:10px;box-shadow:var(--sh1);transition:.2s;font-size:14.2px}
+.steps li:hover{border-color:#bfdbfe;transform:translateX(3px)}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:11px;width:26px;height:26px;border-radius:8px;
+  background:linear-gradient(135deg,var(--blue),var(--indigo));color:#fff;font-size:12.5px;font-weight:800;display:grid;place-items:center}
+.formula{background:#0b1221;color:#7dd3fc;font-family:var(--mono);font-size:14px;padding:18px 22px;border-radius:14px;
+  text-align:center;margin:0 0 20px;box-shadow:var(--sh2);border:1px solid #1e293b}
+.formula .lb{display:block;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:#64748b;margin-bottom:8px}
+#top{position:fixed;right:22px;bottom:22px;width:46px;height:46px;border-radius:14px;background:var(--ink);color:#fff;border:0;
+  cursor:pointer;box-shadow:var(--sh2);font-size:18px;opacity:0;pointer-events:none;transition:.25s;z-index:50}
+#top.show{opacity:1;pointer-events:auto}
+#top:hover{background:var(--blue);transform:translateY(-3px)}
+footer{margin-left:var(--nav);padding:26px 34px 50px;color:var(--muted);font-size:13px;max-width:1240px}
+footer .in{border-top:1px solid var(--line2);padding-top:18px;display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between}
+
+@media (max-width:1024px){
+  :root{--nav:0px}
+  #nav{transform:translateX(-300px);width:300px;transition:transform .28s ease}
+  #nav.open{transform:none;box-shadow:var(--sh3)}
+  #navbtn{display:flex}
+  main{margin-left:0;padding:70px 16px 70px}
+  footer{margin-left:0;padding:20px 16px 40px}
+  section.q{padding:22px 18px;border-radius:14px}
+  .hero{padding:30px 22px}
+  .profile{grid-template-columns:1fr;padding:22px 18px}
+  h2.qt{font-size:21px}
+}
+@media print{
+  #nav,#navbtn,#top,#prog,.cp{display:none}
+  main,footer{margin-left:0}
+  section.q{break-inside:avoid;box-shadow:none;border-color:#ccc}
+}
+</style>
+</head>
+<body>
+<div id="prog"></div>
+<button id="navbtn" aria-label="Toggle navigation">☰</button>
+<div id="scrim"></div>
+
+<nav id="nav">
+  <div class="nav-brand">
+    <div class="lg"><span class="dot">⬢</span> Architecture Interview Guide</div>
+    <p>30 senior-level system design questions, diagrams &amp; production code.</p>
+  </div>
+  <div class="nav-sec">Overview</div>
+  <ol>
+    <li><a href="#profile"><span class="n">00</span><span>Executive Candidate Profile</span></a></li>
+  </ol>
+  <div class="nav-sec">Questions &amp; Solutions</div>
+  <ol id="toc"></ol>
+</nav>
+
+<main>
+  <header class="hero">
+    <div class="eyebrow">Principal Engineering Track</div>
+    <h1>Technical Architecture &amp; System Design Interview Guide</h1>
+    <p class="lede">A complete, production-grade reference covering distributed systems, resiliency patterns, cloud infrastructure, data architecture and AI integration — with annotated diagrams and .NET 8 implementation code.</p>
+    <div class="stats">
+      <div class="stat"><b>30</b><span>Questions</span></div>
+      <div class="stat"><b>26</b><span>Architecture Diagrams</span></div>
+      <div class="stat"><b>20+</b><span>Code Implementations</span></div>
+      <div class="stat"><b>12+</b><span>Years Experience</span></div>
+    </div>
+  </header>
+
+  <section class="q" id="profile">
+    <span class="badge"><span class="hash">§</span> Executive Candidate Profile</span>
+    <div class="profile" style="box-shadow:none;border:0;padding:22px 0 0;margin:0">
+      <div class="avatar">AM</div>
+      <div>
+        <h2>Alex Mercer</h2>
+        <p class="role">Principal Cloud &amp; Software Architect</p>
+        <p style="margin:0"><strong>Experience:</strong> 12+ Years Enterprise Application Architecture</p>
+        <div class="stack">
+          <div class="k">Core Stack</div>
+          <span class="tag">.NET 8 / C#</span><span class="tag c">Azure Infrastructure</span><span class="tag v">Kubernetes (AKS)</span>
+          <span class="tag g">PostgreSQL / SQL Server</span><span class="tag r">Redis</span><span class="tag a">RabbitMQ / Azure Service Bus</span>
+          <span class="tag c">Elasticsearch</span><span class="tag">OpenTelemetry</span>
+          <span class="tag v">AI Integrations (Azure OpenAI / Vector Search)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Q1 ================= -->
+  <section class="q" id="q1">
+    <span class="badge"><span class="hash">#</span> Question 1</span>
+    <h2 class="qt">Design an eCommerce System (e.g., Shoppers Stop)</h2>
+
+    <h3>High-Level Architecture (HLD)</h3>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 1000 590" role="img" aria-label="eCommerce high level architecture">
+        <rect class="box d" x="400" y="8" width="200" height="44" rx="10"/>
+        <text class="t w" x="500" y="35" text-anchor="middle">Mobile / Web / SPA</text>
+        <path class="ar b" d="M500 52 V82"/>
+        <rect class="box c" x="390" y="84" width="220" height="46" rx="10"/>
+        <text class="t" x="500" y="105" text-anchor="middle">Azure Front Door</text>
+        <text class="sub" x="500" y="121" text-anchor="middle">WAF · TLS · Global Routing</text>
+        <path class="ar b" d="M500 130 V158"/>
+        <rect class="box v" x="380" y="158" width="240" height="50" rx="10"/>
+        <text class="t" x="500" y="180" text-anchor="middle">API Gateway</text>
+        <text class="sub" x="500" y="196" text-anchor="middle">(YARP / Azure APIM)</text>
+
+        <path class="ar b" d="M500 208 V230 H108 V252"/>
+        <path class="ar b" d="M500 208 V230 H304 V252"/>
+        <path class="ar b" d="M500 208 V230 H500 V252"/>
+        <path class="ar b" d="M500 208 V230 H696 V252"/>
+        <path class="ar b" d="M500 208 V230 H892 V252"/>
+
+        <rect class="box" x="20" y="252" width="176" height="66" rx="10"/>
+        <text class="t" x="108" y="277" text-anchor="middle">Auth Service</text>
+        <text class="sub" x="108" y="295" text-anchor="middle">(OAuth / OIDC)</text>
+        <rect class="box" x="216" y="252" width="176" height="66" rx="10"/>
+        <text class="t" x="304" y="277" text-anchor="middle">Catalog / Search</text>
+        <text class="sub" x="304" y="295" text-anchor="middle">(Elasticsearch)</text>
+        <rect class="box" x="412" y="252" width="176" height="66" rx="10"/>
+        <text class="t" x="500" y="277" text-anchor="middle">Cart Service</text>
+        <text class="sub" x="500" y="295" text-anchor="middle">(Redis / NoSQL)</text>
+        <rect class="box" x="608" y="252" width="176" height="66" rx="10"/>
+        <text class="t" x="696" y="277" text-anchor="middle">Order Service</text>
+        <text class="sub" x="696" y="295" text-anchor="middle">(CQRS / SQL)</text>
+        <rect class="box" x="804" y="252" width="176" height="66" rx="10"/>
+        <text class="t" x="892" y="277" text-anchor="middle">Payment Serv.</text>
+        <text class="sub" x="892" y="295" text-anchor="middle">(Stripe / Bank)</text>
+
+        <path class="ar a" d="M108 318 V352 H500 V386"/>
+        <path class="ar a" d="M304 318 V352 H500 V386"/>
+        <path class="ar a" d="M500 318 V352 H500 V386"/>
+        <path class="ar a" d="M696 318 V352 H500 V386"/>
+        <path class="ar a" d="M892 318 V352 H500 V386"/>
+
+        <rect class="box a" x="360" y="386" width="280" height="56" rx="10"/>
+        <text class="t" x="500" y="410" text-anchor="middle">RabbitMQ Message Bus</text>
+        <text class="sub" x="500" y="428" text-anchor="middle">(Event Stream · Topic Exchange)</text>
+
+        <path class="ar g" d="M500 442 V470 H290 V498"/>
+        <path class="ar g" d="M500 442 V470 H710 V498"/>
+        <rect class="box g" x="180" y="498" width="220" height="62" rx="10"/>
+        <text class="t" x="290" y="522" text-anchor="middle">Inventory Svc</text>
+        <text class="sub" x="290" y="540" text-anchor="middle">(Redis / SQL)</text>
+        <rect class="box g" x="600" y="498" width="220" height="62" rx="10"/>
+        <text class="t" x="710" y="522" text-anchor="middle">Notification</text>
+        <text class="sub" x="710" y="540" text-anchor="middle">Service</text>
+      </svg>
+      <figcaption>Figure 1.1 — Edge → Gateway → Microservices → Event Bus → Async Consumers</figcaption>
+    </figure>
+
+    <h3>Microservices Breakdown &amp; Storage Engine Selection</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Service</th><th>Primary Database</th><th>Caching / Secondary</th><th>Event / Messaging</th><th>Reason for Tech Choice</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Auth Service</strong></td><td>Azure SQL (Identity Store)</td><td>Redis (Tokens/Sessions)</td><td>—</td><td>Relational consistency for user roles and credentials; fast cache invalidation.</td></tr>
+          <tr><td><strong>Catalog &amp; Search</strong></td><td>PostgreSQL (Product Master)</td><td>Elasticsearch</td><td>RabbitMQ (Catalog updates)</td><td>Complex full-text search, filtering, aggregation (facets) handled via Elasticsearch.</td></tr>
+          <tr><td><strong>Cart Service</strong></td><td>Redis (Persistent Cluster)</td><td>In-Memory Local Cache</td><td>—</td><td>Key-value retrieval under 2ms latency; ephemeral storage with background persistence.</td></tr>
+          <tr><td><strong>Order Service</strong></td><td>PostgreSQL (Partitioned)</td><td>Redis (Idempotency)</td><td>RabbitMQ (Outbox Pattern)</td><td>ACID compliance for financial records; append-only transactional integrity.</td></tr>
+          <tr><td><strong>Inventory Service</strong></td><td>PostgreSQL</td><td>Redis (Distributed Locks)</td><td>RabbitMQ (Stock Events)</td><td>Strong consistency required to avoid overselling; fast lock acquisition.</td></tr>
+          <tr><td><strong>Payment Service</strong></td><td>Azure SQL</td><td>—</td><td>RabbitMQ (Payment Events)</td><td>High transaction guarantees, strict audit trails.</td></tr>
+          <tr><td><strong>Notification</strong></td><td>MongoDB (Template Store)</td><td>—</td><td>RabbitMQ Consumers</td><td>Asynchronous ingestion of transactional email/SMS queues.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3>Detailed Data Flow: Order Placement (Transactional Workflow)</h3>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 700" role="img" aria-label="Order placement transactional data flow">
+        <rect class="box d" x="30" y="20" width="150" height="46" rx="10"/>
+        <text class="t w" x="105" y="48" text-anchor="middle">Client</text>
+        <path class="ar b" d="M180 43 H340"/>
+        <text class="lbl" x="260" y="34" text-anchor="middle">(1) Submit Order</text>
+        <rect class="box v" x="340" y="20" width="200" height="46" rx="10"/>
+        <text class="t" x="440" y="48" text-anchor="middle">API Gateway</text>
+        <path class="ar b" d="M440 66 V108"/>
+        <rect class="box" x="340" y="108" width="200" height="50" rx="10"/>
+        <text class="t" x="440" y="138" text-anchor="middle">Order Service</text>
+
+        <text class="lbl" x="440" y="182" text-anchor="middle">(2) Check &amp; Hold Stock</text>
+        <path class="ar a" d="M440 158 V192 H175 V228"/>
+        <path class="ar a" d="M440 158 V192 H730 V228"/>
+        <rect class="box a" x="60" y="228" width="230" height="68" rx="10"/>
+        <text class="t" x="175" y="253" text-anchor="middle">Inventory Service</text>
+        <text class="sub" x="175" y="272" text-anchor="middle">(Redis Atomic Lock)</text>
+        <rect class="box a" x="610" y="228" width="240" height="68" rx="10"/>
+        <text class="t" x="730" y="253" text-anchor="middle">Payment Service</text>
+        <text class="sub" x="730" y="272" text-anchor="middle">(Process Gateway Authorization)</text>
+
+        <path class="ar" d="M175 296 V330 H440 V358"/>
+        <path class="ar" d="M730 296 V330 H440 V358"/>
+        <rect class="box g" x="300" y="358" width="280" height="60" rx="10"/>
+        <text class="t" x="440" y="382" text-anchor="middle">(3) Persist Order DB</text>
+        <text class="sub" x="440" y="401" text-anchor="middle">(Write to Outbox — same transaction)</text>
+
+        <path class="ar g" d="M440 418 V446"/>
+        <rect class="box" x="320" y="446" width="240" height="48" rx="10"/>
+        <text class="t" x="440" y="475" text-anchor="middle">Outbox Publisher Loop</text>
+        <path class="ar g" d="M440 494 V522"/>
+        <rect class="box a" x="320" y="522" width="240" height="48" rx="10"/>
+        <text class="t" x="440" y="551" text-anchor="middle">RabbitMQ Exchange</text>
+
+        <path class="ar g" d="M440 570 V594 H185 V618"/>
+        <path class="ar g" d="M440 570 V594 H710 V618"/>
+        <rect class="box g" x="60" y="618" width="250" height="64" rx="10"/>
+        <text class="t" x="185" y="642" text-anchor="middle">Inventory Service</text>
+        <text class="sub" x="185" y="661" text-anchor="middle">(Commit Reserve Stock)</text>
+        <rect class="box g" x="580" y="618" width="260" height="64" rx="10"/>
+        <text class="t" x="710" y="642" text-anchor="middle">Notification Service</text>
+        <text class="sub" x="710" y="661" text-anchor="middle">(Send Confirmation)</text>
+      </svg>
+      <figcaption>Figure 1.2 — Synchronous reservation + authorization, then atomic persistence and async fan-out</figcaption>
+    </figure>
+
+    <h3>Code Snippet: Transactional Outbox Pattern for Order Placement (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">OrderService.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public async Task&lt;Guid&gt; CreateOrderAsync(CreateOrderCommand command, CancellationToken ct)
+{
+    using var transaction = await _dbContext.Database.BeginTransactionAsync(ct);
+    try
+    {
+        // 1. Domain Logic: Create Order
+        var order = Order.Create(command.CustomerId, command.Items);
+        _dbContext.Orders.Add(order);
+
+        // 2. Persist Integration Event to Outbox in the SAME Transaction
+        var outboxMessage = new OutboxMessage
+        {
+            Id = Guid.NewGuid(),
+            OccurredOnUtc = DateTime.UtcNow,
+            Type = typeof(OrderCreatedEvent).Name,
+            Content = JsonSerializer.Serialize(new OrderCreatedEvent(order.Id, order.CustomerId, order.TotalAmount))
+        };
+        _dbContext.OutboxMessages.Add(outboxMessage);
+
+        // 3. Commit Database Transaction
+        await _dbContext.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+
+        return order.Id;
+    }
+    catch (Exception)
+    {
+        await transaction.RollbackAsync(ct);
+        throw;
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q2 ================= -->
+  <section class="q" id="q2">
+    <span class="badge"><span class="hash">#</span> Question 2</span>
+    <h2 class="qt">Monolith vs Modular Monolith vs Microservices</h2>
+
+    <h3>Architectural Paradigm Comparison</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Attribute</th><th>Monolith</th><th>Modular Monolith</th><th>Microservices</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Codebase Boundary</strong></td><td>Single deployment unit; shared domain models.</td><td>Single deployment unit; strict module boundaries enforced via assemblies/namespaces.</td><td>Distributed independent repositories/deployments.</td></tr>
+          <tr><td><strong>Data Architecture</strong></td><td>Single shared database.</td><td>Single DB with logical schema separation per module (no cross-module joins).</td><td>Database-per-service pattern.</td></tr>
+          <tr><td><strong>Deployment Complexity</strong></td><td>Low (deploy one artifact).</td><td>Low (deploy one artifact).</td><td>High (requires K8s, Mesh, Distributed Tracing).</td></tr>
+          <tr><td><strong>Runtime Performance</strong></td><td>Microsecond intra-process calls.</td><td>Microsecond intra-process calls via in-memory buses.</td><td>Network latency (milliseconds) over HTTP/gRPC.</td></tr>
+          <tr><td><strong>Failure Domain</strong></td><td>Single bug can crash process.</td><td>Single bug can crash process (unless isolated in out-of-process workers).</td><td>Failure isolated to service bounds.</td></tr>
+          <tr><td><strong>Team Autonomy</strong></td><td>Low (code conflicts high).</td><td>Medium (teams own specific module assemblies).</td><td>High (independent CI/CD pipelines).</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 500" role="img" aria-label="Monolith vs modular monolith vs microservices">
+        <text class="t" x="20" y="24" style="font-size:13.5px;fill:#1e40af">MONOLITH</text>
+        <rect class="box" x="20" y="36" width="470" height="52" rx="10"/>
+        <text class="t" x="255" y="67" text-anchor="middle">UI + Orders + Inventory + Payments</text>
+        <path class="ar b" d="M490 62 H600"/>
+        <ellipse class="db" cx="710" cy="62" rx="105" ry="26"/>
+        <text class="t" x="710" y="67" text-anchor="middle">Single Database</text>
+
+        <line x1="20" y1="112" x2="880" y2="112" stroke="#e2e8f0" stroke-width="1"/>
+        <text class="t" x="20" y="146" style="font-size:13.5px;fill:#5b21b6">MODULAR MONOLITH</text>
+        <rect class="box v" x="20" y="160" width="260" height="48" rx="10"/>
+        <text class="t" x="150" y="189" text-anchor="middle">Orders Module</text>
+        <rect class="box v" x="310" y="160" width="260" height="48" rx="10"/>
+        <text class="t" x="440" y="189" text-anchor="middle">Inventory Module</text>
+        <rect class="box v" x="600" y="160" width="260" height="48" rx="10"/>
+        <text class="t" x="730" y="189" text-anchor="middle">Payments Module</text>
+        <path class="ar v nm" d="M150 208 V236"/><path class="ar v nm" d="M440 208 V236"/><path class="ar v nm" d="M730 208 V236"/>
+        <rect class="box s" x="40" y="236" width="220" height="36" rx="8"/>
+        <text class="sub" x="150" y="259" text-anchor="middle">Schema: Orders</text>
+        <rect class="box s" x="330" y="236" width="220" height="36" rx="8"/>
+        <text class="sub" x="440" y="259" text-anchor="middle">Schema: Inventory</text>
+        <rect class="box s" x="620" y="236" width="220" height="36" rx="8"/>
+        <text class="sub" x="730" y="259" text-anchor="middle">Schema: Payments</text>
+        <rect x="20" y="284" width="840" height="42" rx="10" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="6 4"/>
+        <text class="t" x="440" y="311" text-anchor="middle">Single Database Instance</text>
+
+        <line x1="20" y1="350" x2="880" y2="350" stroke="#e2e8f0" stroke-width="1"/>
+        <text class="t" x="20" y="384" style="font-size:13.5px;fill:#065f46">MICROSERVICES</text>
+        <rect class="box g" x="20" y="396" width="200" height="40" rx="10"/>
+        <text class="t" x="120" y="421" text-anchor="middle">Order Svc</text>
+        <path class="ar g" d="M220 416 H268"/>
+        <ellipse class="db" cx="345" cy="416" rx="76" ry="20" style="fill:#ecfdf5;stroke:#10b981"/>
+        <text class="sub" x="345" y="420" text-anchor="middle">Order DB</text>
+        <rect class="box g" x="460" y="396" width="200" height="40" rx="10"/>
+        <text class="t" x="560" y="421" text-anchor="middle">Inventory Svc</text>
+        <path class="ar g" d="M660 416 H700"/>
+        <ellipse class="db" cx="790" cy="416" rx="86" ry="20" style="fill:#ecfdf5;stroke:#10b981"/>
+        <text class="sub" x="790" y="420" text-anchor="middle">Inventory DB</text>
+        <rect class="box g" x="20" y="450" width="200" height="40" rx="10"/>
+        <text class="t" x="120" y="475" text-anchor="middle">Payment Svc</text>
+        <path class="ar g" d="M220 470 H268"/>
+        <ellipse class="db" cx="345" cy="470" rx="76" ry="20" style="fill:#ecfdf5;stroke:#10b981"/>
+        <text class="sub" x="345" y="474" text-anchor="middle">Payment DB</text>
+      </svg>
+      <figcaption>Figure 2.1 — Deployment unit &amp; data ownership across the three paradigms</figcaption>
+    </figure>
+
+    <h3>Migration Strategy: Strangler Fig Pattern</h3>
+    <p>To modernize legacy enterprise applications without a high-risk full rewrite:</p>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 820 330" role="img" aria-label="Strangler fig migration pattern">
+        <rect class="box d" x="300" y="14" width="220" height="44" rx="10"/>
+        <text class="t w" x="410" y="42" text-anchor="middle">Clients</text>
+        <path class="ar b" d="M410 58 V88"/>
+        <rect class="box v" x="270" y="88" width="280" height="48" rx="10"/>
+        <text class="t" x="410" y="118" text-anchor="middle">YARP / API Gateway</text>
+        <path class="ar a" d="M360 136 V166 H180 V196"/>
+        <path class="ar g" d="M460 136 V166 H640 V196"/>
+        <text class="lbl" x="180" y="160" text-anchor="middle">Legacy Routes</text>
+        <text class="lbl" x="640" y="160" text-anchor="middle">Migrated Routes</text>
+        <rect class="box a" x="60" y="196" width="240" height="52" rx="10"/>
+        <text class="t" x="180" y="227" text-anchor="middle">Legacy Monolith</text>
+        <rect class="box g" x="520" y="196" width="240" height="52" rx="10"/>
+        <text class="t" x="640" y="227" text-anchor="middle">New Microservice</text>
+        <path class="ar dsh" d="M180 248 V276"/>
+        <ellipse class="db" cx="180" cy="298" rx="110" ry="22" style="fill:#f8fafc;stroke:#94a3b8"/>
+        <text class="sub" x="180" y="302" text-anchor="middle">Shared DB Sink</text>
+        <path class="ar dsh v" d="M520 300 H300"/>
+        <text class="lbl" x="410" y="292" text-anchor="middle">CDC replication</text>
+        <ellipse class="db" cx="640" cy="298" rx="100" ry="22" style="fill:#ecfdf5;stroke:#10b981"/>
+        <text class="sub" x="640" y="302" text-anchor="middle">New Service DB</text>
+      </svg>
+      <figcaption>Figure 2.2 — Gateway-based interception incrementally strangles the monolith</figcaption>
+    </figure>
+    <ol class="steps">
+      <li><strong>Interception Layer</strong>: Introduce API Gateway (YARP / Kong) in front of the monolith.</li>
+      <li><strong>Module Decoupling</strong>: Isolate domain bounds inside monolith (Modular Monolith refactor).</li>
+      <li><strong>Data Migration</strong>: Replicate tables using Change Data Capture (CDC via Debezium/Kafka) to the new microservice DB.</li>
+      <li><strong>Traffic Shift</strong>: Re-route specific endpoints dynamically via the Gateway to the new microservice.</li>
+      <li><strong>Decommission</strong>: Remove legacy code paths once cutover metrics stabilize.</li>
+    </ol>
+  </section>
+
+  <!-- ================= Q3 ================= -->
+  <section class="q" id="q3">
+    <span class="badge"><span class="hash">#</span> Question 3</span>
+    <h2 class="qt">How Would You Scale an Order Service?</h2>
+    <p>Scaling an Order Service to handle unpredictable peak volume spikes requires isolating read and write workloads and leveraging asynchronous event processing.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 470" role="img" aria-label="Order service scaling architecture">
+        <rect class="box d" x="320" y="10" width="240" height="42" rx="10"/>
+        <text class="t w" x="440" y="37" text-anchor="middle">Ingress Traffic</text>
+        <path class="ar b" d="M440 52 V80"/>
+        <rect class="box v" x="290" y="80" width="300" height="46" rx="10"/>
+        <text class="t" x="440" y="109" text-anchor="middle">Gateway / Load Balancer</text>
+        <path class="ar a" d="M440 126 V156 H210 V186"/>
+        <path class="ar g" d="M440 126 V156 H670 V186"/>
+        <text class="lbl" x="210" y="150" text-anchor="middle">Write Commands</text>
+        <text class="lbl" x="670" y="150" text-anchor="middle">Read Queries</text>
+        <rect class="box a" x="80" y="186" width="260" height="48" rx="10"/>
+        <text class="t" x="210" y="216" text-anchor="middle">Order Command API</text>
+        <rect class="box g" x="540" y="186" width="260" height="48" rx="10"/>
+        <text class="t" x="670" y="216" text-anchor="middle">Order Query API</text>
+        <path class="ar a" d="M210 234 V266"/>
+        <path class="ar g" d="M670 234 V266"/>
+        <rect class="box" x="80" y="266" width="260" height="52" rx="10"/>
+        <text class="t" x="210" y="290" text-anchor="middle">PostgreSQL Primary</text>
+        <text class="sub" x="210" y="308" text-anchor="middle">(Sharded / Partitioned Writes)</text>
+        <rect class="box r" x="540" y="266" width="260" height="52" rx="10"/>
+        <text class="t" x="670" y="290" text-anchor="middle">Redis Cache Cluster</text>
+        <text class="sub" x="670" y="308" text-anchor="middle">(Materialized Read Views)</text>
+        <path class="ar" d="M210 318 V368"/>
+        <text class="lbl" x="216" y="345" text-anchor="start">Logical Replication</text>
+        <rect class="box" x="80" y="368" width="260" height="52" rx="10"/>
+        <text class="t" x="210" y="392" text-anchor="middle">PostgreSQL</text>
+        <text class="sub" x="210" y="410" text-anchor="middle">Read-Replica</text>
+        <path class="ar v" d="M340 394 H600 V318"/>
+        <text class="lbl" x="470" y="386" text-anchor="middle">Sync View Worker</text>
+      </svg>
+      <figcaption>Figure 3.1 — CQRS traffic split: transactional writes vs replica/cache-served reads</figcaption>
+    </figure>
+
+    <h3>Scaling Dimensions</h3>
+    <ol>
+      <li><strong>Read/Write Segregation (CQRS)</strong>:
+        <ul>
+          <li><strong>Write Path</strong>: High-throughput transaction handling using PostgreSQL horizontal partition (sharding) on <code class="inl">CustomerId</code> or <code class="inl">OrderDate</code>.</li>
+          <li><strong>Read Path</strong>: Serve 95% of queries ("View Order History") from Redis or PostgreSQL Read Replica endpoints.</li>
+        </ul>
+      </li>
+      <li><strong>Database Sharding &amp; Connection Pooling</strong>:
+        <ul>
+          <li>Implement <strong>PgBouncer</strong> connection pooling to restrict active connection saturation.</li>
+          <li>Hash-based sharding strategy: <code class="inl">ShardKey = Hash(CustomerId) % ShardCount</code>.</li>
+        </ul>
+      </li>
+      <li><strong>Event-Driven Asynchronous Processing</strong>:
+        <ul>
+          <li>Offload non-critical post-creation steps (email generation, loyalty points update, analytics) to RabbitMQ background workers.</li>
+        </ul>
+      </li>
+      <li><strong>KEDA Driven Auto-Scaling on Kubernetes</strong>:</li>
+    </ol>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">YAML</span><span class="file">keda-scaledobject.yaml</span><button class="cp">Copy</button></div>
+<pre><code data-lang="yaml">apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: order-worker-scaler
+  namespace: ecommerce
+spec:
+  scaleTargetRef:
+    name: order-processing-worker
+  minReplicaCount: 2
+  maxReplicaCount: 50
+  triggers:
+  - type: rabbitmq
+    metadata:
+      queueName: order-created-queue
+      mode: QueueLength
+      value: "100"
+    authenticationRef:
+      name: keda-rabbitmq-auth</code></pre></div>
+  </section>
+
+  <!-- ================= Q4 ================= -->
+  <section class="q" id="q4">
+    <span class="badge"><span class="hash">#</span> Question 4</span>
+    <h2 class="qt">Design Inventory Management</h2>
+    <p>Preventing overselling while sustaining thousands of concurrent checkouts during flash sales requires strict dynamic locking and state reservations.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 515" role="img" aria-label="Inventory reservation flow">
+        <rect class="box d" x="40" y="16" width="210" height="46" rx="10"/>
+        <text class="t w" x="145" y="44" text-anchor="middle">Checkout Request</text>
+        <path class="ar b" d="M250 39 H326"/>
+        <rect class="box" x="330" y="16" width="210" height="46" rx="10"/>
+        <text class="t" x="435" y="44" text-anchor="middle">Inventory API</text>
+        <path class="ar b" d="M435 62 V96"/>
+        <rect class="box a" x="295" y="96" width="280" height="48" rx="10"/>
+        <text class="t" x="435" y="126" text-anchor="middle">Try Redis Atomic Reservation</text>
+        <path class="ar g" d="M435 144 V178 H190 V210"/>
+        <path class="ar r" d="M435 144 V178 H680 V210"/>
+        <text class="lbl" x="190" y="172" text-anchor="middle">success</text>
+        <text class="lbl" x="680" y="172" text-anchor="middle">contention / no stock</text>
+        <rect class="box g" x="70" y="210" width="240" height="48" rx="10"/>
+        <text class="t" x="190" y="240" text-anchor="middle">Redis Lock Succeeded</text>
+        <rect class="box r" x="560" y="210" width="240" height="48" rx="10"/>
+        <text class="t" x="680" y="240" text-anchor="middle">Redis Lock Failed</text>
+        <path class="ar g" d="M190 258 V296"/>
+        <path class="ar r" d="M680 258 V296"/>
+        <rect class="box g" x="70" y="296" width="240" height="44" rx="10"/>
+        <text class="t" x="190" y="324" text-anchor="middle">Soft Reserve Stock</text>
+        <rect class="box r" x="560" y="296" width="240" height="44" rx="10"/>
+        <text class="t" x="680" y="324" text-anchor="middle">Return HTTP 409 Conflict</text>
+        <path class="ar g" d="M190 340 V376"/>
+        <rect class="box" x="60" y="376" width="260" height="48" rx="10"/>
+        <text class="t" x="190" y="405" text-anchor="middle">Enqueue Deferred Hard Commit</text>
+        <path class="ar g" d="M190 424 V456"/>
+        <rect class="box v" x="60" y="456" width="260" height="52" rx="10"/>
+        <text class="t" x="190" y="480" text-anchor="middle">PostgreSQL DB</text>
+        <text class="sub" x="190" y="498" text-anchor="middle">(Actual Stock — canonical)</text>
+      </svg>
+      <figcaption>Figure 4.1 — Optimistic in-memory reservation followed by deferred durable commit</figcaption>
+    </figure>
+
+    <h3>Soft Locking vs Hard Locking</h3>
+    <div class="grid2">
+      <div class="mini a"><h5><span class="pip"></span>Soft Locking (In-Memory)</h5><p>Reserves stock in Redis for a configurable TTL (e.g., 10 minutes) during checkout flow. If user abandons cart, key expires and stock automatically returns to pool.</p></div>
+      <div class="mini v"><h5><span class="pip"></span>Hard Locking (Relational DB)</h5><p>Atomically decrements the canonical row stock in PostgreSQL using row-level locking (<code class="inl">SELECT ... FOR UPDATE</code>) upon payment approval.</p></div>
+    </div>
+
+    <h3>Lua Script for Atomic Inventory Deduction in Redis</h3>
+    <p>To avoid race conditions, inventory deduction and check execute as an atomic single-threaded operation inside Redis:</p>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">Lua</span><span class="file">reserve_stock.lua</span><button class="cp">Copy</button></div>
+<pre><code data-lang="lua">-- KEYS[1]: Inventory Key (e.g., "inv:prod_10293")
+-- ARGV[1]: Quantity to reserve
+local current_stock = redis.call('get', KEYS[1])
+if not current_stock then
+    return -1 -- Stock key does not exist
+end
+
+local stock_num = tonumber(current_stock)
+local req_num = tonumber(ARGV[1])
+
+if stock_num &gt;= req_num then
+    redis.call('decrby', KEYS[1], req_num)
+    return stock_num - req_num -- Return remaining stock
+else
+    return -2 -- Insufficient stock
+end</code></pre></div>
+  </section>
+
+  <!-- ================= Q5 ================= -->
+  <section class="q" id="q5">
+    <span class="badge"><span class="hash">#</span> Question 5</span>
+    <h2 class="qt">Design Cart Service</h2>
+    <p>The Cart Service demands high availability and sub-millisecond latency. A session-bound or user-bound key-value store fulfills these SLAs cleanly.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 450" role="img" aria-label="Cart service key strategy">
+        <rect class="box d" x="310" y="12" width="240" height="46" rx="10"/>
+        <text class="t w" x="430" y="40" text-anchor="middle">Cart Controller</text>
+        <path class="ar b" d="M430 58 V90 H190 V124"/>
+        <path class="ar v" d="M430 58 V90 H670 V124"/>
+        <text class="lbl" x="190" y="84" text-anchor="middle">Authenticated User?</text>
+        <text class="lbl" x="670" y="84" text-anchor="middle">Anonymous User?</text>
+        <rect class="box" x="55" y="124" width="270" height="50" rx="10"/>
+        <text class="sub" x="190" y="146" text-anchor="middle">Key</text>
+        <text class="mono" x="190" y="164" text-anchor="middle" style="font-size:12px;fill:#1e40af">cart:user:{id}</text>
+        <rect class="box v" x="535" y="124" width="270" height="50" rx="10"/>
+        <text class="sub" x="670" y="146" text-anchor="middle">Key</text>
+        <text class="mono" x="670" y="164" text-anchor="middle" style="font-size:12px;fill:#5b21b6">cart:anon:{guid}</text>
+        <path class="ar" d="M190 174 V206 H430 V238"/>
+        <path class="ar" d="M670 174 V206 H430 V238"/>
+        <rect class="box r" x="290" y="238" width="280" height="62" rx="10"/>
+        <text class="t" x="430" y="263" text-anchor="middle">Redis Enterprise</text>
+        <text class="sub" x="430" y="282" text-anchor="middle">(Hash Structure / JSON)</text>
+        <path class="ar g" d="M430 300 V366"/>
+        <text class="lbl" x="442" y="336" text-anchor="start">(On Login Event Triggers)</text>
+        <rect class="box g" x="290" y="366" width="280" height="52" rx="10"/>
+        <text class="t" x="430" y="397" text-anchor="middle">Merge Carts Worker Logic</text>
+      </svg>
+      <figcaption>Figure 5.1 — Dual-key namespace with login-triggered cart reconciliation</figcaption>
+    </figure>
+
+    <h3>Redis Data Structure Strategy</h3>
+    <p>Using Redis <strong>Hashes</strong> allows updating, incrementing, or deleting individual items without serializing/deserializing the entire cart payload.</p>
+    <div class="grid2">
+      <div class="mini"><h5><span class="pip"></span>Key Format</h5><p><code class="inl">cart:user:{UserId}</code></p></div>
+      <div class="mini g"><h5><span class="pip"></span>Fields</h5><p><code class="inl">Product SKU</code></p></div>
+      <div class="mini a"><h5><span class="pip"></span>Value</h5><p><code class="inl">Serialized JSON { Quantity, AddedTimestamp, UnitPrice }</code></p></div>
+    </div>
+
+    <h3>Redis Cart Merge Implementation (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">CartService.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public async Task MergeAnonymousCartAsync(string anonymousId, string userId)
+{
+    var anonKey = $"cart:anon:{anonymousId}";
+    var userKey = $"cart:user:{userId}";
+
+    var database = _redis.GetDatabase();
+
+    // Fetch all items from anonymous cart
+    var anonItems = await database.HashGetAllAsync(anonKey);
+    if (anonItems.Length == 0) return;
+
+    var transaction = database.CreateTransaction();
+
+    foreach (var item in anonItems)
+    {
+        // Add or increment quantities in authenticated cart
+        transaction.HashSetAsync(userKey, item.Name, item.Value);
+    }
+
+    // Delete anonymous cart after merge
+    transaction.KeyDeleteAsync(anonKey);
+
+    await transaction.ExecuteAsync();
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q6 ================= -->
+  <section class="q" id="q6">
+    <span class="badge"><span class="hash">#</span> Question 6</span>
+    <h2 class="qt">Event-Driven Architecture Using RabbitMQ</h2>
+
+    <h3>RabbitMQ Exchange Architecture</h3>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 552" role="img" aria-label="RabbitMQ exchange topology">
+        <rect class="box d" x="320" y="10" width="260" height="46" rx="10"/>
+        <text class="t w" x="450" y="38" text-anchor="middle">Microservices (Producers)</text>
+        <path class="ar a" d="M450 56 V86"/>
+        <rect class="box a" x="310" y="86" width="280" height="50" rx="10"/>
+        <text class="t" x="450" y="116" text-anchor="middle">Direct / Topic Exchange</text>
+        <path class="ar b" d="M450 136 V168 H200 V200"/>
+        <path class="ar r" d="M450 136 V168 H705 V200"/>
+        <text class="mono" x="200" y="162" text-anchor="middle">binding: order.created</text>
+        <text class="mono" x="705" y="162" text-anchor="middle">binding: payment.failed</text>
+        <rect class="box" x="60" y="200" width="280" height="48" rx="10"/>
+        <text class="t" x="200" y="230" text-anchor="middle">Order Processing Queue</text>
+        <rect class="box r" x="565" y="200" width="285" height="48" rx="10"/>
+        <text class="t" x="707" y="230" text-anchor="middle">Payment Exception Queue</text>
+        <path class="ar b" d="M200 248 V286"/>
+        <path class="ar r" d="M707 248 V286"/>
+        <rect class="box g" x="60" y="286" width="280" height="48" rx="10"/>
+        <text class="t" x="200" y="316" text-anchor="middle">Order Worker Consumers</text>
+        <rect class="box g" x="565" y="286" width="285" height="48" rx="10"/>
+        <text class="t" x="707" y="316" text-anchor="middle">Exception Handler Worker</text>
+        <path class="ar r" d="M200 334 V398"/>
+        <text class="lbl" x="212" y="368" text-anchor="start">Failure / Max Retries Exceeded</text>
+        <rect class="box r" x="60" y="398" width="280" height="48" rx="10"/>
+        <text class="t" x="200" y="428" text-anchor="middle">Dead Letter Exchange (DLX)</text>
+        <path class="ar r" d="M200 446 V486"/>
+        <rect class="box r" x="60" y="486" width="280" height="48" rx="10"/>
+        <text class="t" x="200" y="516" text-anchor="middle">Dead Letter Queue (DLQ)</text>
+      </svg>
+      <figcaption>Figure 6.1 — Routing-key based fan-out with dead-letter escalation path</figcaption>
+    </figure>
+
+    <h3>Topology Definition</h3>
+    <div class="grid2">
+      <div class="mini a"><h5><span class="pip"></span>Exchanges</h5>
+        <ul>
+          <li><code class="inl">ecom.events</code> (Topic Exchange): Routes events based on routing keys (e.g., <code class="inl">order.created</code>, <code class="inl">inventory.adjusted</code>).</li>
+          <li><code class="inl">ecom.dlx</code> (Direct Exchange): Catch-all for rejected/failed messages across queues.</li>
+        </ul>
+      </div>
+      <div class="mini"><h5><span class="pip"></span>Queues</h5>
+        <ul>
+          <li><code class="inl">q.order-service.order-created</code>: Queue for Order Service events.</li>
+          <li><code class="inl">q.order-service.order-created.dlq</code>: Dead Letter Queue for persistent unhandled failures.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h3>C# MassTransit Consumer Implementation with Dead-Letter Handling</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">OrderCreatedConsumer.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public class OrderCreatedConsumer : IConsumer&lt;OrderCreatedEvent&gt;
+{
+    private readonly ILogger&lt;OrderCreatedConsumer&gt; _logger;
+
+    public OrderCreatedConsumer(ILogger&lt;OrderCreatedConsumer&gt; logger) =&gt; _logger = logger;
+
+    public async Task Consume(ConsumeContext&lt;OrderCreatedEvent&gt; context)
+    {
+        _logger.LogInformation("Processing OrderCreatedEvent for OrderId: {OrderId}", context.Message.OrderId);
+
+        if (context.Message.TotalAmount &lt;= 0)
+        {
+            // Invalid business message payload - throw to move to DLQ via MassTransit retry policy
+            throw new InvalidOperationException($"Invalid order amount: {context.Message.TotalAmount}");
+        }
+
+        // Execute processing logic
+        await Task.CompletedTask;
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q7 ================= -->
+  <section class="q" id="q7">
+    <span class="badge"><span class="hash">#</span> Question 7</span>
+    <h2 class="qt">CQRS Implementation</h2>
+    <p>Command Query Responsibility Segregation (CQRS) decouples write operations (Commands) from read operations (Queries) to maximize performance and scalability.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 390" role="img" aria-label="CQRS command and query pipeline">
+        <rect class="box d" x="330" y="10" width="240" height="46" rx="10"/>
+        <text class="t w" x="450" y="38" text-anchor="middle">Client / API</text>
+        <path class="ar a" d="M450 56 V90 H210 V124"/>
+        <path class="ar g" d="M450 56 V90 H690 V124"/>
+        <text class="lbl" x="210" y="84" text-anchor="middle">Write Side</text>
+        <text class="lbl" x="690" y="84" text-anchor="middle">Read Side</text>
+        <rect class="box a" x="80" y="124" width="260" height="46" rx="10"/>
+        <text class="t" x="210" y="152" text-anchor="middle">CreateOrderCommand</text>
+        <rect class="box g" x="560" y="124" width="260" height="46" rx="10"/>
+        <text class="t" x="690" y="152" text-anchor="middle">GetOrderByIdQuery</text>
+        <path class="ar a" d="M210 170 V202"/>
+        <path class="ar g" d="M690 170 V202"/>
+        <rect class="box a" x="80" y="202" width="260" height="46" rx="10"/>
+        <text class="t" x="210" y="230" text-anchor="middle">Command Handler</text>
+        <rect class="box g" x="560" y="202" width="260" height="46" rx="10"/>
+        <text class="t" x="690" y="230" text-anchor="middle">Query Handler</text>
+        <path class="ar a" d="M210 248 V296"/>
+        <path class="ar g" d="M690 248 V296"/>
+        <text class="lbl" x="218" y="274" text-anchor="start">EF Core / Transactional</text>
+        <text class="lbl" x="698" y="274" text-anchor="start">Dapper / Raw SQL</text>
+        <rect class="box v" x="70" y="296" width="290" height="54" rx="10"/>
+        <text class="t" x="215" y="328" text-anchor="middle">Primary PostgreSQL DB</text>
+        <rect class="box c" x="540" y="296" width="300" height="54" rx="10"/>
+        <text class="t" x="690" y="328" text-anchor="middle">Read Replica / Elastic</text>
+        <path class="ar v dsh" d="M360 323 H536"/>
+        <text class="lbl" x="448" y="315" text-anchor="middle">CDC / Async Sync</text>
+      </svg>
+      <figcaption>Figure 7.1 — Segregated write model (EF Core) and read model (Dapper) with async projection</figcaption>
+    </figure>
+
+    <h3>MediatR Implementation (C# .NET 8)</h3>
+    <h4>Command Side (EF Core — Transactional Write)</h4>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">CreateOrderCommandHandler.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public record CreateOrderCommand(Guid CustomerId, List&lt;OrderItemDto&gt; Items) : IRequest&lt;Guid&gt;;
+
+public class CreateOrderCommandHandler : IRequestHandler&lt;CreateOrderCommand, Guid&gt;
+{
+    private readonly ApplicationDbContext _db;
+    public CreateOrderCommandHandler(ApplicationDbContext db) =&gt; _db = db;
+
+    public async Task&lt;Guid&gt; Handle(CreateOrderCommand request, CancellationToken cancellationToken)
+    {
+        var order = new Order(request.CustomerId);
+        foreach (var item in request.Items)
+            order.AddItem(item.ProductId, item.Quantity, item.UnitPrice);
+
+        _db.Orders.Add(order);
+        await _db.SaveChangesAsync(cancellationToken);
+        return order.Id;
+    }
+}</code></pre></div>
+
+    <h4>Query Side (Dapper — Ultra-Fast Read)</h4>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">GetOrderByIdQueryHandler.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public record GetOrderByIdQuery(Guid OrderId) : IRequest&lt;OrderDetailsDto?&gt;;
+
+public class GetOrderByIdQueryHandler : IRequestHandler&lt;GetOrderByIdQuery, OrderDetailsDto?&gt;
+{
+    private readonly IDbConnectionFactory _connectionFactory;
+    public GetOrderByIdQueryHandler(IDbConnectionFactory connectionFactory) =&gt; _connectionFactory = connectionFactory;
+
+    public async Task&lt;OrderDetailsDto?&gt; Handle(GetOrderByIdQuery request, CancellationToken cancellationToken)
+    {
+        using var connection = _connectionFactory.CreateConnection();
+        const string sql = @"
+            SELECT o.Id, o.CustomerId, o.TotalAmount, o.Status,
+                   i.ProductId, i.Quantity, i.UnitPrice
+            FROM Orders o
+            LEFT JOIN OrderItems i ON o.Id = i.OrderId
+            WHERE o.Id = @OrderId";
+
+        var orderMap = new Dictionary&lt;Guid, OrderDetailsDto&gt;();
+        await connection.QueryAsync&lt;OrderDetailsDto, OrderItemDto, OrderDetailsDto&gt;(
+            sql,
+            (order, item) =&gt;
+            {
+                if (!orderMap.TryGetValue(order.Id, out var currentOrder))
+                {
+                    currentOrder = order;
+                    currentOrder.Items = new List&lt;OrderItemDto&gt;();
+                    orderMap.Add(currentOrder.Id, currentOrder);
+                }
+                if (item != null) currentOrder.Items.Add(item);
+                return currentOrder;
+            },
+            new { request.OrderId },
+            splitOn: "ProductId");
+
+        return orderMap.Values.FirstOrDefault();
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q8 ================= -->
+  <section class="q" id="q8">
+    <span class="badge"><span class="hash">#</span> Question 8</span>
+    <h2 class="qt">API Gateway</h2>
+    <p>An API Gateway acts as the single entry point for client applications, handling cross-cutting concerns like security, routing, rate limiting, and request transformation.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 400" role="img" aria-label="API gateway middleware pipeline">
+        <rect class="box d" x="330" y="10" width="220" height="44" rx="10"/>
+        <text class="t w" x="440" y="38" text-anchor="middle">Client Request</text>
+        <path class="ar b" d="M440 54 V82"/>
+        <rect class="box v" x="285" y="82" width="310" height="50" rx="10"/>
+        <text class="t" x="440" y="112" text-anchor="middle">YARP / Reverse Proxy Gateway</text>
+        <rect class="zone" x="35" y="166" width="810" height="112" rx="14"/>
+        <text class="lbl" x="50" y="186">MIDDLEWARE PIPELINE</text>
+        <path class="ar b" d="M440 132 V152 H180 V200"/>
+        <rect class="box" x="65" y="200" width="230" height="52" rx="10"/>
+        <text class="t" x="180" y="231" text-anchor="middle">Token Validation</text>
+        <path class="ar b" d="M295 226 H331"/>
+        <rect class="box a" x="335" y="200" width="240" height="52" rx="10"/>
+        <text class="t" x="455" y="231" text-anchor="middle">Rate Limiter Middleware</text>
+        <path class="ar b" d="M575 226 H611"/>
+        <rect class="box g" x="615" y="200" width="200" height="52" rx="10"/>
+        <text class="t" x="715" y="231" text-anchor="middle">Dynamic Router</text>
+        <path class="ar g" d="M715 278 V322"/>
+        <rect class="box c" x="595" y="322" width="240" height="52" rx="10"/>
+        <text class="t" x="715" y="353" text-anchor="middle">Target Microservice</text>
+      </svg>
+      <figcaption>Figure 8.1 — Single ingress point with chained cross-cutting middleware</figcaption>
+    </figure>
+
+    <h3>Key Capabilities Implemented</h3>
+    <ol class="steps">
+      <li><strong>Routing</strong>: Forward requests dynamically based on path rules.</li>
+      <li><strong>Rate Limiting</strong>: Sliding window rate limits per Client IP / Authenticated User ID.</li>
+      <li><strong>Authentication Offloading</strong>: Validate JWT tokens at the boundary; inject validated user claims into downstream request headers.</li>
+    </ol>
+
+    <h3>Gateway Configuration via YARP (C# .NET 8 <code class="inl">appsettings.json</code>)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">JSON</span><span class="file">appsettings.json</span><button class="cp">Copy</button></div>
+<pre><code data-lang="json">{
+  "ReverseProxy": {
+    "Routes": {
+      "order-service-route": {
+        "ClusterId": "order-cluster",
+        "Match": {
+          "Path": "/api/v1/orders/{**catch-all}"
+        },
+        "RateLimiterPolicy": "SlidingWindowPolicy",
+        "AuthorizationPolicy": "AuthenticatedUsersOnly"
+      }
+    },
+    "Clusters": {
+      "order-cluster": {
+        "Destinations": {
+          "node-1": { "Address": "http://order-service.prod.internal:8080" },
+          "node-2": { "Address": "http://order-service-2.prod.internal:8080" }
+        }
+      }
+    }
+  }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q9 ================= -->
+  <section class="q" id="q9">
+    <span class="badge"><span class="hash">#</span> Question 9</span>
+    <h2 class="qt">Service Discovery</h2>
+    <p>In dynamic environments like Kubernetes, container IP addresses shift frequently. Service Discovery maps static logical service names to dynamic network addresses.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 470" role="img" aria-label="Kubernetes service discovery flow">
+        <rect class="box d" x="290" y="10" width="280" height="46" rx="10"/>
+        <text class="t w" x="430" y="38" text-anchor="middle">Client / Consumer Svc</text>
+        <path class="ar b" d="M430 56 V116"/>
+        <text class="lbl" x="442" y="90" text-anchor="start">1. Query DNS: "order-service"</text>
+        <rect class="box c" x="290" y="116" width="280" height="48" rx="10"/>
+        <text class="t" x="430" y="146" text-anchor="middle">CoreDNS (K8s Cluster)</text>
+        <path class="ar b" d="M430 164 V224"/>
+        <text class="lbl" x="442" y="198" text-anchor="start">2. Resolves to Endpoint Cluster IP</text>
+        <rect class="box v" x="290" y="224" width="280" height="48" rx="10"/>
+        <text class="t" x="430" y="254" text-anchor="middle">Kube-Proxy / IPVS</text>
+        <path class="ar g" d="M430 272 V314 H190 V352"/>
+        <path class="ar g" d="M430 272 V314 H670 V352"/>
+        <text class="lbl" x="430" y="306" text-anchor="middle">Load Balance Routing</text>
+        <rect class="box g" x="70" y="352" width="240" height="58" rx="10"/>
+        <text class="t" x="190" y="376" text-anchor="middle">Pod A</text>
+        <text class="mono" x="190" y="395" text-anchor="middle" style="font-size:12px">10.244.1.15</text>
+        <rect class="box g" x="550" y="352" width="240" height="58" rx="10"/>
+        <text class="t" x="670" y="376" text-anchor="middle">Pod B</text>
+        <text class="mono" x="670" y="395" text-anchor="middle" style="font-size:12px">10.244.2.88</text>
+        <text class="mono" x="430" y="444" text-anchor="middle" style="font-size:11.5px">order-service.default.svc.cluster.local → ClusterIP → Endpoints</text>
+      </svg>
+      <figcaption>Figure 9.1 — Server-side discovery via CoreDNS and kube-proxy endpoint load balancing</figcaption>
+    </figure>
+
+    <h3>Mechanisms Comparison</h3>
+    <div class="grid2">
+      <div class="mini"><h5><span class="pip"></span>Server-Side Discovery (Kubernetes Service / CoreDNS)</h5>
+        <ul>
+          <li>Pods register automatically with API Server endpoints.</li>
+          <li>Internal DNS translates <code class="inl">order-service.default.svc.cluster.local</code> directly into dynamic Virtual Cluster IP (<code class="inl">ClusterIP</code>).</li>
+          <li>Abstracted entirely away from application code.</li>
+        </ul>
+      </div>
+      <div class="mini v"><h5><span class="pip"></span>Client-Side Discovery (Consul / Eureka Frameworks)</h5>
+        <ul>
+          <li>Applications register directly with Consul agent via heartbeat APIs.</li>
+          <li>Clients fetch application instances registry and execute load balancing algorithms in-process (e.g., Spring Cloud Netflix Ribbon / Steeltoe .NET).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= Q10 ================= -->
+  <section class="q" id="q10">
+    <span class="badge"><span class="hash">#</span> Question 10</span>
+    <h2 class="qt">Distributed Transactions</h2>
+    <p>Standard ACID transactions cannot span network boundaries across microservices without introducing severe locking bottlenecks (2PC anti-pattern).</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 320" role="img" aria-label="2PC versus Saga">
+        <rect class="box d" x="290" y="10" width="280" height="46" rx="10"/>
+        <text class="t w" x="430" y="38" text-anchor="middle">Distributed Transaction</text>
+        <path class="ar r" d="M430 56 V92 H210 V128"/>
+        <path class="ar g" d="M430 56 V92 H650 V128"/>
+        <rect class="box r" x="40" y="128" width="340" height="52" rx="10"/>
+        <text class="t" x="210" y="159" text-anchor="middle">Two-Phase Commit (2PC)</text>
+        <rect class="box g" x="480" y="128" width="340" height="52" rx="10"/>
+        <text class="t" x="650" y="159" text-anchor="middle">Saga Pattern</text>
+        <text class="sub" x="60" y="210">— Central Coordinator Locks DBs</text>
+        <text class="sub" x="60" y="234">— High Latency, Low Throughput</text>
+        <text class="sub" x="60" y="258">— Single Point of Failure</text>
+        <text class="sub" x="500" y="210">— Local Transactions</text>
+        <text class="sub" x="500" y="234">— Asynchronous Events</text>
+        <text class="sub" x="500" y="258">— Compensating Actions</text>
+        <rect class="zone" x="40" y="188" width="340" height="88" rx="12" style="stroke:#fca5a5"/>
+        <rect class="zone" x="480" y="188" width="340" height="88" rx="12" style="stroke:#6ee7b7"/>
+      </svg>
+      <figcaption>Figure 10.1 — Coordinator-locked consistency vs event-driven eventual consistency</figcaption>
+    </figure>
+
+    <h3>Comparison: Two-Phase Commit (2PC) vs Saga Pattern</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Metric</th><th>Two-Phase Commit (2PC)</th><th>Saga Pattern</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Consistency Model</strong></td><td>Immediate Strong Consistency.</td><td>Eventual Consistency.</td></tr>
+          <tr><td><strong>Locking Mechanism</strong></td><td>Holds database locks across network boundaries.</td><td>No global database locks; local locks only.</td></tr>
+          <tr><td><strong>Availability</strong></td><td>Low (if 1 node fails, whole system blocks).</td><td>High (uses compensating transactions on failure).</td></tr>
+          <tr><td><strong>Throughput</strong></td><td>Poor (scalable up to tens of TPS).</td><td>High (scalable up to tens of thousands TPS).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= Q11 ================= -->
+  <section class="q" id="q11">
+    <span class="badge"><span class="hash">#</span> Question 11</span>
+    <h2 class="qt">Saga Pattern</h2>
+
+    <h3>Orchestration vs Choreography</h3>
+    <div class="grid2">
+      <div class="mini c"><h5><span class="pip" style="background:#06b6d4"></span>Choreography</h5><p>Microservices publish and listen to events independently without a central controller. Best for simple workflows.</p></div>
+      <div class="mini v"><h5><span class="pip"></span>Orchestration</h5><p>A central Saga Orchestrator coordinates workflow execution, dictates execution paths, and triggers compensating commands on failures. Best for complex enterprise workflows.</p></div>
+    </div>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 430" role="img" aria-label="Saga orchestration with compensation">
+        <rect class="box v" x="320" y="10" width="260" height="50" rx="10"/>
+        <text class="t" x="450" y="41" text-anchor="middle">Saga Orchestrator</text>
+        <path class="ar b" d="M450 60 V104 H155 V150"/>
+        <path class="ar b" d="M450 60 V104 H450 V150"/>
+        <path class="ar b" d="M450 60 V104 H745 V150"/>
+        <text class="lbl" x="155" y="98" text-anchor="middle">1. Execute Command</text>
+        <text class="lbl" x="450" y="98" text-anchor="middle">2. Execute Command</text>
+        <text class="lbl" x="745" y="98" text-anchor="middle">3. Execute Command</text>
+        <rect class="box" x="30" y="150" width="250" height="64" rx="10"/>
+        <text class="t" x="155" y="175" text-anchor="middle">Inventory Service</text>
+        <text class="sub" x="155" y="194" text-anchor="middle">(Deduct Stock)</text>
+        <rect class="box r" x="325" y="150" width="250" height="64" rx="10"/>
+        <text class="t" x="450" y="175" text-anchor="middle">Payment Service</text>
+        <text class="sub" x="450" y="194" text-anchor="middle">(Process Charge)</text>
+        <rect class="box" x="620" y="150" width="250" height="64" rx="10"/>
+        <text class="t" x="745" y="175" text-anchor="middle">Delivery Service</text>
+        <text class="sub" x="745" y="194" text-anchor="middle">(Schedule Ship)</text>
+        <text class="t" x="450" y="240" text-anchor="middle" style="fill:#b91c1c">✖ Payment Fails!</text>
+        <path class="ar r" d="M450 252 V292 H155 V330"/>
+        <text class="lbl" x="300" y="284" text-anchor="middle" style="fill:#b91c1c">4. Trigger Compensation</text>
+        <rect class="box a" x="30" y="330" width="250" height="64" rx="10"/>
+        <text class="t" x="155" y="355" text-anchor="middle">Inventory Service</text>
+        <text class="sub" x="155" y="374" text-anchor="middle">(Restore Stock)</text>
+      </svg>
+      <figcaption>Figure 11.1 — Orchestrated saga with compensating rollback on payment failure</figcaption>
+    </figure>
+
+    <h3>State Machine Implementation with MassTransit (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">OrderSagaOrchestrator.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public class OrderSagaState : SagaStateMachineInstance
+{
+    public Guid CorrelationId { get; set; }
+    public string CurrentState { get; set; } = null!;
+    public Guid OrderId { get; set; }
+    public decimal Amount { get; set; }
+}
+
+public class OrderSagaOrchestrator : MassTransitStateMachine&lt;OrderSagaState&gt;
+{
+    public State ProcessingPayment { get; private set; } = null!;
+
+    public Event&lt;OrderCreatedEvent&gt; OrderCreated { get; private set; } = null!;
+    public Event&lt;PaymentFailedEvent&gt; PaymentFailed { get; private set; } = null!;
+
+    public OrderSagaOrchestrator()
+    {
+        InstanceState(x =&gt; x.CurrentState);
+
+        Event(() =&gt; OrderCreated, x =&gt; x.CorrelateById(m =&gt; m.Message.OrderId));
+        Event(() =&gt; PaymentFailed, x =&gt; x.CorrelateById(m =&gt; m.Message.OrderId));
+
+        Initially(
+            When(OrderCreated)
+                .Then(context =&gt; context.Saga.Amount = context.Message.TotalAmount)
+                .TransitionTo(ProcessingPayment)
+                .Publish(context =&gt; new ProcessPaymentCommand(context.Saga.OrderId, context.Saga.Amount))
+        );
+
+        During(ProcessingPayment,
+            When(PaymentFailed)
+                .Publish(context =&gt; new CompensateInventoryCommand(context.Saga.OrderId))
+                .Finalize()
+        );
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q12 ================= -->
+  <section class="q" id="q12">
+    <span class="badge"><span class="hash">#</span> Question 12</span>
+    <h2 class="qt">Circuit Breaker Pattern</h2>
+    <p>The Circuit Breaker pattern prevents cascading failures by halting operations to a remote service when it exhibits high error rates or elevated latency.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 840 430" role="img" aria-label="Circuit breaker state machine">
+        <rect class="box g" x="230" y="14" width="300" height="70" rx="12"/>
+        <text class="t" x="380" y="45" text-anchor="middle" style="font-size:15px;fill:#065f46">CLOSED</text>
+        <text class="sub" x="380" y="66" text-anchor="middle">(Calls Permitted)</text>
+        <text class="lbl" x="548" y="42" text-anchor="start">Normal Operations</text>
+        <text class="lbl" x="548" y="60" text-anchor="start">Threshold Recovered</text>
+        <path class="ar r" d="M380 84 V150"/>
+        <text class="lbl" x="392" y="122" text-anchor="start" style="fill:#b91c1c">Failure Rate &gt; Threshold</text>
+        <rect class="box r" x="230" y="150" width="300" height="70" rx="12"/>
+        <text class="t" x="380" y="181" text-anchor="middle" style="font-size:15px;fill:#991b1b">OPEN</text>
+        <text class="sub" x="380" y="202" text-anchor="middle">(Short-Circuit)</text>
+        <path class="ar a" d="M380 220 V286"/>
+        <text class="lbl" x="392" y="258" text-anchor="start" style="fill:#92400e">Wait Duration Expired</text>
+        <rect class="box a" x="230" y="286" width="300" height="70" rx="12"/>
+        <text class="t" x="380" y="317" text-anchor="middle" style="font-size:15px;fill:#92400e">HALF-OPEN</text>
+        <text class="sub" x="380" y="338" text-anchor="middle">(Probe Requests)</text>
+        <path class="ar g" d="M530 321 H660 V49 H534"/>
+        <text class="lbl" x="672" y="316" text-anchor="start" style="fill:#065f46">Success</text>
+        <text class="lbl" x="672" y="334" text-anchor="start" style="fill:#065f46">Threshold Met</text>
+        <path class="ar r dsh" d="M230 321 H120 V185 H226"/>
+        <text class="lbl" x="112" y="256" text-anchor="end" style="fill:#b91c1c">Probe fails</text>
+        <text class="mono" x="380" y="400" text-anchor="middle">CLOSED → OPEN → HALF-OPEN → CLOSED</text>
+      </svg>
+      <figcaption>Figure 12.1 — Circuit breaker state transitions and recovery probing</figcaption>
+    </figure>
+
+    <h3>Polly v8 Configuration (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">ResiliencePipeline.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">var builder = new ResiliencePipelineBuilder&lt;HttpResponseMessage&gt;()
+    .AddCircuitBreaker(new HttpCircuitBreakerStrategyOptions
+    {
+        FailureRatio = 0.5, // 50% failure rate
+        SamplingDuration = TimeSpan.FromSeconds(10),
+        MinimumThroughput = 8,
+        BreakDuration = TimeSpan.FromSeconds(30),
+        OnOpened = args =&gt;
+        {
+            Console.WriteLine($"Circuit Opened! Break Duration: {args.BreakDuration}");
+            return ValueTask.CompletedTask;
+        }
+    });
+
+ResiliencePipeline&lt;HttpResponseMessage&gt; pipeline = builder.Build();</code></pre></div>
+  </section>
+
+  <!-- ================= Q13 ================= -->
+  <section class="q" id="q13">
+    <span class="badge"><span class="hash">#</span> Question 13</span>
+    <h2 class="qt">Retry Policy (Exponential Backoff &amp; Jitter)</h2>
+    <p>Re-trying transient errors immediately can overwhelm a struggling downstream service (thundering herd problem). <strong>Jitter</strong> introduces randomness to retry delays to distribute request volume evenly over time.</p>
+
+    <div class="formula"><span class="lb">Calculated Delay Formula</span>Delay = Min(Max_Delay, Base_Delay * 2 ^ Attempt) + Random_Jitter</div>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 320" role="img" aria-label="Retry distribution with and without jitter">
+        <text class="t" x="20" y="20" style="fill:#b91c1c">Without Jitter</text>
+        <line x1="80" y1="118" x2="820" y2="118" stroke="#cbd5e1" stroke-width="1.5"/>
+        <g id="jitA"></g>
+        <text class="sub" x="20" y="60">Attempt 1</text>
+        <text class="sub" x="20" y="100">Attempt 2</text>
+        <text class="lbl" x="272" y="136" text-anchor="middle">1s</text>
+        <text class="lbl" x="452" y="136" text-anchor="middle">2s</text>
+        <text class="lbl" x="632" y="136" text-anchor="middle">3s</text>
+        <text class="lbl" x="812" y="136" text-anchor="middle">4s</text>
+        <text class="lbl" x="300" y="60" text-anchor="start" style="fill:#b91c1c">100 Requests at 1s</text>
+        <text class="lbl" x="480" y="100" text-anchor="start" style="fill:#b91c1c">100 Requests at 2s</text>
+
+        <text class="t" x="20" y="188" style="fill:#065f46">With Full Jitter</text>
+        <line x1="80" y1="286" x2="820" y2="286" stroke="#cbd5e1" stroke-width="1.5"/>
+        <g id="jitB"></g>
+        <text class="sub" x="20" y="228">Attempt 1</text>
+        <text class="sub" x="20" y="268">Attempt 2</text>
+        <text class="lbl" x="272" y="304" text-anchor="middle">1s</text>
+        <text class="lbl" x="452" y="304" text-anchor="middle">2s</text>
+        <text class="lbl" x="632" y="304" text-anchor="middle">3s</text>
+        <text class="lbl" x="812" y="304" text-anchor="middle">4s</text>
+        <text class="lbl" x="380" y="228" text-anchor="start" style="fill:#065f46">100 Requests spread 0.5s – 1.5s</text>
+        <text class="lbl" x="740" y="268" text-anchor="start" style="fill:#065f46">spread 1.5s – 3.5s</text>
+      </svg>
+      <figcaption>Figure 13.1 — Jitter converts synchronized retry spikes into a smooth request distribution</figcaption>
+    </figure>
+    <script>
+    (function(){
+      const X=t=>92+t*180; // 0s at x=92, 180px per second
+      let seed=20250; const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+      const bar=(x,y,h,c)=>`<rect x="${x.toFixed(1)}" y="${y-h}" width="2.6" height="${h}" rx="1.2" fill="${c}"/>`;
+      let a='';
+      for(let i=0;i<22;i++)a+=bar(X(1)-14+i*1.3,72,34,'#ef4444');
+      for(let i=0;i<22;i++)a+=bar(X(2)-14+i*1.3,112,34,'#ef4444');
+      document.getElementById('jitA').innerHTML=a;
+      let b='';
+      for(let i=0;i<26;i++)b+=bar(X(0.5+rnd()),240,16+rnd()*20,'#10b981');
+      for(let i=0;i<26;i++)b+=bar(X(1.5+rnd()*2),280,16+rnd()*20,'#10b981');
+      document.getElementById('jitB').innerHTML=b;
+    })();
+    </script>
+
+    <h3>Polly Implementation with Exponential Backoff + Jitter</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">RetryPipeline.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">var retryPipeline = new ResiliencePipelineBuilder&lt;HttpResponseMessage&gt;()
+    .AddRetry(new RetryStrategyOptions&lt;HttpResponseMessage&gt;
+    {
+        ShouldHandle = new PredicateBuilder&lt;HttpResponseMessage&gt;()
+            .HandleResult(res =&gt; res.StatusCode == HttpStatusCode.ServiceUnavailable),
+        MaxRetryAttempts = 4,
+        BackoffType = DelayBackoffType.Exponential,
+        Delay = TimeSpan.FromSeconds(1),
+        UseJitter = true // Adds full randomized jitter
+    })
+    .Build();</code></pre></div>
+  </section>
+
+  <!-- ================= Q14 ================= -->
+  <section class="q" id="q14">
+    <span class="badge"><span class="hash">#</span> Question 14</span>
+    <h2 class="qt">Idempotency</h2>
+    <p>An idempotent endpoint yields the exact same state outcome regardless of how many times the request executes with identical payloads.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 470" role="img" aria-label="Idempotency key handling flow">
+        <rect class="box d" x="40" y="14" width="230" height="46" rx="10"/>
+        <text class="t w" x="155" y="42" text-anchor="middle">Client Request</text>
+        <path class="ar b" d="M270 37 H330"/>
+        <rect class="box" x="330" y="10" width="470" height="54" rx="10"/>
+        <text class="sub" x="565" y="31" text-anchor="middle">Payload includes header</text>
+        <text class="mono" x="565" y="51" text-anchor="middle" style="font-size:12px;fill:#1e40af">Idempotency-Key: guid-1234-5678</text>
+        <path class="ar b" d="M565 64 V104"/>
+        <rect class="box r" x="425" y="104" width="280" height="48" rx="10"/>
+        <text class="t" x="565" y="134" text-anchor="middle">Check Redis Cache</text>
+        <path class="ar g" d="M565 152 V186 H225 V222"/>
+        <path class="ar a" d="M565 152 V186 H700 V222"/>
+        <text class="lbl" x="225" y="180" text-anchor="middle">Key Exists</text>
+        <text class="lbl" x="700" y="180" text-anchor="middle">Key Not Found</text>
+        <rect class="box g" x="80" y="222" width="290" height="62" rx="10"/>
+        <text class="t" x="225" y="246" text-anchor="middle">Return Cached Response</text>
+        <text class="sub" x="225" y="265" text-anchor="middle">(HTTP 200 / 201 Replayed)</text>
+        <rect class="box a" x="560" y="222" width="280" height="48" rx="10"/>
+        <text class="t" x="700" y="252" text-anchor="middle">Process Request</text>
+        <path class="ar a" d="M700 270 V308"/>
+        <rect class="box a" x="560" y="308" width="280" height="48" rx="10"/>
+        <text class="t" x="700" y="338" text-anchor="middle">Save Payload to Redis</text>
+        <path class="ar g" d="M700 356 V394"/>
+        <rect class="box g" x="560" y="394" width="280" height="48" rx="10"/>
+        <text class="t" x="700" y="424" text-anchor="middle">Return HTTP 201 Created</text>
+      </svg>
+      <figcaption>Figure 14.1 — Replay-safe request handling keyed by a client-supplied idempotency token</figcaption>
+    </figure>
+
+    <h3>ASP.NET Core Idempotency Middleware Implementation</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">IdempotencyMiddleware.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public class IdempotencyMiddleware
+{
+    private readonly RequestDelegate _next;
+    private readonly IDistributedCache _cache;
+
+    public IdempotencyMiddleware(RequestDelegate next, IDistributedCache cache)
+    {
+        _next = next;
+        _cache = cache;
+    }
+
+    public async Task InvokeAsync(HttpContext context)
+    {
+        if (context.Request.Method != HttpMethods.Post)
+        {
+            await _next(context);
+            return;
+        }
+
+        if (!context.Request.Headers.TryGetValue("X-Idempotency-Key", out var idempotencyKey))
+        {
+            await _next(context);
+            return;
+        }
+
+        var cacheKey = $"idempotency:{idempotencyKey}";
+        var cachedResponse = await _cache.GetStringAsync(cacheKey);
+
+        if (cachedResponse != null)
+        {
+            context.Response.ContentType = "application/json";
+            context.Response.StatusCode = StatusCodes.Status200OK;
+            await context.Response.WriteAsync(cachedResponse);
+            return;
+        }
+
+        // Capture downstream response body
+        var originalBodyStream = context.Response.Body;
+        using var responseBody = new MemoryStream();
+        context.Response.Body = responseBody;
+
+        await _next(context);
+
+        if (context.Response.StatusCode is StatusCodes.Status200OK or StatusCodes.Status201Created)
+        {
+            responseBody.Seek(0, SeekOrigin.Begin);
+            var responseText = await new StreamReader(responseBody).ReadToEndAsync();
+            
+            // Cache successful payload for 24 hours
+            await _cache.SetStringAsync(cacheKey, responseText, new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(24)
+            });
+
+            responseBody.Seek(0, SeekOrigin.Begin);
+            await responseBody.CopyToAsync(originalBodyStream);
+        }
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q15 ================= -->
+  <section class="q" id="q15">
+    <span class="badge"><span class="hash">#</span> Question 15</span>
+    <h2 class="qt">Database per Microservice</h2>
+    <p>Decoupling services demands strict isolation at the data tier. Direct database cross-joins across domains are strictly prohibited.</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 800 250" role="img" aria-label="Database per microservice isolation">
+        <rect class="box" x="60" y="14" width="260" height="50" rx="10"/>
+        <text class="t" x="190" y="45" text-anchor="middle">Order Service</text>
+        <rect class="box g" x="470" y="14" width="270" height="50" rx="10"/>
+        <text class="t" x="605" y="45" text-anchor="middle">Catalog Service</text>
+        <path class="ar b" d="M190 64 V110"/>
+        <path class="ar g" d="M605 64 V110"/>
+        <ellipse class="db" cx="190" cy="140" rx="130" ry="30"/>
+        <text class="t" x="190" y="138" text-anchor="middle">PostgreSQL DB</text>
+        <text class="sub" x="190" y="156" text-anchor="middle">Schema: Orders</text>
+        <ellipse class="db" cx="605" cy="140" rx="135" ry="30" style="fill:#ecfdf5;stroke:#10b981"/>
+        <text class="t" x="605" y="138" text-anchor="middle">MongoDB Server</text>
+        <text class="sub" x="605" y="156" text-anchor="middle">Catalog Store</text>
+        <path d="M330 140 H460" stroke="#ef4444" stroke-width="2" stroke-dasharray="6 5" fill="none"/>
+        <text x="395" y="132" text-anchor="middle" style="font-size:16px;fill:#ef4444;font-weight:800">✖</text>
+        <text class="lbl" x="395" y="200" text-anchor="middle" style="fill:#b91c1c">No cross-database joins permitted</text>
+      </svg>
+      <figcaption>Figure 15.1 — Private persistence per bounded context</figcaption>
+    </figure>
+
+    <h3>Cross-Boundary Queries Strategy</h3>
+    <p>When data from multiple domains must be consolidated:</p>
+    <ol class="steps">
+      <li><strong>API Aggregation Pattern</strong>: An Orchestration service or API Gateway calls both underlying services sequentially/in parallel and stitches payload models in memory.</li>
+      <li><strong>Event-Driven CQRS Projection</strong>: Services listen to domain change events published over RabbitMQ and maintain local, localized read-optimized projections of referenced entities.</li>
+    </ol>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 300" role="img" aria-label="Event driven projection across services">
+        <rect class="box g" x="30" y="20" width="220" height="48" rx="10"/>
+        <text class="t" x="140" y="50" text-anchor="middle">Catalog Svc</text>
+        <path class="ar a" d="M250 44 H520"/>
+        <text class="mono" x="385" y="34" text-anchor="middle">Publish ProductUpdatedEvent</text>
+        <rect class="box a" x="520" y="20" width="220" height="48" rx="10"/>
+        <text class="t" x="630" y="50" text-anchor="middle">RabbitMQ</text>
+        <path class="ar a" d="M630 68 V120"/>
+        <rect class="box" x="500" y="120" width="260" height="48" rx="10"/>
+        <text class="t" x="630" y="150" text-anchor="middle">Order Worker Svc</text>
+        <path class="ar b" d="M630 168 V218"/>
+        <rect class="box v" x="470" y="218" width="320" height="54" rx="10"/>
+        <text class="t" x="630" y="242" text-anchor="middle">Update Local Product</text>
+        <text class="sub" x="630" y="260" text-anchor="middle">Cache Table (read projection)</text>
+      </svg>
+      <figcaption>Figure 15.2 — Local read projections replace cross-service joins</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= Q16 ================= -->
+  <section class="q" id="q16">
+    <span class="badge"><span class="hash">#</span> Question 16</span>
+    <h2 class="qt">Azure App Services vs Azure Kubernetes Service (AKS)</h2>
+    <h3>Decision Matrix</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Metric</th><th>Azure App Services</th><th>Azure Kubernetes Service (AKS)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Operational Overhead</strong></td><td>Fully Managed Platform (PaaS); zero OS management.</td><td>High (Requires Control Plane maintenance, CNI, Mesh, Ingress management).</td></tr>
+          <tr><td><strong>Scaling Dynamics</strong></td><td>Instance-based metrics (CPU/RAM). Slow scaling.</td><td>KEDA-driven microsecond event scaling, pod autoscaling (HPA), Cluster Autoscaler.</td></tr>
+          <tr><td><strong>Deployment Density</strong></td><td>Lower density; cost scales per App Service Plan.</td><td>High density; pack hundreds of microservices onto shared node pools.</td></tr>
+          <tr><td><strong>Custom Infrastructure</strong></td><td>Limited host OS control.</td><td>Full control over Linux kernel variables, sidecars, daemonsets, persistent volumes.</td></tr>
+          <tr><td><strong>Ideal For</strong></td><td>Simple web APIs, monolithic apps, low-maintenance services.</td><td>Complex cloud-native systems with dozens of interdependent microservices.</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= Q17 ================= -->
+  <section class="q" id="q17">
+    <span class="badge"><span class="hash">#</span> Question 17</span>
+    <h2 class="qt">Azure Service Bus vs RabbitMQ</h2>
+    <h3>Feature Comparison</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Feature</th><th>Azure Service Bus (PaaS)</th><th>RabbitMQ (IaaS / Self-Hosted)</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Management</strong></td><td>Serverless / Fully Managed Cloud Native Service.</td><td>Requires broker management (or CloudAMQP).</td></tr>
+          <tr><td><strong>Protocol Support</strong></td><td>AMQP 1.0, HTTPS, SBMP.</td><td>AMQP 0-9-1, STOMP, MQTT, AMQP 1.0.</td></tr>
+          <tr><td><strong>Ordering Promises</strong></td><td>FIFO guaranteed via Service Bus Message Sessions.</td><td>Guaranteed per-queue/per-channel; streams support high-speed replaying.</td></tr>
+          <tr><td><strong>Peak Throughput</strong></td><td>High, governed by Messaging Units (MUs).</td><td>Extremely high on optimized raw compute instances.</td></tr>
+          <tr><td><strong>Max Payload Size</strong></td><td>100 MB (Premium Tier).</td><td>Configurable (Typically 128 MB max default recommended).</td></tr>
+          <tr><td><strong>Message Lock Model</strong></td><td>Peek-Lock with Automatic Renew Token Lock.</td><td>Explicit Acknowledgments (Ack / Nack / Reject).</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ================= Q18 ================= -->
+  <section class="q" id="q18">
+    <span class="badge"><span class="hash">#</span> Question 18</span>
+    <h2 class="qt">Redis Caching Strategy</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 470" role="img" aria-label="Cache aside with mutex flow">
+        <rect class="box d" x="310" y="12" width="240" height="46" rx="10"/>
+        <text class="t w" x="430" y="40" text-anchor="middle">Client Query</text>
+        <path class="ar b" d="M430 58 V92"/>
+        <rect class="box r" x="300" y="92" width="260" height="48" rx="10"/>
+        <text class="t" x="430" y="122" text-anchor="middle">Read Redis Cache</text>
+        <path class="ar g" d="M430 140 V174 H180 V208"/>
+        <path class="ar a" d="M430 140 V174 H660 V208"/>
+        <text class="lbl" x="180" y="168" text-anchor="middle">Cache Hit</text>
+        <text class="lbl" x="660" y="168" text-anchor="middle">Cache Miss</text>
+        <rect class="box g" x="55" y="208" width="250" height="48" rx="10"/>
+        <text class="t" x="180" y="238" text-anchor="middle">Return Payload</text>
+        <rect class="box a" x="530" y="208" width="260" height="48" rx="10"/>
+        <text class="t" x="660" y="238" text-anchor="middle">Acquire Mutex Lock</text>
+        <path class="ar a" d="M660 256 V288"/>
+        <rect class="box v" x="530" y="288" width="260" height="48" rx="10"/>
+        <text class="t" x="660" y="318" text-anchor="middle">Query PostgreSQL DB</text>
+        <path class="ar v" d="M660 336 V368"/>
+        <rect class="box r" x="530" y="368" width="260" height="44" rx="10"/>
+        <text class="t" x="660" y="396" text-anchor="middle">Populate Redis Cache</text>
+        <path class="ar g" d="M660 412 V440 H305"/>
+        <rect class="box g" x="55" y="418" width="250" height="44" rx="10"/>
+        <text class="t" x="180" y="446" text-anchor="middle">Return Payload</text>
+      </svg>
+      <figcaption>Figure 18.1 — Cache-aside read path guarded by a distributed mutex</figcaption>
+    </figure>
+
+    <h3>Cache-Aside Pattern with Mutex (Mitigating Cache Stampede)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">CatalogCacheService.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public async Task&lt;ProductDto?&gt; GetProductAsync(Guid productId, CancellationToken ct)
+{
+    var cacheKey = $"catalog:product:{productId}";
+    var cachedData = await _cache.GetStringAsync(cacheKey, ct);
+
+    if (cachedData != null)
+        return JsonSerializer.Deserialize&lt;ProductDto&gt;(cachedData);
+
+    // Acquire distributed lock to prevent thundering herd against primary DB
+    var lockKey = $"lock:product:{productId}";
+    var isLocked = await _redisDb.StringSetAsync(lockKey, "locked", TimeSpan.FromSeconds(5), QueueWhenLocked: false);
+
+    if (!isLocked)
+    {
+        // Wait and fallback retry cache hit
+        await Task.Delay(200, ct);
+        return await GetProductAsync(productId, ct);
+    }
+
+    try
+    {
+        var product = await _dbContext.Products.AsNoTracking().FirstOrDefaultAsync(p =&gt; p.Id == productId, ct);
+        if (product != null)
+        {
+            var dto = new ProductDto(product.Id, product.Name, product.Price);
+            await _cache.SetStringAsync(cacheKey, JsonSerializer.Serialize(dto), new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30)
+            }, ct);
+            return dto;
+        }
+        return null;
+    }
+    finally
+    {
+        await _redisDb.KeyDeleteAsync(lockKey);
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q19 ================= -->
+  <section class="q" id="q19">
+    <span class="badge"><span class="hash">#</span> Question 19</span>
+    <h2 class="qt">Production-Grade Kubernetes Deployment Manifest</h2>
+    <div class="grid2">
+      <div class="mini"><h5><span class="pip"></span>Rollout Safety</h5><p><code class="inl">maxUnavailable: 0</code> with <code class="inl">maxSurge: 25%</code> guarantees full capacity throughout a rolling update.</p></div>
+      <div class="mini g"><h5><span class="pip"></span>Health Gating</h5><p>Separate <code class="inl">/health/ready</code> and <code class="inl">/health/live</code> probes prevent traffic reaching warming pods.</p></div>
+      <div class="mini a"><h5><span class="pip"></span>Resource Governance</h5><p>Requests/limits enable bin-packing and protect noisy-neighbour scenarios on shared node pools.</p></div>
+    </div>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">YAML</span><span class="file">order-service.deployment.yaml</span><button class="cp">Copy</button></div>
+<pre><code data-lang="yaml">apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-service
+  namespace: ecommerce
+  labels:
+    app.kubernetes.io/name: order-service
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: order-service
+  template:
+    metadata:
+      labels:
+        app: order-service
+    spec:
+      containers:
+      - name: order-service
+        image: myregistry.azurecr.io/order-service:v2.1.0
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "512Mi"
+          limits:
+            cpu: "1000m"
+            memory: "1Gi"
+        env:
+        - name: ConnectionStrings__Database
+          valueFrom:
+            secretKeyRef:
+              name: order-db-secret
+              key: connection-string
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-service
+  namespace: ecommerce
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8080
+  selector:
+    app: order-service</code></pre></div>
+  </section>
+
+  <!-- ================= Q20 ================= -->
+  <section class="q" id="q20">
+    <span class="badge"><span class="hash">#</span> Question 20</span>
+    <h2 class="qt">CI/CD Pipeline Architecture (GitHub Actions)</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 200" role="img" aria-label="CI/CD pipeline stages">
+        <rect class="box s" x="14" y="46" width="130" height="58" rx="10"/>
+        <text class="t" x="79" y="72" text-anchor="middle">Push</text>
+        <text class="sub" x="79" y="90" text-anchor="middle">branch: main</text>
+        <path class="ar b" d="M144 75 H172"/>
+        <rect class="box" x="176" y="46" width="140" height="58" rx="10"/>
+        <text class="t" x="246" y="72" text-anchor="middle">Build</text>
+        <text class="sub" x="246" y="90" text-anchor="middle">.NET 8 setup</text>
+        <path class="ar b" d="M316 75 H344"/>
+        <rect class="box" x="348" y="46" width="140" height="58" rx="10"/>
+        <text class="t" x="418" y="72" text-anchor="middle">Test</text>
+        <text class="sub" x="418" y="90" text-anchor="middle">unit + integration</text>
+        <path class="ar a" d="M488 75 H516"/>
+        <rect class="box a" x="520" y="46" width="150" height="58" rx="10"/>
+        <text class="t" x="595" y="72" text-anchor="middle">Trivy Scan</text>
+        <text class="sub" x="595" y="90" text-anchor="middle">CRITICAL,HIGH</text>
+        <path class="ar g" d="M670 75 H698"/>
+        <rect class="box g" x="702" y="46" width="164" height="58" rx="10"/>
+        <text class="t" x="784" y="72" text-anchor="middle">Helm Deploy</text>
+        <text class="sub" x="784" y="90" text-anchor="middle">AKS prod</text>
+        <rect class="zone" x="176" y="26" width="494" height="100" rx="14"/>
+        <text class="lbl" x="188" y="144">job: build-and-test</text>
+        <rect class="zone" x="702" y="26" width="164" height="100" rx="14" style="stroke:#6ee7b7"/>
+        <text class="lbl" x="714" y="144">job: deploy-production</text>
+        <text class="lbl" x="188" y="166" style="fill:#b91c1c">exit-code: 1 blocks the pipeline on HIGH/CRITICAL CVEs</text>
+      </svg>
+      <figcaption>Figure 20.1 — Gated promotion: test &amp; scan must pass before cluster deployment</figcaption>
+    </figure>
+
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">YAML</span><span class="file">.github/workflows/deploy.yml</span><button class="cp">Copy</button></div>
+<pre><code data-lang="yaml">name: Production Deployment Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET 8
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Run Unit &amp; Integration Tests
+      run: dotnet test --configuration Release --logger "trx"
+
+    - name: Container Security Scan (Trivy)
+      uses: aquasecurity/trivy-action@master
+      with:
+        image-ref: 'myregistry.azurecr.io/order-service:${{ github.sha }}'
+        format: 'table'
+        exit-code: '1'
+        severity: 'CRITICAL,HIGH'
+
+  deploy-production:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+    - name: Azure Login
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+    - name: Set AKS Context
+      uses: azure/aks-set-context@v3
+      with:
+        resource-group: 'rg-ecommerce-prod'
+        cluster-name: 'aks-ecommerce-prod'
+
+    - name: Deploy Manifests via Helm
+      run: |
+        helm upgrade --install order-service ./charts/order-service \
+          --namespace ecommerce \
+          --set image.tag=${{ github.sha }}</code></pre></div>
+  </section>
+
+  <!-- ================= Q21 ================= -->
+  <section class="q" id="q21">
+    <span class="badge"><span class="hash">#</span> Question 21</span>
+    <h2 class="qt">Securing Enterprise APIs</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 350" role="img" aria-label="Defense in depth security layers">
+        <rect class="box d" x="290" y="10" width="300" height="46" rx="10"/>
+        <text class="t w" x="440" y="38" text-anchor="middle">Security Perimeter</text>
+        <path class="ar b" d="M440 56 V88 H155 V122"/>
+        <path class="ar v" d="M440 56 V88 H440 V122"/>
+        <path class="ar g" d="M440 56 V88 H725 V122"/>
+        <rect class="box" x="20" y="122" width="270" height="52" rx="10"/>
+        <text class="t" x="155" y="153" text-anchor="middle">Network Infrastructure</text>
+        <rect class="box v" x="305" y="122" width="270" height="52" rx="10"/>
+        <text class="t" x="440" y="153" text-anchor="middle">Transport Identity</text>
+        <rect class="box g" x="590" y="122" width="270" height="52" rx="10"/>
+        <text class="t" x="725" y="153" text-anchor="middle">Application Guard</text>
+        <text class="sub" x="36" y="208">— Cloud WAF Layer</text>
+        <text class="sub" x="36" y="234">— Private Endpoints (VNet)</text>
+        <text class="sub" x="36" y="260">— DDOS Protection Standard</text>
+        <text class="sub" x="321" y="208">— TLS 1.3 Strict Transit</text>
+        <text class="sub" x="321" y="234">— Mutual TLS (mTLS)</text>
+        <text class="sub" x="321" y="260">— JWT OAuth2 Validation</text>
+        <text class="sub" x="606" y="208">— OWASP Sanitization</text>
+        <text class="sub" x="606" y="234">— Scope Claim Check</text>
+        <text class="sub" x="606" y="260">— Dynamic Rate Limits</text>
+        <rect class="zone" x="20" y="186" width="270" height="92" rx="12"/>
+        <rect class="zone" x="305" y="186" width="270" height="92" rx="12" style="stroke:#c4b5fd"/>
+        <rect class="zone" x="590" y="186" width="270" height="92" rx="12" style="stroke:#6ee7b7"/>
+        <text class="lbl" x="440" y="312" text-anchor="middle">Defense in depth — every layer independently enforced</text>
+      </svg>
+      <figcaption>Figure 21.1 — Three-tier defense-in-depth control plane</figcaption>
+    </figure>
+
+    <h3>Key Implementation Pillars</h3>
+    <ol class="steps">
+      <li><strong>Network Layer Isolation</strong>: Isolate underlying services inside Azure VNet Private Subnets; allow inbound access exclusively via Gateway Private Endpoints.</li>
+      <li><strong>Mutual TLS (mTLS)</strong>: Enforce mTLS cert verification for service-to-service communication via Istio Service Mesh.</li>
+      <li><strong>Application Security (OWASP)</strong>: Parameterize database queries (SQL Injection defense); validate input models strictly against strict schemas.</li>
+    </ol>
+  </section>
+
+  <!-- ================= Q22 ================= -->
+  <section class="q" id="q22">
+    <span class="badge"><span class="hash">#</span> Question 22</span>
+    <h2 class="qt">OAuth 2.0 vs JWT</h2>
+
+    <h3>Core Difference</h3>
+    <div class="grid2">
+      <div class="mini"><h5><span class="pip"></span>OAuth 2.0</h5><p>An <strong>authorization framework</strong> defining flows and protocols for delegates accessing resources.</p></div>
+      <div class="mini v"><h5><span class="pip"></span>JWT (JSON Web Token)</h5><p>A compact, cryptographically signed <strong>token format</strong> used to transmit security claims between parties.</p></div>
+    </div>
+
+    <h3>OAuth 2.0 Authorization Code Flow with PKCE</h3>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 880 470" role="img" aria-label="OAuth 2.0 PKCE sequence diagram">
+        <rect class="box d" x="20" y="8" width="200" height="46" rx="10"/>
+        <text class="t w" x="120" y="36" text-anchor="middle">Client App</text>
+        <rect class="box v" x="330" y="8" width="230" height="46" rx="10"/>
+        <text class="t" x="445" y="36" text-anchor="middle">Authorization Server</text>
+        <rect class="box g" x="660" y="8" width="210" height="46" rx="10"/>
+        <text class="t" x="765" y="36" text-anchor="middle">Resource Server (API)</text>
+        <line x1="120" y1="54" x2="120" y2="450" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <line x1="445" y1="54" x2="445" y2="450" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>
+        <line x1="765" y1="54" x2="765" y2="450" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="6 5"/>
+
+        <text class="lbl" x="128" y="90" text-anchor="start">1. Request Authorization (With Code Challenge)</text>
+        <path class="ar b" d="M120 100 H441"/>
+        <text class="lbl" x="437" y="140" text-anchor="end">2. Grants Auth Code</text>
+        <path class="ar v" d="M445 150 H124"/>
+        <text class="lbl" x="128" y="190" text-anchor="start">3. Token Exchange (Code + Code Verifier)</text>
+        <path class="ar b" d="M120 200 H441"/>
+        <text class="lbl" x="437" y="240" text-anchor="end">4. Returns Access JWT</text>
+        <path class="ar v" d="M445 250 H124"/>
+        <text class="lbl" x="128" y="320" text-anchor="start">5. Request Resource (Bearer JWT)</text>
+        <path class="ar g" d="M120 330 H761"/>
+        <text class="lbl" x="757" y="390" text-anchor="end">6. Return Protected Payload</text>
+        <path class="ar g" d="M765 400 H124"/>
+        <rect class="zone" x="60" y="70" width="420" height="200" rx="12" style="stroke:#c4b5fd"/>
+        <text class="lbl" x="70" y="288" style="fill:#5b21b6">PKCE protects public clients from code interception</text>
+      </svg>
+      <figcaption>Figure 22.1 — Authorization Code Flow with Proof Key for Code Exchange</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= Q23 ================= -->
+  <section class="q" id="q23">
+    <span class="badge"><span class="hash">#</span> Question 23</span>
+    <h2 class="qt">SOLID Principles Applied</h2>
+
+    <h3>Bad (Violating SOLID)</h3>
+    <div class="note r"><div class="hd">⚠ Anti-pattern</div><p>A single class owning domain logic, persistence and transport concerns — untestable and tightly coupled to concretions.</p></div>
+    <div class="code" style="border-color:#7f1d1d"><div class="code-hd" style="background:#2a1111"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang" style="color:#fca5a5">C# — Violation</span><span class="file">OrderManager.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public class OrderManager // Violates SRP (Order logic, Emailing, Database access all in one class)
+{
+    public void ProcessOrder(Order order)
+    {
+        // Save to Database
+        using var conn = new SqlConnection("Server=...");
+        conn.Open();
+        // Execute SQL statement...
+
+        // Send Email
+        var client = new SmtpClient("smtp.mail.com");
+        client.Send(new MailMessage());
+    }
+}</code></pre></div>
+
+    <h3>Refactored (SOLID Compliant)</h3>
+    <div class="note g"><div class="hd">✓ Compliant</div><p>Responsibilities are separated behind abstractions; the processor depends only on interfaces it owns.</p></div>
+    <div class="code" style="border-color:#065f46"><div class="code-hd" style="background:#0c2019"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang" style="color:#6ee7b7">C# — Refactored</span><span class="file">OrderProcessor.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">// Single Responsibility Principle (SRP) &amp; Dependency Inversion Principle (DIP)
+public interface IOrderRepository { Task SaveAsync(Order order); }
+public interface INotificationService { Task SendConfirmationEmailAsync(Order order); }
+
+public class OrderProcessor // SRP: Focuses exclusively on order domain orchestration
+{
+    private readonly IOrderRepository _repository;
+    private readonly INotificationService _notificationService;
+
+    // Dependency Inversion Principle: Depend on abstractions, not concretions
+    public OrderProcessor(IOrderRepository repository, INotificationService notificationService)
+    {
+        _repository = repository;
+        _notificationService = notificationService;
+    }
+
+    public async Task ProcessAsync(Order order)
+    {
+        order.MarkAsProcessed();
+        await _repository.SaveAsync(order);
+        await _notificationService.SendConfirmationEmailAsync(order);
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q24 ================= -->
+  <section class="q" id="q24">
+    <span class="badge"><span class="hash">#</span> Question 24</span>
+    <h2 class="qt">Clean Architecture</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 780 420" role="img" aria-label="Clean architecture layers">
+        <rect class="box c" x="180" y="10" width="420" height="56" rx="12"/>
+        <text class="t" x="390" y="44" text-anchor="middle">Presentation / Web API</text>
+        <path class="ar b" d="M390 66 V96"/>
+        <rect class="box" x="180" y="96" width="420" height="66" rx="12"/>
+        <text class="t" x="390" y="124" text-anchor="middle">Application Layer</text>
+        <text class="sub" x="390" y="145" text-anchor="middle">(CQRS, Use Cases, Interfaces)</text>
+        <path class="ar b" d="M390 162 V192"/>
+        <rect class="box v" x="180" y="192" width="420" height="66" rx="12"/>
+        <text class="t" x="390" y="220" text-anchor="middle">Domain Layer</text>
+        <text class="sub" x="390" y="241" text-anchor="middle">(Entities, Value Objects)</text>
+        <rect class="box a" x="180" y="316" width="420" height="66" rx="12"/>
+        <text class="t" x="390" y="344" text-anchor="middle">Infrastructure Layer</text>
+        <text class="sub" x="390" y="365" text-anchor="middle">(EF Core, Redis, RabbitMQ)</text>
+        <path class="ar a" d="M390 316 V262"/>
+        <text class="lbl" x="402" y="292" text-anchor="start">Implements Interfaces (Dependency Inversion)</text>
+        <text class="lbl" x="20" y="228" style="fill:#5b21b6">Zero</text>
+        <text class="lbl" x="20" y="244" style="fill:#5b21b6">dependencies</text>
+        <path class="ar v dsh" d="M120 232 H176"/>
+      </svg>
+      <figcaption>Figure 24.1 — Dependencies point inward; infrastructure plugs in via inverted interfaces</figcaption>
+    </figure>
+
+    <h3>Boundary Rules</h3>
+    <ul>
+      <li>Domain layer has <strong>zero dependencies</strong> on external libraries or outer layers.</li>
+      <li>Infrastructure depends on Application and Domain layers (Dependency Inversion).</li>
+    </ul>
+  </section>
+
+  <!-- ================= Q25 ================= -->
+  <section class="q" id="q25">
+    <span class="badge"><span class="hash">#</span> Question 25</span>
+    <h2 class="qt">Domain-Driven Design (DDD)</h2>
+
+    <h3>Aggregate Root &amp; Value Object Code Example</h3>
+    <div class="grid2">
+      <div class="mini v"><h5><span class="pip"></span>Value Object</h5><p>Immutable, compared by structural equality, has no identity — modelled with a C# <code class="inl">record</code>.</p></div>
+      <div class="mini"><h5><span class="pip"></span>Aggregate Root</h5><p>Guards invariants, exposes behaviour (not setters) and raises domain events for downstream consumers.</p></div>
+    </div>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">Customer.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">// Value Object (Immutable)
+public record Address(string Street, string City, string ZipCode);
+
+// Aggregate Root
+public class Customer
+{
+    public Guid Id { get; private set; }
+    public string Name { get; private set; }
+    public Address ShippingAddress { get; private set; }
+    
+    private readonly List&lt;DomainEvent&gt; _domainEvents = new();
+    public IReadOnlyCollection&lt;DomainEvent&gt; DomainEvents =&gt; _domainEvents.AsReadOnly();
+
+    public Customer(Guid id, string name, Address shippingAddress)
+    {
+        Id = id;
+        Name = Guard.Against.NullOrEmpty(name);
+        ShippingAddress = Guard.Against.Null(shippingAddress);
+    }
+
+    public void UpdateAddress(Address newAddress)
+    {
+        ShippingAddress = Guard.Against.Null(newAddress);
+        _domainEvents.Add(new CustomerAddressUpdatedEvent(Id, newAddress));
+    }
+}</code></pre></div>
+  </section>
+
+  <!-- ================= Q26 ================= -->
+  <section class="q" id="q26">
+    <span class="badge"><span class="hash">#</span> Question 26</span>
+    <h2 class="qt">High Availability Design (Multi-Region Active-Active)</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 420" role="img" aria-label="Multi-region active-active topology">
+        <rect class="box d" x="290" y="10" width="320" height="56" rx="12"/>
+        <text class="t w" x="450" y="34" text-anchor="middle">Global Azure Front Door</text>
+        <text class="sub w" x="450" y="54" text-anchor="middle" style="fill:#94a3b8">(Health Probe Routing / WAF)</text>
+        <path class="ar b" d="M450 66 V104 H230 V142"/>
+        <path class="ar g" d="M450 66 V104 H670 V142"/>
+        <text class="lbl" x="230" y="98" text-anchor="middle">Active Primary Region</text>
+        <text class="lbl" x="670" y="98" text-anchor="middle">Active Secondary Region</text>
+        <rect class="box" x="85" y="142" width="290" height="52" rx="10"/>
+        <text class="t" x="230" y="173" text-anchor="middle">Region East: AKS Cluster</text>
+        <rect class="box g" x="525" y="142" width="290" height="52" rx="10"/>
+        <text class="t" x="670" y="173" text-anchor="middle">Region West: AKS Cluster</text>
+        <path class="ar b" d="M230 194 V232"/>
+        <path class="ar g" d="M670 194 V232"/>
+        <rect class="box v" x="85" y="232" width="290" height="56" rx="10"/>
+        <text class="t" x="230" y="256" text-anchor="middle">Azure SQL Geo-Replica</text>
+        <text class="sub" x="230" y="275" text-anchor="middle">(Write)</text>
+        <rect class="box v" x="525" y="232" width="290" height="56" rx="10"/>
+        <text class="t" x="670" y="256" text-anchor="middle">Azure SQL Geo-Replica</text>
+        <text class="sub" x="670" y="275" text-anchor="middle">(Read / Failover)</text>
+        <path class="ar v" d="M379 260 H521" style="marker-start:url(#ahv)"/>
+        <text class="lbl" x="450" y="252" text-anchor="middle">Active Synchronization</text>
+        <path class="ar v" d="M230 288 V326"/>
+        <path class="ar v" d="M670 288 V326"/>
+        <rect class="box c" x="85" y="326" width="290" height="56" rx="10"/>
+        <text class="t" x="230" y="350" text-anchor="middle">Cosmos DB</text>
+        <text class="sub" x="230" y="369" text-anchor="middle">Multi-Region Write</text>
+        <rect class="box c" x="525" y="326" width="290" height="56" rx="10"/>
+        <text class="t" x="670" y="350" text-anchor="middle">Cosmos DB</text>
+        <text class="sub" x="670" y="369" text-anchor="middle">Multi-Region Write</text>
+        <path class="ar" d="M379 354 H521" style="marker-start:url(#ah)"/>
+        <text class="lbl" x="450" y="346" text-anchor="middle">Global Replication</text>
+      </svg>
+      <figcaption>Figure 26.1 — Active-active regions with bidirectional data replication</figcaption>
+    </figure>
+
+    <h3>Metrics Configuration Targets</h3>
+    <div class="grid2">
+      <div class="mini g"><h5><span class="pip"></span>Target Availability SLA</h5><p><strong>99.99%</strong> (Max 52 minutes downtime/year).</p></div>
+      <div class="mini a"><h5><span class="pip"></span>Recovery Time Objective (RTO)</h5><p><strong>&lt; 1 Minute</strong> (Automated Failover).</p></div>
+      <div class="mini v"><h5><span class="pip"></span>Recovery Point Objective (RPO)</h5><p><strong>&lt; 5 Seconds</strong> (Asynchronous Storage Mirroring).</p></div>
+    </div>
+  </section>
+
+  <!-- ================= Q27 ================= -->
+  <section class="q" id="q27">
+    <span class="badge"><span class="hash">#</span> Question 27</span>
+    <h2 class="qt">Blue-Green Deployment with Database Evolution</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 400" role="img" aria-label="Blue green deployment with expand contract schema">
+        <rect class="box d" x="280" y="10" width="300" height="50" rx="12"/>
+        <text class="t w" x="430" y="41" text-anchor="middle">Azure Front Door Router</text>
+        <path class="ar b" d="M430 60 V98 H200 V136"/>
+        <path class="ar dsh" d="M430 60 V98 H660 V136" style="stroke:#94a3b8"/>
+        <text class="lbl" x="200" y="92" text-anchor="middle" style="fill:#1d4ed8">Traffic: 100%</text>
+        <text class="lbl" x="660" y="92" text-anchor="middle">Traffic: 0%</text>
+        <rect class="box" x="60" y="136" width="280" height="58" rx="12"/>
+        <text class="t" x="200" y="162" text-anchor="middle">Blue Environment</text>
+        <text class="sub" x="200" y="181" text-anchor="middle">v1 — live production</text>
+        <rect class="box g" x="520" y="136" width="280" height="58" rx="12"/>
+        <text class="t" x="660" y="162" text-anchor="middle">Green Environment</text>
+        <text class="sub" x="660" y="181" text-anchor="middle">v2 — idle / warming</text>
+        <path class="ar" d="M200 194 V232 H430 V268"/>
+        <path class="ar" d="M660 194 V232 H430 V268"/>
+        <rect class="box v" x="230" y="268" width="400" height="64" rx="12"/>
+        <text class="t" x="430" y="294" text-anchor="middle">Database Schema Evolution</text>
+        <text class="sub" x="430" y="314" text-anchor="middle">Expand-Contract Pattern (shared, backward compatible)</text>
+        <text class="lbl" x="430" y="362" text-anchor="middle">Instant rollback = flip the router back to Blue</text>
+      </svg>
+      <figcaption>Figure 27.1 — Two identical environments sharing one backward-compatible schema</figcaption>
+    </figure>
+
+    <h3>Database Migration Strategy (Expand-Contract Pattern)</h3>
+    <ol class="steps">
+      <li><strong>Expand</strong>: Add new non-breaking column (e.g., add <code class="inl">FullName</code> alongside <code class="inl">FirstName</code>/<code class="inl">LastName</code>). Deploy DB migration first.</li>
+      <li><strong>Deploy Green</strong>: Deploy v2 microservices to Green environment configured to read/write to <code class="inl">FullName</code>. Both v1 (Blue) and v2 (Green) operate safely in parallel.</li>
+      <li><strong>Switch Traffic</strong>: Route 100% gateway traffic to Green.</li>
+      <li><strong>Contract</strong>: Drop obsolete <code class="inl">FirstName</code>/<code class="inl">LastName</code> columns in a subsequent cleanup DB migration once v1 is decommissioned.</li>
+    </ol>
+  </section>
+
+  <!-- ================= Q28 ================= -->
+  <section class="q" id="q28">
+    <span class="badge"><span class="hash">#</span> Question 28</span>
+    <h2 class="qt">Zero-Downtime Deployment Strategies</h2>
+    <h3>Deployment Types Matrix</h3>
+    <div class="tw">
+      <table>
+        <thead><tr><th>Strategy</th><th>Speed</th><th>Risk</th><th>Rollback Time</th><th>Compute Overhead</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Rolling Update</strong></td><td>Moderate</td><td>Low</td><td>Moderate (Pod Rollback)</td><td>Minimal (Over-provisions 25% pods temporarily).</td></tr>
+          <tr><td><strong>Blue-Green</strong></td><td>Instant</td><td>Low</td><td>Instant (DNS / Proxy Switch)</td><td>100% duplicate infrastructure required during deploy.</td></tr>
+          <tr><td><strong>Canary</strong></td><td>Progressive</td><td>Lowest</td><td>Fast (Metric Driven)</td><td>Minimal additional compute required.</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 860 200" role="img" aria-label="Deployment strategy traffic shapes">
+        <text class="t" x="20" y="24">Rolling Update</text>
+        <rect x="200" y="10" width="90" height="18" rx="4" fill="#3b82f6"/><rect x="292" y="10" width="90" height="18" rx="4" fill="#3b82f6"/>
+        <rect x="384" y="10" width="90" height="18" rx="4" fill="#94a3b8"/><rect x="476" y="10" width="90" height="18" rx="4" fill="#94a3b8"/>
+        <text class="lbl" x="580" y="24">pods replaced batch-by-batch</text>
+        <text class="t" x="20" y="94">Blue-Green</text>
+        <rect x="200" y="80" width="180" height="18" rx="4" fill="#3b82f6"/>
+        <rect x="386" y="80" width="180" height="18" rx="4" fill="#10b981"/>
+        <text class="lbl" x="580" y="94">instant 0% → 100% cutover</text>
+        <text class="t" x="20" y="164">Canary</text>
+        <rect x="200" y="150" width="40" height="18" rx="4" fill="#10b981"/>
+        <rect x="242" y="150" width="90" height="18" rx="4" fill="#10b981" opacity=".75"/>
+        <rect x="334" y="150" width="140" height="18" rx="4" fill="#10b981" opacity=".5"/>
+        <rect x="476" y="150" width="90" height="18" rx="4" fill="#94a3b8"/>
+        <text class="lbl" x="580" y="164">5% → 25% → 50% → 100%, metric gated</text>
+      </svg>
+      <figcaption>Figure 28.1 — Traffic progression profiles per strategy</figcaption>
+    </figure>
+  </section>
+
+  <!-- ================= Q29 ================= -->
+  <section class="q" id="q29">
+    <span class="badge"><span class="hash">#</span> Question 29</span>
+    <h2 class="qt">Distributed Tracing &amp; Observability</h2>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 350" role="img" aria-label="Distributed tracing pipeline">
+        <rect class="box v" x="30" y="14" width="230" height="48" rx="10"/>
+        <text class="t" x="145" y="44" text-anchor="middle">API Gateway</text>
+        <path class="ar b" d="M260 38 H320"/>
+        <rect class="box s" x="320" y="10" width="550" height="56" rx="10"/>
+        <text class="sub" x="595" y="30" text-anchor="middle">Inject TraceParent Header</text>
+        <text class="mono" x="595" y="50" text-anchor="middle" style="font-size:11px;fill:#1e40af">00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01</text>
+        <path class="ar b" d="M145 62 V140"/>
+        <rect class="box" x="30" y="140" width="240" height="50" rx="10"/>
+        <text class="t" x="150" y="171" text-anchor="middle">Order Microservice</text>
+        <path class="ar c" d="M270 165 H346" style="stroke:#06b6d4;marker-end:url(#ahb)"/>
+        <rect class="box c" x="350" y="140" width="230" height="50" rx="10"/>
+        <text class="t" x="465" y="171" text-anchor="middle">OpenTelemetry Engine</text>
+        <path class="ar b" d="M150 190 V250"/>
+        <rect class="box" x="30" y="250" width="240" height="52" rx="10"/>
+        <text class="t" x="150" y="282" text-anchor="middle">Payment Microservice</text>
+        <path class="ar" d="M465 190 V252"/>
+        <path class="ar" d="M270 276 H346"/>
+        <rect class="box a" x="350" y="252" width="230" height="50" rx="10"/>
+        <text class="t" x="465" y="283" text-anchor="middle">OTLP Collector</text>
+        <path class="ar g" d="M580 277 H616"/>
+        <rect class="box g" x="620" y="252" width="250" height="50" rx="10"/>
+        <text class="t" x="745" y="272" text-anchor="middle">Application Insights</text>
+        <text class="sub" x="745" y="291" text-anchor="middle">/ Grafana Jaeger</text>
+      </svg>
+      <figcaption>Figure 29.1 — W3C trace context propagation into a vendor-neutral collector</figcaption>
+    </figure>
+
+    <h3>OpenTelemetry Setup (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">Program.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing =&gt;
+    {
+        tracing
+            .AddSource("Ecommerce.OrderService")
+            .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("OrderService"))
+            .AddAspNetCoreInstrumentation()
+            .AddHttpClientInstrumentation()
+            .AddEntityFrameworkCoreInstrumentation()
+            .AddOtlpExporter(options =&gt; options.Endpoint = new Uri("http://otel-collector:4317"));
+    });</code></pre></div>
+  </section>
+
+  <!-- ================= Q30 ================= -->
+  <section class="q" id="q30">
+    <span class="badge"><span class="hash">#</span> Question 30</span>
+    <h2 class="qt">AI Integration into Enterprise Applications</h2>
+    <p>Integrating Large Language Models (LLMs) securely with enterprise microservices using Retrieval-Augmented Generation (RAG).</p>
+
+    <figure class="fig">
+      <svg class="dg" viewBox="0 0 900 530" role="img" aria-label="Retrieval augmented generation pipeline">
+        <rect class="box d" x="30" y="14" width="200" height="46" rx="10"/>
+        <text class="t w" x="130" y="42" text-anchor="middle">User Query</text>
+        <path class="ar b" d="M230 37 H286"/>
+        <rect class="box v" x="290" y="14" width="200" height="46" rx="10"/>
+        <text class="t" x="390" y="42" text-anchor="middle">API Gateway</text>
+        <path class="ar b" d="M490 37 H546"/>
+        <rect class="box" x="550" y="14" width="320" height="46" rx="10"/>
+        <text class="t" x="710" y="42" text-anchor="middle">Customer Support AI Service</text>
+        <path class="ar c" d="M710 60 V104 H240 V144" style="stroke:#06b6d4;marker-end:url(#ahb)"/>
+        <path class="ar c" d="M710 60 V104 H700 V144" style="stroke:#06b6d4;marker-end:url(#ahb)"/>
+        <text class="lbl" x="240" y="98" text-anchor="middle">1. Generate Embeddings</text>
+        <text class="lbl" x="700" y="98" text-anchor="middle">2. Perform Vector Search</text>
+        <rect class="box c" x="80" y="144" width="320" height="64" rx="10"/>
+        <text class="t" x="240" y="169" text-anchor="middle">Azure OpenAI Embeddings</text>
+        <text class="sub" x="240" y="188" text-anchor="middle">(text-embedding-3-large)</text>
+        <rect class="box g" x="540" y="144" width="320" height="64" rx="10"/>
+        <text class="t" x="700" y="169" text-anchor="middle">Azure AI Search (Vector DB)</text>
+        <text class="sub" x="700" y="188" text-anchor="middle">(Product Manuals &amp; FAQs)</text>
+        <path class="ar g" d="M240 208 V252 H470 V292"/>
+        <path class="ar g" d="M700 208 V252 H470 V292"/>
+        <text class="lbl" x="470" y="244" text-anchor="middle">3. Relevant Context Documents Returned</text>
+        <rect class="box a" x="330" y="292" width="280" height="52" rx="10"/>
+        <text class="t" x="470" y="323" text-anchor="middle">Grounded System Prompt</text>
+        <path class="ar a" d="M470 344 V384"/>
+        <rect class="box v" x="330" y="384" width="280" height="52" rx="10"/>
+        <text class="t" x="470" y="415" text-anchor="middle">Azure OpenAI GPT-4o</text>
+        <path class="ar v" d="M470 436 V476"/>
+        <rect class="box g" x="330" y="476" width="280" height="52" rx="10"/>
+        <text class="t" x="470" y="507" text-anchor="middle">Synthesized Response</text>
+      </svg>
+      <figcaption>Figure 30.1 — Grounded RAG pipeline: embed → retrieve → prompt → generate</figcaption>
+    </figure>
+
+    <h3>Low-Level Design (LLD): Semantic Kernel RAG Service (C# .NET 8)</h3>
+    <div class="code"><div class="code-hd"><span class="dots"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i></span><span class="lang">C#</span><span class="file">AIRecommendationService.cs</span><button class="cp">Copy</button></div>
+<pre><code data-lang="csharp">public class AIRecommendationService
+{
+    private readonly Kernel _kernel;
+    private readonly VectorStoreClient _vectorStore;
+
+    public AIRecommendationService(Kernel kernel, VectorStoreClient vectorStore)
+    {
+        _kernel = kernel;
+        _vectorStore = vectorStore;
+    }
+
+    public async Task&lt;string&gt; GetProductRecommendationAsync(string customerQuery, Guid customerId)
+    {
+        // 1. Perform Vector Similarity Search in Enterprise Catalog Index
+        var vectorSearchResults = await _vectorStore.SearchAsync(
+            collectionName: "product-catalog",
+            query: customerQuery,
+            limit: 3
+        );
+
+        var contextPayload = string.Join("\n", vectorSearchResults.Select(r =&gt; r.Description));
+
+        // 2. Build Grounded Prompt with Context Isolation
+        var prompt = $"""
+            You are an expert enterprise shopping assistant.
+            Answer the user query based ONLY on the contextual product information provided below.
+            Do not use outside knowledge. If the answer cannot be found, say 'I cannot assist with that product.'
+
+            [Context Data]
+            {contextPayload}
+
+            [User Question]
+            {customerQuery}
+            """;
+
+        // 3. Invoke LLM via Semantic Kernel Integration
+        var result = await _kernel.InvokePromptAsync(prompt);
+        return result.ToString();
+    }
+}</code></pre></div>
+  </section>
+</main>
+
+<footer>
+  <div class="in">
+    <span>Technical Architecture &amp; System Design Interview Guide — Alex Mercer, Principal Cloud &amp; Software Architect.</span>
+    <span>.NET 8 · Azure · Kubernetes · Event-Driven Systems</span>
+  </div>
+</footer>
+
+<button id="top" aria-label="Back to top">↑</button>
+
+<script>
+/* ============ SVG ARROW DEFS (cloned into every diagram) ============ */
+const AH=[['ah','#94a3b8'],['ahb','#3b82f6'],['ahg','#10b981'],['ahr','#ef4444'],['aha','#f59e0b'],['ahv','#8b5cf6']];
+const SVGNS='http://www.w3.org/2000/svg';
+function buildDefs(){
+  const defs=document.createElementNS(SVGNS,'defs');
+  AH.forEach(([id,c])=>{
+    const m=document.createElementNS(SVGNS,'marker');
+    m.setAttribute('id',id);m.setAttribute('viewBox','0 0 10 10');
+    m.setAttribute('refX','9');m.setAttribute('refY','5');
+    m.setAttribute('markerWidth','6.5');m.setAttribute('markerHeight','6.5');
+    m.setAttribute('orient','auto-start-reverse');
+    const p=document.createElementNS(SVGNS,'path');
+    p.setAttribute('d','M0 0 L10 5 L0 10 z');p.setAttribute('fill',c);
+    m.appendChild(p);defs.appendChild(m);
+  });
+  return defs;
+}
+function injectDefs(){
+  document.querySelectorAll('svg.dg').forEach(s=>{
+    if(s.dataset.defs)return; s.dataset.defs='1';
+    s.insertBefore(buildDefs(),s.firstChild);
+  });
+}
+
+/* ============ SYNTAX HIGHLIGHTER ============ */
+const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const KW={
+ csharp:'public|private|protected|internal|static|async|await|var|new|return|class|record|interface|struct|enum|using|namespace|if|else|for|foreach|in|while|switch|case|break|continue|try|catch|finally|throw|null|true|false|this|base|readonly|const|override|virtual|abstract|get|set|init|void|string|int|decimal|bool|double|float|long|object|is|as|not|or|and|when|default|params|out|ref|yield|nameof|typeof|sealed|partial',
+ lua:'local|if|then|else|elseif|end|return|function|not|and|or|nil|true|false|while|do|for|in|repeat|until'
+};
+const RULES={
+ csharp:[
+  {c:'com',r:/\/\/[^\n]*|\/\*[\s\S]*?\*\//y},
+  {c:'str',r:/\$?"""[\s\S]*?"""|[@$]{0,2}"(?:[^"\\\n]|\\.)*"|'(?:[^'\\]|\\.)'/y},
+  {c:'num',r:/\b\d+(?:\.\d+)?[fdmLl]?\b/y},
+  {c:'kw',r:new RegExp('\\b(?:'+KW.csharp+')\\b','y')},
+  {c:'typ',r:/\b[A-Z][A-Za-z0-9_]*\b/y},
+  {c:'fn',r:/\b[a-z_][A-Za-z0-9_]*(?=\s*\()/y},
+  {c:'pun',r:/[{}()\[\];,.<>=+\-*/%!&|?:]/y}
+ ],
+ lua:[
+  {c:'com',r:/--[^\n]*/y},
+  {c:'str',r:/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"/y},
+  {c:'num',r:/\b\d+(?:\.\d+)?\b/y},
+  {c:'kw',r:new RegExp('\\b(?:'+KW.lua+')\\b','y')},
+  {c:'fn',r:/\b[a-zA-Z_][A-Za-z0-9_]*(?=\s*\()/y},
+  {c:'typ',r:/\b(?:KEYS|ARGV|redis)\b/y},
+  {c:'pun',r:/[{}()\[\];,.<>=+\-*/%#]/y}
+ ],
+ yaml:[
+  {c:'com',r:/#[^\n]*/y},
+  {c:'str',r:/'(?:[^'\n]|'')*'|"(?:[^"\\\n]|\\.)*"/y},
+  {c:'prop',r:/[A-Za-z_][\w.\-\/]*(?=\s*:)/y},
+  {c:'bool',r:/\b(?:true|false|null)\b/y},
+  {c:'num',r:/\b\d+(?:\.\d+)?%?\b/y},
+  {c:'attr',r:/\$\{\{[^}]*\}\}/y},
+  {c:'pun',r:/[:\-|>{}\[\],]/y}
+ ],
+ json:[
+  {c:'prop',r:/"(?:[^"\\]|\\.)*"(?=\s*:)/y},
+  {c:'str',r:/"(?:[^"\\]|\\.)*"/y},
+  {c:'bool',r:/\b(?:true|false|null)\b/y},
+  {c:'num',r:/-?\b\d+(?:\.\d+)?\b/y},
+  {c:'pun',r:/[{}\[\]:,]/y}
+ ],
+ plain:[]
+};
+function hl(code,lang){
+  const rules=RULES[lang]||RULES.plain; let out='',i=0;
+  while(i<code.length){
+    let hit=false;
+    for(const rule of rules){
+      rule.r.lastIndex=i; const m=rule.r.exec(code);
+      if(m&&m[0].length){ out+='<span class="tok-'+rule.c+'">'+esc(m[0])+'</span>'; i+=m[0].length; hit=true; break; }
+    }
+    if(!hit){ out+=esc(code[i]); i++; }
+  }
+  return out;
+}
+function paint(){
+  document.querySelectorAll('pre code[data-lang]').forEach(el=>{
+    if(el.dataset.done)return; el.dataset.done='1';
+    const raw=el.textContent.replace(/^\n+/,'').replace(/\s+$/,'');
+    el.dataset.raw=raw;
+    el.innerHTML=hl(raw,el.dataset.lang);
+  });
+}
+
+/* ============ COPY BUTTONS ============ */
+function wireCopy(){
+  document.querySelectorAll('.cp').forEach(b=>{
+    if(b.dataset.w)return; b.dataset.w='1';
+    b.addEventListener('click',()=>{
+      const code=b.closest('.code').querySelector('code');
+      navigator.clipboard.writeText(code.dataset.raw||code.textContent).then(()=>{
+        b.textContent='Copied ✓'; b.classList.add('ok');
+        setTimeout(()=>{b.textContent='Copy';b.classList.remove('ok')},1600);
+      });
+    });
+  });
+}
+
+/* ============ TOC + SCROLLSPY ============ */
+function buildToc(){
+  const toc=document.getElementById('toc'); toc.innerHTML='';
+  document.querySelectorAll('section.q[id^="q"]').forEach(s=>{
+    const n=s.id.replace('q',''); const t=s.querySelector('h2.qt').textContent;
+    toc.insertAdjacentHTML('beforeend',
+      `<li><a href="#${s.id}"><span class="n">${String(n).padStart(2,'0')}</span><span>${t}</span></a></li>`);
+  });
+  const links=[...document.querySelectorAll('#nav a')];
+  const io=new IntersectionObserver(es=>{
+    es.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+e.target.id));
+      }
+    });
+  },{rootMargin:'-15% 0px -70% 0px',threshold:0});
+  document.querySelectorAll('section.q').forEach(s=>io.observe(s));
+}
+
+/* ============ UI CHROME ============ */
+const nav=document.getElementById('nav'),scrim=document.getElementById('scrim');
+function closeNav(){nav.classList.remove('open');scrim.style.display='none'}
+document.getElementById('navbtn').addEventListener('click',()=>{
+  const o=nav.classList.toggle('open'); scrim.style.display=o?'block':'none';
+});
+scrim.addEventListener('click',closeNav);
+nav.addEventListener('click',e=>{if(e.target.closest('a')&&innerWidth<=1024)closeNav()});
+const topBtn=document.getElementById('top');
+topBtn.addEventListener('click',()=>scrollTo({top:0,behavior:'smooth'}));
+addEventListener('scroll',()=>{
+  const h=document.documentElement;
+  const p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+  document.getElementById('prog').style.width=p+'%';
+  topBtn.classList.toggle('show',h.scrollTop>600);
+},{passive:true});
+
+function boot(){injectDefs();paint();wireCopy();buildToc();}
+document.addEventListener('DOMContentLoaded',boot);
+if(document.readyState!=='loading')boot();
+</script>
+</body>
+</html>
