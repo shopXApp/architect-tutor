@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="Day 4 of the 30-Day Technical Architect Track — Distributed Transactions &amp; Sagas: designing a reliable Order → Payment → Inventory → Notification flow." />
+<title>Day 4 — Distributed Transactions &amp; Sagas · 30-Day Technical Architect Track</title>
+<meta http-equiv="refresh" content="0; url=Day4.html" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;600&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+:root{
+  --paper:#F6F2E9;--paper2:#EFE9DB;--card:#FBF8F1;
+  --ink:#20293A;--ink2:#5A637A;--ink3:#8A90A3;
+  --line:#DCD3BF;--line2:#CBC0A5;
+  --accent:#C2571B;--accent-tint:rgba(194,87,27,.08);
+  --teal:#2F6D5C;--blue:#2C5D77;--red:#8C2F39;--gold:#7A6416;
+  --shadow:0 18px 40px -24px rgba(32,41,58,.35);
+  --grid:rgba(32,41,58,.055);
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+  --disp:'Fraunces',Georgia,serif;
+  --body:'Source Sans 3','Segoe UI',system-ui,sans-serif;
+}
+body.dark{
+  --paper:#141924;--paper2:#10141D;--card:#1B2231;
+  --ink:#E8E3D5;--ink2:#A7AEC2;--ink3:#79819a;
+  --line:#2A3348;--line2:#39435C;
+  --accent:#E57A36;--accent-tint:rgba(229,122,54,.1);
+  --teal:#5FA98F;--blue:#6FA3C4;--red:#D97A86;--gold:#C9B45E;
+  --grid:rgba(232,227,213,.045);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16.5px;line-height:1.66;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+.wrap{position:relative;flex:1;display:flex;align-items:center;justify-content:center;padding:60px 24px;overflow:hidden}
+.wrap::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:30px 30px;animation:drift 70s linear infinite}
+@keyframes drift{to{background-position:300px 300px}}
+.card{position:relative;max-width:760px;width:100%;background:var(--card);border:1px solid var(--line);border-radius:6px;padding:44px 44px 38px;box-shadow:var(--shadow)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.26em;color:var(--accent);display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.kicker::before{content:"";width:38px;height:1px;background:var(--accent)}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(30px,4.6vw,54px);line-height:1.04;letter-spacing:-.015em}
+h1 em{font-style:italic;color:var(--accent)}
+.sub{margin-top:16px;font-size:17px;color:var(--ink2);max-width:600px}
+.flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:26px 0 8px;font-family:var(--mono);font-size:11px;letter-spacing:.12em}
+.flow span{border:1px solid var(--line2);background:var(--paper);padding:7px 12px;border-radius:3px;color:var(--ink2)}
+.flow span.hi{border-color:var(--accent);color:var(--accent);background:var(--accent-tint)}
+.flow i{color:var(--ink3);font-style:normal}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin:22px 0 26px}
+.chip{font-family:var(--mono);font-size:10px;letter-spacing:.12em;border:1px solid var(--line2);padding:6px 10px;border-radius:3px;color:var(--ink2)}
+.cta{display:inline-flex;align-items:center;gap:12px;background:var(--ink);color:var(--paper);text-decoration:none;font-family:var(--mono);font-size:12px;letter-spacing:.16em;padding:15px 26px;border-radius:4px;transition:transform .25s,box-shadow .25s}
+.cta:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.note{margin-top:18px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--ink3)}
+.foot{border-top:1px solid var(--line);padding:18px 24px;font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink3);display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.foot b{color:var(--accent)}
+@media(max-width:600px){.card{padding:30px 22px}}
+@media(prefers-reduced-motion:reduce){.wrap::before{animation:none}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 04 / 30</div>
+      <h1>One business action.<br />Four services.<br /><em>No shared rollback.</em></h1>
+      <p class="sub">Design a reliable <b>Order → Payment → Inventory → Notification</b> flow: where it fails, how to compensate, how to retry safely, and how to explain every decision in an Architect interview.</p>
+      <div class="flow">
+        <span class="hi">ORDER</span><i>→</i><span>PAYMENT</span><i>→</i><span>INVENTORY</span><i>→</i><span>NOTIFICATION</span>
+      </div>
+      <div class="meta">
+        <span class="chip">15 SECTIONS</span>
+        <span class="chip">6 LIVE FAILURE SCENARIOS</span>
+        <span class="chip">SAGA + COMPENSATION</span>
+        <span class="chip">IDEMPOTENCY · RETRY · TIMEOUT</span>
+        <span class="chip">12 DELIVERABLES</span>
+      </div>
+      <a class="cta" href="Day4.html">
+        OPEN DAY 4
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <p class="note">OPENING DAY 4 AUTOMATICALLY — IF NOTHING HAPPENS, CLICK THE BUTTON ABOVE.</p>
+    </div>
+  </div>
+  <footer class="foot">
+    <div>DAY 04 / 30 — DISTRIBUTED TRANSACTIONS &amp; SAGAS</div>
+    <div>PREV: DAY 03 — DATABASE STRATEGY · <b>DAY 5 NOT ON THIS PAGE</b></div>
+  </footer>
+<script>
+  (function(){
+    try{
+      var saved=localStorage.getItem('arch-day4-theme');
+      if(saved==='dark'){document.body.classList.add('dark');}
+    }catch(e){}
+    if(location.pathname.indexOf('Day4.html')===-1){
+      setTimeout(function(){location.replace('Day4.html');},400);
+    }
+  })();
+</script>
+</body>
+</html>
