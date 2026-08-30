@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -712,6 +713,13 @@
       padding-top: 14px;
     }
 
+    .over-pointer:hover {
+      cursor: pointer;
+      padding: 10px;
+      box-shadow: 0 0 10px rgba(229, 122, 54, 0.25);
+      transition: all 0.25s;
+    }
+
     .day h4 {
       display: flex;
       align-items: baseline;
@@ -890,12 +898,14 @@
       from {
         transform: translate3d(0, 0, 0) rotate(0deg);
       }
+
       to {
         transform: translate3d(-32px, 26px, 0) rotate(5deg);
       }
     }
 
     @media (max-width: 1020px) {
+
       .desktop-nav,
       .side-index,
       .print-btn {
@@ -1008,8 +1018,11 @@
     }
   </style>
 </head>
+
 <body>
-  <div class="progress-track" aria-hidden="true"><div class="progress-bar"></div></div>
+  <div class="progress-track" aria-hidden="true">
+    <div class="progress-bar"></div>
+  </div>
 
   <header class="topbar">
     <div class="shell topbar-inner">
@@ -1050,12 +1063,15 @@
       <div class="hero-content reveal">
         <div class="kicker">For Suraj</div>
         <h1>Technical Architect Roadmap</h1>
-        <p class="hero-lede">You are closer to <strong>Technical Architect</strong> than Technical Lead, but not yet consistently operating at Architect level. The next gap is not technology knowledge. It is decision quality under constraints.</p>
+        <p class="hero-lede">You are closer to <strong>Technical Architect</strong> than Technical Lead, but not yet
+          consistently operating at Architect level. The next gap is not technology knowledge. It is decision quality
+          under constraints.</p>
         <div class="hero-actions">
           <a class="btn-primary" href="#roadmap">Start 30-Day Plan</a>
           <a class="btn-secondary" href="#assignments">View Assignments</a>
         </div>
-        <div class="thesis">Stop trying to learn everything. Become exceptionally good at designing, defending, and communicating scalable .NET and Azure distributed systems.</div>
+        <div class="thesis">Stop trying to learn everything. Become exceptionally good at designing, defending, and
+          communicating scalable .NET and Azure distributed systems.</div>
       </div>
     </section>
 
@@ -1080,12 +1096,16 @@
           <div class="section-head">
             <span class="section-number">01</span>
             <h2>Career Path Analysis</h2>
-            <p class="lead">The market expects a modern .NET architect to connect .NET, Azure, microservices, Kubernetes, CI/CD, distributed systems, security, observability, architecture documentation, and business outcomes.</p>
+            <p class="lead">The market expects a modern .NET architect to connect .NET, Azure, microservices,
+              Kubernetes, CI/CD, distributed systems, security, observability, architecture documentation, and business
+              outcomes.</p>
           </div>
 
           <h3>Your current career position</h3>
           <div class="text-block">
-            <p>You have accumulated enough technology knowledge to talk like an architect. The missing proof is your ability to make architecture decisions under constraints, defend them, quantify trade-offs, and explain business impact.</p>
+            <p>You have accumulated enough technology knowledge to talk like an architect. The missing proof is your
+              ability to make architecture decisions under constraints, defend them, quantify trade-offs, and explain
+              business impact.</p>
           </div>
 
           <table class="comparison-table" aria-label="Current level versus architect expectation">
@@ -1098,36 +1118,133 @@
               </tr>
             </thead>
             <tbody>
-              <tr><td>C# / .NET</td><td>9/10</td><td>8/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>ASP.NET Core / APIs</td><td>9/10</td><td>8/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>SQL / data</td><td>8/10</td><td>8/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>Microservices</td><td>8/10</td><td>9/10</td><td class="gap-medium">Medium</td></tr>
-              <tr><td>Distributed systems</td><td>6.5/10</td><td>9/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Cloud architecture</td><td>6/10</td><td>8.5/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Azure</td><td>6.5/10</td><td>8.5/10</td><td class="gap-high">High</td></tr>
-              <tr><td>AWS</td><td>4/10</td><td>7/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Kubernetes / containers</td><td>6/10</td><td>8/10</td><td class="gap-medium">Medium</td></tr>
-              <tr><td>Event-driven architecture</td><td>7/10</td><td>8.5/10</td><td class="gap-medium">Medium</td></tr>
-              <tr><td>Security architecture</td><td>6/10</td><td>8/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Scalability / performance</td><td>7/10</td><td>9/10</td><td class="gap-medium">Medium</td></tr>
-              <tr><td>Architecture documentation</td><td>8/10</td><td>8/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>System design</td><td>7/10</td><td>9/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Business understanding</td><td>6/10</td><td>9/10</td><td class="gap-high">High</td></tr>
-              <tr><td>Stakeholder communication</td><td>7/10</td><td>9/10</td><td class="gap-medium">Medium</td></tr>
-              <tr><td>Technical leadership</td><td>8/10</td><td>8.5/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>AI / GenAI</td><td>7/10</td><td>7/10</td><td class="gap-low">Low</td></tr>
-              <tr><td>Architecture decision making</td><td>6.5/10</td><td>9/10</td><td class="gap-high">High</td></tr>
+              <tr>
+                <td>C# / .NET</td>
+                <td>9/10</td>
+                <td>8/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>ASP.NET Core / APIs</td>
+                <td>9/10</td>
+                <td>8/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>SQL / data</td>
+                <td>8/10</td>
+                <td>8/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>Microservices</td>
+                <td>8/10</td>
+                <td>9/10</td>
+                <td class="gap-medium">Medium</td>
+              </tr>
+              <tr>
+                <td>Distributed systems</td>
+                <td>6.5/10</td>
+                <td>9/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Cloud architecture</td>
+                <td>6/10</td>
+                <td>8.5/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Azure</td>
+                <td>6.5/10</td>
+                <td>8.5/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>AWS</td>
+                <td>4/10</td>
+                <td>7/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Kubernetes / containers</td>
+                <td>6/10</td>
+                <td>8/10</td>
+                <td class="gap-medium">Medium</td>
+              </tr>
+              <tr>
+                <td>Event-driven architecture</td>
+                <td>7/10</td>
+                <td>8.5/10</td>
+                <td class="gap-medium">Medium</td>
+              </tr>
+              <tr>
+                <td>Security architecture</td>
+                <td>6/10</td>
+                <td>8/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Scalability / performance</td>
+                <td>7/10</td>
+                <td>9/10</td>
+                <td class="gap-medium">Medium</td>
+              </tr>
+              <tr>
+                <td>Architecture documentation</td>
+                <td>8/10</td>
+                <td>8/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>System design</td>
+                <td>7/10</td>
+                <td>9/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Business understanding</td>
+                <td>6/10</td>
+                <td>9/10</td>
+                <td class="gap-high">High</td>
+              </tr>
+              <tr>
+                <td>Stakeholder communication</td>
+                <td>7/10</td>
+                <td>9/10</td>
+                <td class="gap-medium">Medium</td>
+              </tr>
+              <tr>
+                <td>Technical leadership</td>
+                <td>8/10</td>
+                <td>8.5/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>AI / GenAI</td>
+                <td>7/10</td>
+                <td>7/10</td>
+                <td class="gap-low">Low</td>
+              </tr>
+              <tr>
+                <td>Architecture decision making</td>
+                <td>6.5/10</td>
+                <td>9/10</td>
+                <td class="gap-high">High</td>
+              </tr>
             </tbody>
           </table>
 
           <div class="callout">
-            <strong>The uncomfortable truth:</strong> your biggest problem is not lack of technology. It is technology breadth without sufficient architectural depth.
+            <strong>The uncomfortable truth:</strong> your biggest problem is not lack of technology. It is technology
+            breadth without sufficient architectural depth.
           </div>
 
           <div class="split">
             <div class="plain-panel">
               <h3>Technical Lead Fit</h3>
-              <p>Technical Lead roles expect strong hands-on engineering, team leadership, code reviews, mentoring, troubleshooting, architecture contribution, and delivery ownership.</p>
+              <p>Technical Lead roles expect strong hands-on engineering, team leadership, code reviews, mentoring,
+                troubleshooting, architecture contribution, and delivery ownership.</p>
               <div class="fit-line">
                 <div class="fit-label">Estimated Fit</div>
                 <div class="meter" data-width="88%"><span></span></div>
@@ -1137,7 +1254,8 @@
             </div>
             <div class="plain-panel">
               <h3>Technical Architect Fit</h3>
-              <p>Architect roles shift from implementation to the reason behind the architecture: alternatives, risks, NFRs, cost, failure modes, and stakeholder confidence.</p>
+              <p>Architect roles shift from implementation to the reason behind the architecture: alternatives, risks,
+                NFRs, cost, failure modes, and stakeholder confidence.</p>
               <div class="fit-line">
                 <div class="fit-label">Fit Today</div>
                 <div class="meter" data-width="68%"><span></span></div>
@@ -1152,16 +1270,24 @@
           </div>
 
           <h3>Recommendation</h3>
-          <p class="quote">Do not choose Technical Lead as your final destination. Use Technical Lead as your fallback position, not your career destination.</p>
+          <p class="quote">Do not choose Technical Lead as your final destination. Use Technical Lead as your fallback
+            position, not your career destination.</p>
           <div class="text-block">
-            <p>Your target should be Technical Architect -> Solution Architect -> Enterprise Architect. But do not try to become a generic Enterprise Architect immediately.</p>
-            <p>Your strongest market positioning is: <strong>.NET Technical Architect | Distributed Systems | Azure | Microservices | Cloud-Native | AI</strong>.</p>
+            <p>Your target should be Technical Architect -> Solution Architect -> Enterprise Architect. But do not try
+              to become a generic Enterprise Architect immediately.</p>
+            <p>Your strongest market positioning is: <strong>.NET Technical Architect | Distributed Systems | Azure |
+                Microservices | Cloud-Native | AI</strong>.</p>
           </div>
 
           <h3>Your biggest career risk</h3>
           <div class="text-block">
-            <p>Your biggest risk is becoming permanently stuck between Senior Developer and Architect. If your interviews remain mostly C#, SOLID, design patterns, EF, SQL, Web API, coding, and debugging, you will continue being evaluated as a strong senior engineer or technical lead.</p>
-            <p>Architect interviews will attack scalability, availability, CAP, consistency, failure handling, distributed transactions, observability, security, cost, cloud trade-offs, data partitioning, event-driven systems, disaster recovery, migration, multi-tenancy, architecture governance, and business constraints.</p>
+            <p>Your biggest risk is becoming permanently stuck between Senior Developer and Architect. If your
+              interviews remain mostly C#, SOLID, design patterns, EF, SQL, Web API, coding, and debugging, you will
+              continue being evaluated as a strong senior engineer or technical lead.</p>
+            <p>Architect interviews will attack scalability, availability, CAP, consistency, failure handling,
+              distributed transactions, observability, security, cost, cloud trade-offs, data partitioning, event-driven
+              systems, disaster recovery, migration, multi-tenancy, architecture governance, and business constraints.
+            </p>
           </div>
         </section>
 
@@ -1169,7 +1295,8 @@
           <div class="section-head">
             <span class="section-number">02</span>
             <h2>Business vs Job</h2>
-            <p class="lead">Do not quit your job and start a business now. Your highest-value asset right now is your technical career capital.</p>
+            <p class="lead">Do not quit your job and start a business now. Your highest-value asset right now is your
+              technical career capital.</p>
           </div>
 
           <div class="split">
@@ -1200,7 +1327,8 @@
           </div>
 
           <div class="callout green">
-            <strong>Recommendation:</strong> 2026 to 2027 should be job plus strategic side asset. Not job or business. Your job funds the transition. Your architecture expertise becomes the product.
+            <strong>Recommendation:</strong> 2026 to 2027 should be job plus strategic side asset. Not job or business.
+            Your job funds the transition. Your architecture expertise becomes the product.
           </div>
         </section>
 
@@ -1218,15 +1346,18 @@
             </div>
             <div class="phase">
               <strong>Phase 2: Become genuinely strong at architecture</strong>
-              <span>Build architecture case studies, system designs, ADRs, cloud architectures, production problem solving, and cost/performance analysis.</span>
+              <span>Build architecture case studies, system designs, ADRs, cloud architectures, production problem
+                solving, and cost/performance analysis.</span>
             </div>
             <div class="phase">
               <strong>Phase 3: Build authority</strong>
-              <span>Create GitHub architecture projects, technical articles, presentations, reusable templates, and AI architecture experiments.</span>
+              <span>Create GitHub architecture projects, technical articles, presentations, reusable templates, and AI
+                architecture experiments.</span>
             </div>
             <div class="phase">
               <strong>Phase 4: Monetize</strong>
-              <span>Experiment with architecture consulting, mentoring, interview coaching, architecture reviews, small SaaS products, and AI automation products.</span>
+              <span>Experiment with architecture consulting, mentoring, interview coaching, architecture reviews, small
+                SaaS products, and AI automation products.</span>
             </div>
           </div>
         </section>
@@ -1235,11 +1366,14 @@
           <div class="section-head">
             <span class="section-number">04</span>
             <h2>The Skill You Are Avoiding</h2>
-            <p class="lead">You are avoiding deep system design. Exploration gives dopamine. Mastery gives discomfort.</p>
+            <p class="lead">You are avoiding deep system design. Exploration gives dopamine. Mastery gives discomfort.
+            </p>
           </div>
 
           <div class="text-block">
-            <p>You keep moving sideways: Redis, Elasticsearch, RabbitMQ, Semantic Kernel, RAG, Ollama, Docker, Kubernetes, AI, APIs, Hangfire, GraphQL, and more. That feels like progress, but it can keep you at 60% depth across too many topics.</p>
+            <p>You keep moving sideways: Redis, Elasticsearch, RabbitMQ, Semantic Kernel, RAG, Ollama, Docker,
+              Kubernetes, AI, APIs, Hangfire, GraphQL, and more. That feels like progress, but it can keep you at 60%
+              depth across too many topics.</p>
           </div>
 
           <p class="quote">The skill that can change your career trajectory is Architecture Decision Making.</p>
@@ -1275,12 +1409,15 @@
             <div class="plain-panel">
               <h3>Problem 1: Context switching</h3>
               <p>You are learning many unrelated technologies. That creates the illusion of productivity.</p>
-              <div class="callout gold">For 30 days, no random technology exploration. Every learning activity must support Technical Architect.</div>
+              <div class="callout gold">For 30 days, no random technology exploration. Every learning activity must
+                support Technical Architect.</div>
             </div>
             <div class="plain-panel">
               <h3>Problem 2: Over-documenting before proving</h3>
-              <p>You can spend 5 hours designing the documentation structure and 1 hour solving the actual architecture.</p>
-              <div class="callout gold">New rule: architecture first, documentation second. Think first. Draw second. Write third.</div>
+              <p>You can spend 5 hours designing the documentation structure and 1 hour solving the actual architecture.
+              </p>
+              <div class="callout gold">New rule: architecture first, documentation second. Think first. Draw second.
+                Write third.</div>
             </div>
             <div class="plain-panel">
               <h3>Problem 3: Learning your way into confidence</h3>
@@ -1288,14 +1425,17 @@
             </div>
             <div class="plain-panel">
               <h3>Problem 4: Goal too broad</h3>
-              <p>Your primary 12-month career goal should be: become an employable, credible .NET Technical Architect.</p>
+              <p>Your primary 12-month career goal should be: become an employable, credible .NET Technical Architect.
+              </p>
             </div>
           </div>
 
           <h3>Time management diagnosis</h3>
           <div class="text-block">
-            <p>Your schedule is approximately 11 AM to 8 PM with roughly 2 hours daily commute and gym in the morning. Your strategy cannot depend on studying 4 hours every night.</p>
-            <p><strong>Realistic target:</strong> 90 minutes of deep learning per weekday, plus 2 to 3 hours on the weekend.</p>
+            <p>Your schedule is approximately 11 AM to 8 PM with roughly 2 hours daily commute and gym in the morning.
+              Your strategy cannot depend on studying 4 hours every night.</p>
+            <p><strong>Realistic target:</strong> 90 minutes of deep learning per weekday, plus 2 to 3 hours on the
+              weekend.</p>
           </div>
         </section>
 
@@ -1324,7 +1464,8 @@
           <div class="section-head">
             <span class="section-number">07</span>
             <h2>30-Day Technical Architect Interview Roadmap</h2>
-            <p class="lead">Use the filters to focus the plan by week. Click each week heading to collapse or expand.</p>
+            <p class="lead">Use the filters to focus the plan by week. Click each week heading to collapse or expand.
+            </p>
           </div>
 
           <div class="roadmap-controls" aria-label="Roadmap filters">
@@ -1339,18 +1480,45 @@
             <div class="week-header" tabindex="0" role="button" aria-expanded="true">
               <div>
                 <h3>Week 1: Architecture Fundamentals</h3>
-                <span>Build the foundation for NFRs, scale, data, distributed systems, caching, messaging, and first mock design.</span>
+                <span>Build the foundation for NFRs, scale, data, distributed systems, caching, messaging, and first
+                  mock design.</span>
               </div>
               <div class="week-toggle">Collapse</div>
             </div>
             <div class="days">
-              <div class="day"><h4><span>Day 1</span> Architecture mindset</h4><p>Study functional vs NFR, scalability, availability, reliability, maintainability, and cost. Assignment: design a multi-tenant SaaS platform.</p></div>
-              <div class="day"><h4><span>Day 2</span> Scaling basics</h4><p>Master load balancing, horizontal scaling, vertical scaling, caching, CDN, and database scaling. Assignment: design for 1 million users and 100K concurrent users.</p></div>
-              <div class="day"><h4><span>Day 3</span> Databases</h4><p>Study SQL vs NoSQL, indexing, partitioning, replication, sharding, read replicas, and consistency. Explain SQL Server vs PostgreSQL vs MongoDB vs Cosmos DB.</p></div>
-              <div class="day"><h4><span>Day 4</span> Distributed systems</h4><p>Study CAP, consistency, availability, eventual consistency, and distributed transactions. Explain Order -> Payment -> Inventory -> Notification.</p></div>
-              <div class="day"><h4><span>Day 5</span> Caching</h4><p>Study cache-aside, write-through, write-behind, TTL, invalidation, cache stampede, and distributed cache failure. Use your Redis outage as an interview case.</p></div>
-              <div class="day"><h4><span>Day 6</span> Messaging</h4><p>Study RabbitMQ, Kafka, Azure Service Bus, queues vs topics, retry, DLQ, and idempotency.</p></div>
-              <div class="day"><h4><span>Day 7</span> Mock interview</h4><p>Design an Amazon-like order system in 45 minutes without Google.</p></div>
+              <div class="day over-pointer" onclick="window.location.href='day1-v1.html'">
+                <h4><span>Day 1</span> Architecture mindset</h4>
+                <p>Study functional vs NFR, scalability, availability, reliability, maintainability, and cost.
+                  Assignment: design a multi-tenant SaaS platform.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day2-v1.html'">
+                <h4><span>Day 2</span> Scaling basics</h4>
+                <p>Master load balancing, horizontal scaling, vertical scaling, caching, CDN, and database scaling.
+                  Assignment: design for 1 million users and 100K concurrent users.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day3-v1.html'">
+                <h4><span>Day 3</span> Databases</h4>
+                <p>Study SQL vs NoSQL, indexing, partitioning, replication, sharding, read replicas, and consistency.
+                  Explain SQL Server vs PostgreSQL vs MongoDB vs Cosmos DB.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day4-v1.html'">
+                <h4><span>Day 4</span> Distributed systems</h4>
+                <p>Study CAP, consistency, availability, eventual consistency, and distributed transactions. Explain
+                  Order -> Payment -> Inventory -> Notification.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day5-v1.html'">
+                <h4><span>Day 5</span> Caching</h4>
+                <p>Study cache-aside, write-through, write-behind, TTL, invalidation, cache stampede, and distributed
+                  cache failure. Use your Redis outage as an interview case.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day6-v1.html'">
+                <h4><span>Day 6</span> Messaging</h4>
+                <p>Study RabbitMQ, Kafka, Azure Service Bus, queues vs topics, retry, DLQ, and idempotency.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day7-v1.html'">
+                <h4><span>Day 7</span> Mock interview</h4>
+                <p>Design an Amazon-like order system in 45 minutes without Google.</p>
+              </div>
             </div>
           </article>
 
@@ -1358,18 +1526,45 @@
             <div class="week-header" tabindex="0" role="button" aria-expanded="true">
               <div>
                 <h3>Week 2: Cloud + Distributed Architecture</h3>
-                <span>Move from concepts into Azure, AWS mapping, Kubernetes, security, observability, and resilience.</span>
+                <span>Move from concepts into Azure, AWS mapping, Kubernetes, security, observability, and
+                  resilience.</span>
               </div>
               <div class="week-toggle">Collapse</div>
             </div>
             <div class="days">
-              <div class="day"><h4><span>Day 8</span> Azure architecture</h4><p>Study App Service, Functions, AKS, Service Bus, Event Grid, Cosmos DB, Azure SQL, Key Vault, and API Management.</p></div>
-              <div class="day"><h4><span>Day 9</span> AWS equivalent architecture</h4><p>Map App Service to Elastic Beanstalk / ECS, Functions to Lambda, Service Bus to SQS / SNS, Cosmos DB to DynamoDB, Blob Storage to S3, AKS to EKS, Azure SQL to RDS, and Key Vault to Secrets Manager.</p></div>
-              <div class="day"><h4><span>Day 10</span> Docker + Kubernetes</h4><p>Explain why Kubernetes exists without saying only that it provides scalability.</p></div>
-              <div class="day"><h4><span>Day 11</span> Security architecture</h4><p>Study OAuth2, OpenID Connect, JWT, Entra ID, API gateway, RBAC, secrets, encryption, and zero trust.</p></div>
-              <div class="day"><h4><span>Day 12</span> Observability</h4><p>Study logs, metrics, traces, correlation IDs, OpenTelemetry, Application Insights, and alerting.</p></div>
-              <div class="day"><h4><span>Day 13</span> Resilience</h4><p>Study timeout, retry, exponential backoff, circuit breaker, bulkhead, rate limiting, and idempotency.</p></div>
-              <div class="day"><h4><span>Day 14</span> Mock payment platform</h4><p>Include 99.99% availability, retries, duplicate requests, payment failure, database failure, queue failure, and observability.</p></div>
+              <div class="day over-pointer" onclick="window.location.href='day8-v1.html'">
+                <h4><span>Day 8</span> Azure architecture</h4>
+                <p>Study App Service, Functions, AKS, Service Bus, Event Grid, Cosmos DB, Azure SQL, Key Vault, and API
+                  Management.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day9-v1.html'">
+                <h4><span>Day 9</span> AWS equivalent architecture</h4>
+                <p>Map App Service to Elastic Beanstalk / ECS, Functions to Lambda, Service Bus to SQS / SNS, Cosmos DB
+                  to DynamoDB, Blob Storage to S3, AKS to EKS, Azure SQL to RDS, and Key Vault to Secrets Manager.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day10-v1.html'">
+                <h4><span>Day 10</span> Docker + Kubernetes</h4>
+                <p>Explain why Kubernetes exists without saying only that it provides scalability.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day11-v1.html'">
+                <h4><span>Day 11</span> Security architecture</h4>
+                <p>Study OAuth2, OpenID Connect, JWT, Entra ID, API gateway, RBAC, secrets, encryption, and zero trust.
+                </p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day12-v1.html'">
+                <h4><span>Day 12</span> Observability</h4>
+                <p>Study logs, metrics, traces, correlation IDs, OpenTelemetry, Application Insights, and alerting.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day13-v1.html'">
+                <h4><span>Day 13</span> Resilience</h4>
+                <p>Study timeout, retry, exponential backoff, circuit breaker, bulkhead, rate limiting, and idempotency.
+                </p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day14-v1.html'">
+                <h4><span>Day 14</span> Mock payment platform</h4>
+                <p>Include 99.99% availability, retries, duplicate requests, payment failure, database failure, queue
+                  failure, and observability.</p>
+              </div>
             </div>
           </article>
 
@@ -1377,18 +1572,43 @@
             <div class="week-header" tabindex="0" role="button" aria-expanded="true">
               <div>
                 <h3>Week 3: Architecture Thinking</h3>
-                <span>The most important week: DDD, CQRS, events, microservices trade-offs, and executive communication.</span>
+                <span>The most important week: DDD, CQRS, events, microservices trade-offs, and executive
+                  communication.</span>
               </div>
               <div class="week-toggle">Collapse</div>
             </div>
             <div class="days">
-              <div class="day"><h4><span>Day 15</span> DDD</h4><p>Study bounded context, aggregate, entity, value object, and domain event.</p></div>
-              <div class="day"><h4><span>Day 16</span> CQRS</h4><p>Do not memorize definitions. Answer: why would I not use CQRS?</p></div>
-              <div class="day"><h4><span>Day 17</span> Event-driven architecture</h4><p>Design Order -> Payment -> Inventory -> Shipping -> Notification.</p></div>
-              <div class="day"><h4><span>Day 18</span> Microservices</h4><p>Answer: when should you not use microservices? If you cannot answer convincingly, you are not ready to sell yourself as an architect.</p></div>
-              <div class="day"><h4><span>Day 19</span> Modular monolith vs microservices</h4><p>Make this one of your strongest interview topics.</p></div>
-              <div class="day"><h4><span>Day 20</span> Architecture trade-offs</h4><p>For every major technology, create Option A, Option B, pros, cons, cost, complexity, scale, and recommendation.</p></div>
-              <div class="day"><h4><span>Day 21</span> Architecture presentation</h4><p>Take one architecture and explain it in 10 minutes to a CTO, Product Manager, and Engineering Manager. Avoid jargon unless necessary.</p></div>
+              <div class="day over-pointer" onclick="window.location.href='day15-v1.html'">
+                <h4><span>Day 15</span> DDD</h4>
+                <p>Study bounded context, aggregate, entity, value object, and domain event.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day16-v1.html'">
+                <h4><span>Day 16</span> CQRS</h4>
+                <p>Do not memorize definitions. Answer: why would I not use CQRS?</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day17-v1.html'">
+                <h4><span>Day 17</span> Event-driven architecture</h4>
+                <p>Design Order -> Payment -> Inventory -> Shipping -> Notification.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day18-v1.html'">
+                <h4><span>Day 18</span> Microservices</h4>
+                <p>Answer: when should you not use microservices? If you cannot answer convincingly, you are not ready
+                  to sell yourself as an architect.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day19-v1.html'">
+                <h4><span>Day 19</span> Modular monolith vs microservices</h4>
+                <p>Make this one of your strongest interview topics.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day20-v1.html'">
+                <h4><span>Day 20</span> Architecture trade-offs</h4>
+                <p>For every major technology, create Option A, Option B, pros, cons, cost, complexity, scale, and
+                  recommendation.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day21-v1.html'">
+                <h4><span>Day 21</span> Architecture presentation</h4>
+                <p>Take one architecture and explain it in 10 minutes to a CTO, Product Manager, and Engineering
+                  Manager. Avoid jargon unless necessary.</p>
+              </div>
             </div>
           </article>
 
@@ -1396,45 +1616,116 @@
             <div class="week-header" tabindex="0" role="button" aria-expanded="true">
               <div>
                 <h3>Week 4: Interview Simulation</h3>
-                <span>Practice difficult system design, production incidents, governance, behavioral stories, and a final mock exam.</span>
+                <span>Practice difficult system design, production incidents, governance, behavioral stories, and a
+                  final mock exam.</span>
               </div>
               <div class="week-toggle">Collapse</div>
             </div>
             <div class="days">
-              <div class="day"><h4><span>Day 22</span> Netflix-like video platform</h4><p>Complete a full system design with requirements, NFRs, trade-offs, and failure modes.</p></div>
-              <div class="day"><h4><span>Day 23</span> Uber-like ride platform</h4><p>Focus on geo, matching, availability, location updates, and surge load.</p></div>
-              <div class="day"><h4><span>Day 24</span> WhatsApp-like messaging system</h4><p>Focus on messaging, delivery guarantees, fanout, presence, storage, and offline handling.</p></div>
-              <div class="day"><h4><span>Day 25</span> Multi-tenant enterprise SaaS</h4><p>This is particularly relevant to your experience. Cover tenancy, authorization, scale, reporting, integrations, and future AI.</p></div>
-              <div class="day"><h4><span>Day 26</span> Production incident interview</h4><p>Redis goes down, returns, and 1 million requests hit SQL. Explain what happens and how you prevent database collapse.</p></div>
-              <div class="day"><h4><span>Day 27</span> Architecture governance</h4><p>Study ADR, HLD, LLD, architecture review, standards, security review, technical debt, and governance.</p></div>
-              <div class="day"><h4><span>Day 28</span> Behavioral Architect interview</h4><p>Prepare STAR stories for architecture decision, production failure, developer conflict, stakeholder conflict, performance problem, migration, mentoring, difficult deadline, technical debt, and failed decision.</p></div>
-              <div class="day"><h4><span>Day 29</span> Full mock interview</h4><p>Run a 90-minute Architect mock interview with no notes.</p></div>
-              <div class="day"><h4><span>Day 30</span> Architecture exam</h4><p>Score yourself out of 100 using the exam table below. Target 80+ for Architect interview readiness.</p></div>
+              <div class="day over-pointer" onclick="window.location.href='day22-v1.html'">
+                <h4><span>Day 22</span> Netflix-like video platform</h4>
+                <p>Complete a full system design with requirements, NFRs, trade-offs, and failure modes.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day23-v1.html'">
+                <h4><span>Day 23</span> Uber-like ride platform</h4>
+                <p>Focus on geo, matching, availability, location updates, and surge load.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day24-v1.html'">
+                <h4><span>Day 24</span> WhatsApp-like messaging system</h4>
+                <p>Focus on messaging, delivery guarantees, fanout, presence, storage, and offline handling.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day25-v1.html'">
+                <h4><span>Day 25</span> Multi-tenant enterprise SaaS</h4>
+                <p>This is particularly relevant to your experience. Cover tenancy, authorization, scale, reporting,
+                  integrations, and future AI.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day26-v1.html'">
+                <h4><span>Day 26</span> Production incident interview</h4>
+                <p>Redis goes down, returns, and 1 million requests hit SQL. Explain what happens and how you prevent
+                  database collapse.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day27-v1.html'">
+                <h4><span>Day 27</span> Architecture governance</h4>
+                <p>Study ADR, HLD, LLD, architecture review, standards, security review, technical debt, and governance.
+                </p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day28-v1.html'">
+                <h4><span>Day 28</span> Behavioral Architect interview</h4>
+                <p>Prepare STAR stories for architecture decision, production failure, developer conflict, stakeholder
+                  conflict, performance problem, migration, mentoring, difficult deadline, technical debt, and failed
+                  decision.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day29-v1.html'">
+                <h4><span>Day 29</span> Full mock interview</h4>
+                <p>Run a 90-minute Architect mock interview with no notes.</p>
+              </div>
+              <div class="day over-pointer" onclick="window.location.href='day30-v1.html'">
+                <h4><span>Day 30</span> Architecture exam</h4>
+                <p>Score yourself out of 100 using the exam table below. Target 80+ for Architect interview readiness.
+                </p>
+              </div>
             </div>
           </article>
 
           <h3>Day 30 Exam Scorecard</h3>
           <table class="score-table" aria-label="Architecture exam scoring">
             <thead>
-              <tr><th>Area</th><th>Weight</th></tr>
+              <tr>
+                <th>Area</th>
+                <th>Weight</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Requirement analysis</td><td>10</td></tr>
-              <tr><td>NFR analysis</td><td>10</td></tr>
-              <tr><td>Architecture</td><td>15</td></tr>
-              <tr><td>Distributed systems</td><td>15</td></tr>
-              <tr><td>Cloud</td><td>10</td></tr>
-              <tr><td>Data</td><td>10</td></tr>
-              <tr><td>Security</td><td>10</td></tr>
-              <tr><td>Resilience</td><td>10</td></tr>
-              <tr><td>Trade-offs</td><td>5</td></tr>
-              <tr><td>Communication</td><td>5</td></tr>
-              <tr><td><strong>Total</strong></td><td><strong>100</strong></td></tr>
+              <tr>
+                <td>Requirement analysis</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>NFR analysis</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Architecture</td>
+                <td>15</td>
+              </tr>
+              <tr>
+                <td>Distributed systems</td>
+                <td>15</td>
+              </tr>
+              <tr>
+                <td>Cloud</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Data</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Security</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Resilience</td>
+                <td>10</td>
+              </tr>
+              <tr>
+                <td>Trade-offs</td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td>Communication</td>
+                <td>5</td>
+              </tr>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td><strong>100</strong></td>
+              </tr>
             </tbody>
           </table>
 
           <div class="callout">
-            <strong>Target:</strong> 80+ = Architect interview ready. 70 to 79 = Technical Lead / borderline Architect. Below 70 = continue preparation.
+            <strong>Target:</strong> 80+ = Architect interview ready. 70 to 79 = Technical Lead / borderline Architect.
+            Below 70 = continue preparation.
           </div>
         </section>
 
@@ -1453,7 +1744,8 @@
             </div>
             <div class="plain-panel">
               <h3>Commute</h3>
-              <p>Use commute for architecture podcasts, listening to your own interview answers, and mentally designing systems. Do not use commute for heavy coding.</p>
+              <p>Use commute for architecture podcasts, listening to your own interview answers, and mentally designing
+                systems. Do not use commute for heavy coding.</p>
             </div>
             <div class="plain-panel">
               <h3>Evening</h3>
@@ -1474,14 +1766,23 @@
           </div>
 
           <div class="ratio-bars">
-            <div class="ratio" data-ratio="60"><strong>System design + architecture</strong><div class="ratio-track"><span></span></div><b>60%</b></div>
-            <div class="ratio" data-ratio="20"><strong>Cloud + distributed systems</strong><div class="ratio-track"><span></span></div><b>20%</b></div>
-            <div class="ratio" data-ratio="10"><strong>Security + DevOps + observability</strong><div class="ratio-track"><span></span></div><b>10%</b></div>
-            <div class="ratio" data-ratio="10"><strong>AI architecture</strong><div class="ratio-track"><span></span></div><b>10%</b></div>
+            <div class="ratio" data-ratio="60"><strong>System design + architecture</strong>
+              <div class="ratio-track"><span></span></div><b>60%</b>
+            </div>
+            <div class="ratio" data-ratio="20"><strong>Cloud + distributed systems</strong>
+              <div class="ratio-track"><span></span></div><b>20%</b>
+            </div>
+            <div class="ratio" data-ratio="10"><strong>Security + DevOps + observability</strong>
+              <div class="ratio-track"><span></span></div><b>10%</b>
+            </div>
+            <div class="ratio" data-ratio="10"><strong>AI architecture</strong>
+              <div class="ratio-track"><span></span></div><b>10%</b>
+            </div>
           </div>
 
           <div class="callout gold">
-            Do not shift to 30% AI, 20% random technologies, 20% coding, 20% cloud, and 10% architecture. That would keep you exactly where you are.
+            Do not shift to 30% AI, 20% random technologies, 20% coding, 20% cloud, and 10% architecture. That would
+            keep you exactly where you are.
           </div>
         </section>
 
@@ -1489,13 +1790,17 @@
           <div class="section-head">
             <span class="section-number">10</span>
             <h2>The Assignment That Will Actually Judge You</h2>
-            <p class="lead">The goal is not trivia. The goal is to expose how you think, decide, defend, and communicate.</p>
+            <p class="lead">The goal is not trivia. The goal is to expose how you think, decide, defend, and
+              communicate.</p>
           </div>
 
           <div class="assignment-grid">
             <article class="assignment">
               <h3>Architect Assessment 1: Multi-tenant enterprise SaaS platform</h3>
-              <p>Design for 10,000 companies, 1 million users, 100,000 concurrent users, 5,000 requests/sec peak, 99.9% availability, tenant isolation, authentication, RBAC, audit logging, notifications, reporting, file uploads, background jobs, third-party integrations, mobile and web clients, SQL transactional data, analytics/reporting workload, Azure deployment, and future AI features.</p>
+              <p>Design for 10,000 companies, 1 million users, 100,000 concurrent users, 5,000 requests/sec peak, 99.9%
+                availability, tenant isolation, authentication, RBAC, audit logging, notifications, reporting, file
+                uploads, background jobs, third-party integrations, mobile and web clients, SQL transactional data,
+                analytics/reporting workload, Azure deployment, and future AI features.</p>
 
               <h3>Your output</h3>
               <ul class="requirement-grid">
@@ -1520,12 +1825,14 @@
                 <li>19. Top 5 risks</li>
                 <li>20. Alternatives you rejected</li>
               </ul>
-              <div class="callout"><strong>Most important:</strong> for every major decision, answer why and why not the alternative.</div>
+              <div class="callout"><strong>Most important:</strong> for every major decision, answer why and why not the
+                alternative.</div>
             </article>
 
             <article class="assignment">
               <h3>Assignment 2: Architecture Defense</h3>
-              <p>After Assignment 1, your architecture will be attacked. You must defend your decisions under pressure.</p>
+              <p>After Assignment 1, your architecture will be attacked. You must defend your decisions under pressure.
+              </p>
               <ul class="requirement-grid">
                 <li>Redis is down.</li>
                 <li>SQL is at 95% CPU.</li>
@@ -1541,7 +1848,8 @@
 
             <article class="assignment">
               <h3>Assignment 3: Executive Thinking</h3>
-              <p>Explain the same architecture in 5 minutes to a non-technical CEO. Avoid terms like CQRS, CAP, Kubernetes, Kafka, Redis, and DDD unless absolutely necessary.</p>
+              <p>Explain the same architecture in 5 minutes to a non-technical CEO. Avoid terms like CQRS, CAP,
+                Kubernetes, Kafka, Redis, and DDD unless absolutely necessary.</p>
               <ul>
                 <li>What are we building?</li>
                 <li>Why this architecture?</li>
@@ -1562,24 +1870,33 @@
           </div>
 
           <div class="final-grid">
-            <div class="verdict"><strong>Technical Lead</strong><span>Ready now: YES. You have the experience and technical foundation.</span></div>
-            <div class="verdict"><strong>Technical Architect</strong><span>Ready to start applying: YES. Ready to consistently clear difficult Architect interviews: NOT YET.</span></div>
-            <div class="verdict"><strong>Solution Architect</strong><span>Not yet as your primary positioning. You need stronger business, NFR, cloud, and trade-off thinking.</span></div>
-            <div class="verdict"><strong>Enterprise Architect</strong><span>Too early. Do not chase the title prematurely.</span></div>
-            <div class="verdict"><strong>Entrepreneur</strong><span>Not yet as your primary career move. Build capability and market credibility first.</span></div>
+            <div class="verdict"><strong>Technical Lead</strong><span>Ready now: YES. You have the experience and
+                technical foundation.</span></div>
+            <div class="verdict"><strong>Technical Architect</strong><span>Ready to start applying: YES. Ready to
+                consistently clear difficult Architect interviews: NOT YET.</span></div>
+            <div class="verdict"><strong>Solution Architect</strong><span>Not yet as your primary positioning. You need
+                stronger business, NFR, cloud, and trade-off thinking.</span></div>
+            <div class="verdict"><strong>Enterprise Architect</strong><span>Too early. Do not chase the title
+                prematurely.</span></div>
+            <div class="verdict"><strong>Entrepreneur</strong><span>Not yet as your primary career move. Build
+                capability and market credibility first.</span></div>
           </div>
 
-          <p class="quote">Stop trying to learn everything. Become exceptionally good at designing, defending, and communicating scalable .NET/Azure distributed systems.</p>
+          <p class="quote">Stop trying to learn everything. Become exceptionally good at designing, defending, and
+            communicating scalable .NET/Azure distributed systems.</p>
 
           <div class="callout">
-            Do not spend the next 30 days consuming architecture content. Build. Think. Defend. Get challenged. Repeat. Your next step is Assignment 1.
+            Do not spend the next 30 days consuming architecture content. Build. Think. Defend. Get challenged. Repeat.
+            Your next step is Assignment 1.
           </div>
         </section>
 
         <footer class="footer references searchable">
           <p><strong>References</strong></p>
-          <p>[1] <a href="https://careers.hcltech.com/job/Senior-Technical-Lead-_Net%2C-Azure%2C-C/131151-en_US/" target="_blank" rel="noopener">Senior Technical Lead - .Net, Azure, C# Job Details | HCLTech</a></p>
-          <p>[2] <a href="https://in.indeed.com/viewjob?jk=6edaba7f50b09fae" target="_blank" rel="noopener">.NET/Web-App Technical Architect - India - Indeed.com</a></p>
+          <p>[1] <a href="https://careers.hcltech.com/job/Senior-Technical-Lead-_Net%2C-Azure%2C-C/131151-en_US/"
+              target="_blank" rel="noopener">Senior Technical Lead - .Net, Azure, C# Job Details | HCLTech</a></p>
+          <p>[2] <a href="https://in.indeed.com/viewjob?jk=6edaba7f50b09fae" target="_blank" rel="noopener">.NET/Web-App
+              Technical Architect - India - Indeed.com</a></p>
         </footer>
       </div>
     </div>
@@ -1720,4 +2037,5 @@
     });
   </script>
 </body>
+
 </html>

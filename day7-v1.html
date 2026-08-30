@@ -1,0 +1,2343 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 7 of the 30-Day Technical Architect Track: Week 1 assessment — architect thinking framework, a 45-minute mock system design interview, pressure round, self-evaluation and final report." />
+    <title>Day 7 — Week 1 Assessment · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 840px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .surprise {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 24px 0
+        }
+
+        .sp {
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--red);
+            background: var(--warnbg);
+            border-radius: 0 5px 5px 0;
+            padding: 16px 18px
+        }
+
+        .sp b {
+            font-size: 15px
+        }
+
+        .sp p {
+            font-size: 14px;
+            color: var(--ink2);
+            margin: 4px 0 0
+        }
+
+        .sp .ask {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--red);
+            display: block;
+            margin-top: 8px
+        }
+
+        .score-row {
+            display: grid;
+            grid-template-columns: 1fr 110px;
+            gap: 14px;
+            align-items: center;
+            border-bottom: 1px dashed var(--line);
+            padding: 12px 0
+        }
+
+        .score-row:last-of-type {
+            border-bottom: 0
+        }
+
+        .score-row label {
+            font-size: 15px;
+            color: var(--ink)
+        }
+
+        .score-row label small {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .12em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .score-row input {
+            width: 100%;
+            font-family: var(--mono);
+            font-size: 15px;
+            padding: 9px 11px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink);
+            text-align: center
+        }
+
+        .score-row input:focus {
+            outline: none;
+            border-color: var(--accent)
+        }
+
+        .score-total {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 2px solid var(--ink)
+        }
+
+        .score-total .big {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 44px;
+            color: var(--accent);
+            line-height: 1
+        }
+
+        .score-total .band {
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: .08em;
+            color: var(--ink2);
+            max-width: 480px
+        }
+
+        .band-bar {
+            height: 10px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            overflow: hidden;
+            background: var(--card);
+            margin-top: 12px
+        }
+
+        .band-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .5s ease
+        }
+
+        .devlist {
+            list-style: none;
+            max-width: 840px;
+            margin: 20px 0
+        }
+
+        .devlist li {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s
+        }
+
+        .devlist li:hover {
+            border-color: var(--accent)
+        }
+
+        .devlist li b {
+            color: var(--ink)
+        }
+
+        .devlist li .cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 3px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .devlist li.checked .cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .devlist li.checked .cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .devlist li.checked {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .report .rgrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 6px
+        }
+
+        .rfield label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            margin-bottom: 6px;
+            line-height: 1.5
+        }
+
+        .rfield input,
+        .rfield textarea {
+            width: 100%;
+            font-family: var(--body);
+            font-size: 15px;
+            padding: 10px 12px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink)
+        }
+
+        .rfield textarea {
+            min-height: 68px;
+            resize: vertical
+        }
+
+        .rfield input:focus,
+        .rfield textarea:focus {
+            outline: none;
+            border-color: var(--accent)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+
+            .surprise {
+                grid-template-columns: 1fr
+            }
+
+            .report .rgrid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+
+            .score-row {
+                grid-template-columns: 1fr 70px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge" onclick="window.location.href='roadmap.html#roadmap'">DAY 07 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 07 / 30 · WEEK 1 ASSESSMENT</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Six days in.</span></span>
+                    <span class="mask"><span class="line d2">Now <em>prove</em> you</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">think like an
+                            <em>architect.</em></span></span>
+                </h1>
+                <p class="hero-sub">This is not a lesson. It is a <b>45-minute mock interview</b>. You have all the
+                    pieces — load, databases, transactions, caching, messaging. Today tests whether you can assemble
+                    them under pressure, defend every choice, and survive the pressure round. <b>There is no solution on
+                        this page. Think first.</b></p>
+                <div class="hero-meta"><span class="chip hot">ASSESSMENT</span><span class="chip">45-MIN
+                        MOCK</span><span class="chip">100-POINT SCORE</span><span class="chip">NO SOLUTION GIVEN</span>
+                </div>
+                <div class="howto">
+                    <h4>HOW TO RUN THIS ASSESSMENT</h4>
+                    <ol>
+                        <li><b>01</b> Skim the Week 1 review (10 min) — remind yourself of the toolkit.</li>
+                        <li><b>02</b> Set a 45-minute timer. Do the mock in Section 3–6, cold.</li>
+                        <li><b>03</b> Score yourself (Section 7), be honest (Section 8), write the report (Section 9).
+                        </li>
+                    </ol>
+                </div>
+                <div class="hero-stats">9 SECTIONS · 14-STEP FRAMEWORK · 15 QUESTIONS · 20 OUTPUTS · 10 CURVEBALLS ·
+                    100-POINT SCORE</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">WEEK 1 → THE TOOLKIT YOU BUILT</text>
+                    <rect class="box" x="36" y="62" width="140" height="34" /><text x="106" y="83" font-size="9"
+                        class="t1" text-anchor="middle">5 PILLARS · DAY 1</text>
+                    <rect class="box" x="190" y="62" width="140" height="34" /><text x="260" y="83" font-size="9"
+                        class="t1" text-anchor="middle">1M USERS · DAY 2</text>
+                    <rect class="box" x="344" y="62" width="140" height="34" /><text x="414" y="83" font-size="9"
+                        class="t1" text-anchor="middle">DATABASES · DAY 3</text>
+                    <rect class="box" x="36" y="104" width="140" height="34" /><text x="106" y="125" font-size="9"
+                        class="t1" text-anchor="middle">FLOWS · DAY 4</text>
+                    <rect class="box" x="190" y="104" width="140" height="34" /><text x="260" y="125" font-size="9"
+                        class="t1" text-anchor="middle">CACHING · DAY 5</text>
+                    <rect class="box" x="344" y="104" width="140" height="34" /><text x="414" y="125" font-size="9"
+                        class="t1" text-anchor="middle">MESSAGING · DAY 6</text>
+                    <path class="thin" d="M106 138 V 158 M260 138 V 158 M414 138 V 158" />
+                    <rect class="box hot" x="36" y="160" width="448" height="96" />
+                    <text x="52" y="184" font-size="10" class="ta">THE ONE REAL QUESTION TODAY</text>
+                    <text x="52" y="208" font-size="9.5" class="t1">"GIVEN THIS PROBLEM, WHAT WOULD YOU BUILD —</text>
+                    <text x="52" y="226" font-size="9.5" class="t1">AND CAN YOU DEFEND EVERY BOX YOU DREW?"</text>
+                    <text x="52" y="246" font-size="8.5" class="t3">not "what do you know" · not "which tool do you
+                        like"</text>
+                    <g>
+                        <rect class="fr" x="36" y="286" width="448" height="76" />
+                        <path class="fr" d="M180 286v76M320 286v76" />
+                        <text x="52" y="308" class="st2 t3">SCORE</text><text x="86" y="344" font-size="26" class="ta"
+                            style="font-family:var(--disp);font-weight:900">/100</text>
+                        <text x="196" y="308" class="st2 t3">PRESSURE ROUND</text><text x="250" y="330" font-size="9.5"
+                            class="t1">10 surprise</text><text x="250" y="346" font-size="9.5" class="t1">changes</text>
+                        <text x="336" y="308" class="st2 t3">RULE</text><text x="414" y="330" font-size="8.6"
+                            class="tr">no answer</text><text x="414" y="346" font-size="8.6" class="tr">provided</text>
+                    </g>
+                    <text x="36" y="388" class="st2 ta">THE PURPOSE OF WEEK 1 WAS NEVER THE TOOLS. IT WAS THE THINKING.
+                        PROVE IT.</text>
+                    <defs>
+                        <marker id="sarr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <path d="M0 0 L8 4 L0 8 Z" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Week 1 Review</span><span class="p-tg">WHAT YOU LEARNED</span></span></a>
+            <a class="pstrip" href="#s2" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h7l2-2h7v14H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">The Framework</span><span class="p-tg">14 STEPS</span></span></a>
+            <a class="pstrip" href="#s3" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v5l3 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Mock</span><span class="p-tg">45-MIN CHALLENGE</span></span></a>
+            <a class="pstrip" href="#s6" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M13 3L5 14h5l-1 7 9-12h-5l1-6Z" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Pressure Round</span><span class="p-tg">10 CURVEBALLS</span></span></a>
+            <a class="pstrip" href="#s7" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M5 19V5l7 3 7-3v14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Score Yourself</span><span class="p-tg">100-POINT SHEET</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> Week 1 review</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> Thinking framework</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> Mock interview rules</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> 15 questions</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Required output</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> Pressure round</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> Self-evaluation</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Honest review</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Final report</a>
+            <a class="tn" href="#mindset" data-spy="mindset"><span>★</span> Week 1 close</a>
+        </aside>
+        <main class="doc">
+            <section class="sec" id="s1">
+                <div class="sec-kicker">SECTION 01 — THE REVIEW</div>
+                <h2 class="sec-title rv">Week 1, In One Pass</h2>
+                <p class="sec-lead rv">Six days, distilled to what matters. Not a re-teach — a <b>map of what you should
+                        reach for</b> during the mock.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:14%">DAY</th>
+                                <th>WHAT I LEARNED</th>
+                                <th>WHY IT MATTERS</th>
+                                <th>WHAT AN ARCHITECT THINKS ABOUT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1 · Think</b></td>
+                                <td>Architecture = the expensive-to-change decisions. The five pillars: reliability,
+                                    performance, scalability, security, maintainability.</td>
+                                <td>Every later decision sits on these five. They are the lenses, not a checklist.</td>
+                                <td>Which pillar am I deliberately trading away today — and can I say so out loud?</td>
+                            </tr>
+                            <tr>
+                                <td><b>2 · Scale</b></td>
+                                <td>Registered ≠ concurrent. The funnel to peak RPS. Bottleneck hunting. Scale out vs
+                                    up. Statelessness. The V1→V6 path.</td>
+                                <td>Size for the peak, not the marketing number. The weakest part wins.</td>
+                                <td>What's the real number — and what breaks first at 10×?</td>
+                            </tr>
+                            <tr>
+                                <td><b>3 · Data</b></td>
+                                <td>Data shape before technology. SQL vs NoSQL. ACID. Consistency. Indexes, replicas,
+                                    sharding. Multi-tenant.</td>
+                                <td>The database is the truth. Get it wrong and every layer inherits the mistake.</td>
+                                <td>What does this data need — not what is popular?</td>
+                            </tr>
+                            <tr>
+                                <td><b>4 · Flows</b></td>
+                                <td>Partial success. Sagas. Compensation. Sync vs async. Idempotency. Retry + timeout.
+                                </td>
+                                <td>One action, many services — failure is normal, not exceptional.</td>
+                                <td>What does the customer see when step 3 fails?</td>
+                            </tr>
+                            <tr>
+                                <td><b>5 · Cache</b></td>
+                                <td>When/what/how to cache. TTL. Invalidation. Stampede. Redis failure. Key design.</td>
+                                <td>The fastest query is the one the DB never sees — but it is a trade, not a gift.</td>
+                                <td>How wrong may this data be, and what happens when the cache dies?</td>
+                            </tr>
+                            <tr>
+                                <td><b>6 · Message</b></td>
+                                <td>Queue vs direct call. RabbitMQ concepts. Retries, DLQ. Idempotency. Ordering.
+                                    Scaling consumers.</td>
+                                <td>Decouple, survive spikes, lose nothing — only delay.</td>
+                                <td>Does the user need the answer now, or later?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE WEEK IN ONE SENTENCE</span>
+                    <p>An architect reads the <b>numbers</b>, finds the <b>weakest part</b>, chooses the <b>cheapest fix
+                            that survives failure</b>, and can <b>explain the trade-off</b> — while never letting the
+                        customer feel the machinery. Everything in Days 1–6 serves that sentence.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">SECTION 02 — THE FRAMEWORK</div>
+                <h2 class="sec-title rv">The Architect Thinking Framework</h2>
+                <p class="sec-lead rv">Fourteen steps, in order. Use this in <b>any</b> system design interview. It
+                    keeps you from jumping to technology, keeps you from skipping failure, and makes sure you <b>say the
+                        trade-offs</b> before the interviewer asks.</p>
+                <ol class="framework rv">
+                    <li><b>Understand the business problem</b><span>What does the business earn, save, or learn from
+                            this system? Restate it in one sentence. If you cannot, you do not know what you are
+                            building.</span><span class="fr-hint">SAY: "so the core value here is…"</span></li>
+                    <li><b>Ask important questions</b><span>Who uses it? What is the peak? What is sensitive? What may
+                            fail? How much may it cost? The first five minutes are questions, not boxes.</span><span
+                            class="fr-hint">SAY: "before I draw, three questions…"</span></li>
+                    <li><b>Identify users and scale</b><span>Registered → daily active → concurrent → peak RPS. Four
+                            multiplications that turn marketing into engineering.</span><span class="fr-hint">SAY: "1M
+                            registered means about 2,000 peak RPS, so…"</span></li>
+                    <li><b>Identify important requirements</b><span>Separate must-have from nice-to-have. Name the
+                            functional and the non-functional (latency, availability, consistency).</span><span
+                            class="fr-hint">SAY: "the non-negotiable here is…"</span></li>
+                    <li><b>Identify risks and failures</b><span>What breaks first? The DB. The payment gateway. The
+                            cache. Walk the failure path before you walk the happy path.</span><span
+                            class="fr-hint">SAY: "the first thing to die will be…"</span></li>
+                    <li><b>Create a simple architecture</b><span>Start with the fewest boxes that could work. A
+                            monolith, one DB, one cache. Complexity is earned, never assumed.</span><span
+                            class="fr-hint">SAY: "I'd start embarrassingly simple…"</span></li>
+                    <li><b>Decide the database approach</b><span>Data shape → relationships → consistency → read/write
+                            ratio → scaling path. SQL for the core, document for flexible, cache for
+                            sessions.</span><span class="fr-hint">SAY: "this data is connected and transactional,
+                            so…"</span></li>
+                    <li><b>Decide the caching approach</b><span>What is hot, cold-changing, and forgivable? TTL,
+                            invalidation, and the cache-down plan — all three, or you have not decided.</span><span
+                            class="fr-hint">SAY: "cache X for 60s, and if Redis dies…"</span></li>
+                    <li><b>Decide the messaging approach</b><span>Which steps can wait? Queue them. Which must answer
+                            now? Call them. Which are both? Split them.</span><span class="fr-hint">SAY: "payment is
+                            sync, notification is queued…"</span></li>
+                    <li><b>Think about security</b><span>Trust boundaries, auth vs authorization, what you never store,
+                            tenant isolation, least privilege.</span><span class="fr-hint">SAY: "the boundary is here,
+                            and we never store…"</span></li>
+                    <li><b>Think about scaling</b><span>What scales out (stateless), what scales up (the writer), what
+                            you add when the number grows. Name the triggers.</span><span class="fr-hint">SAY: "at 10× I
+                            add…"</span></li>
+                    <li><b>Think about monitoring and recovery</b><span>What do you measure, what do you alert on, and
+                            what is the runbook when it breaks? A design with no metrics is a guess.</span><span
+                            class="fr-hint">SAY: "I'd alarm on hit ratio and queue depth…"</span></li>
+                    <li><b>Explain trade-offs</b><span>For every choice: what did I pick, what did I reject, and why.
+                            This is where seniority shows — not in the boxes, in the reasons.</span><span
+                            class="fr-hint">SAY: "I chose X over Y because…"</span></li>
+                    <li><b>Summarize the final design</b><span>Close with a 30-second recap: the shape, the two or three
+                            real decisions, and what you would change at 10×.</span><span class="fr-hint">SAY: "so in
+                            one sentence, this is…"</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">THE POINT</span>
+                    <p>Notice what is <b>not</b> in the list: "pick the technology." Technology is the answer to steps
+                        7–9, and only after steps 1–6 have framed the problem. If you find yourself naming frameworks in
+                        minute one, you skipped the framework.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">SECTION 03 — THE CHALLENGE</div>
+                <h2 class="sec-title rv">The 45-Minute Mock Interview</h2>
+                <p class="sec-lead rv">Set a timer. Treat this as a real interview — you talk, the page does not.
+                    <b>Design the Online Ordering Platform.</b>
+                </p>
+                <div class="panel rv">
+                    <h4>THE PROBLEM — AS AN INTERVIEWER WOULD GIVE IT</h4>
+                    <p style="font-size:16px;color:var(--ink)">"Design a system for an online ordering platform. A
+                        customer can browse products, search, add items to a cart, place an order, pay, and receive
+                        notifications. Multiple companies use the same platform. Orders must not be lost, payments must
+                        not be duplicated, and the system should stay available when individual components fail."</p>
+                    <div class="tblwrap" style="margin:18px 0 0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Registered users</b></td>
+                                    <td>1,000,000</td>
+                                    <td><b>Peak requests/sec</b></td>
+                                    <td>5,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Daily active users</b></td>
+                                    <td>100,000</td>
+                                    <td><b>Tenancy</b></td>
+                                    <td>Multiple companies (multi-tenant)</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Concurrent users</b></td>
+                                    <td>10,000</td>
+                                    <td><b>Deployment</b></td>
+                                    <td>Azure</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Core features</b></td>
+                                    <td colspan="3">browse · search · cart · order · payment · inventory · notifications
+                                        · reporting · audit history</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Constraints</b></td>
+                                    <td colspan="3">external payment provider · must remain available during component
+                                        failure</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="font-size:14.5px;color:var(--ink2)"><b>Suggested time:</b> 5 min on requirements and
+                        questions · 25 min on the architecture · 10 min on the pressure round · 5 min to summarise. The
+                        interviewer is watching for <b>questions, numbers, failure paths, and trade-offs</b> — not for a
+                        perfectly polished diagram.</p>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">READ THIS FIRST</span>
+                    <p>There is <b>no solution on this page</b> — not in a collapsed box, not in the margin, not "hint
+                        below." The purpose of Day 7 is to see what <i>you</i> produce when nobody hands you the answer.
+                        Resist the urge to scroll looking for one.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">SECTION 04 — THE QUESTIONS</div>
+                <h2 class="sec-title rv">15 Questions the Interviewer Will Ask</h2>
+                <p class="sec-lead rv">Progressive difficulty — warm-up, core, deep, then curveballs. Answer each out
+                    loud as you design. <b>There are no answers here; the questions are the interview.</b></p>
+                <ol class="qlist rv">
+                    <li>Who are the users of this platform, and what does each group actually do?<span
+                            class="qt warm">WARM-UP</span></li>
+                    <li>What is the expected traffic — and how do you translate "1 million users" into something you can
+                        design against?<span class="qt warm">WARM-UP</span></li>
+                    <li>Which operations are most important to get right — and which can be slightly wrong?<span
+                            class="qt warm">WARM-UP</span></li>
+                    <li>Walk me through your high-level architecture. What are the main components?<span
+                            class="qt">CORE</span></li>
+                    <li>How will the database scale as orders and reporting grow?<span class="qt">CORE</span></li>
+                    <li>What should be cached — and what must never go in the cache?<span class="qt">CORE</span></li>
+                    <li>Where should messaging be used in the order flow, and where should you keep it synchronous?<span
+                            class="qt">CORE</span></li>
+                    <li>How is payment failure handled when the inventory step fails after the charge?<span
+                            class="qt">CORE</span></li>
+                    <li>What happens if Redis goes down at peak? Walk me through the minute-by-minute.<span
+                            class="qt deep">DEEP</span></li>
+                    <li>What happens if the database becomes slow — how do you know, and what do you fix first?<span
+                            class="qt deep">DEEP</span></li>
+                    <li>How do you prevent a customer being charged twice for one order?<span
+                            class="qt deep">DEEP</span></li>
+                    <li>How do you handle one company generating unusually high traffic on a shared platform?<span
+                            class="qt deep">DEEP</span></li>
+                    <li>What happens if an entire Azure region fails? What is your recovery story?<span
+                            class="qt deep">DEEP</span></li>
+                    <li>Tell me three decisions you made — and for each, what you rejected and why.<span
+                            class="qt curve">CURVEBALL</span></li>
+                    <li>If the budget were cut by a third tomorrow, what would you remove from your design first?<span
+                            class="qt curve">CURVEBALL</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">WHAT THE INTERVIEWER IS REALLY SCORING</span>
+                    <p>Not whether you know the terms. Whether you <b>ask before answering</b>, <b>attach numbers to
+                            words</b>, <b>find the weakest part</b>, and <b>name the trade-off</b>. A wrong answer
+                        defended with clear reasoning beats a right answer delivered as a fact.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">SECTION 05 — THE DELIVERABLE</div>
+                <h2 class="sec-title rv">What You Must Produce</h2>
+                <p class="sec-lead rv">Twenty outputs. For every major decision, answer four questions: <b>What did I
+                        choose · Why · What did I reject · Why did I reject it.</b> Tick each as you complete it.</p>
+                <div class="callout co-key rv"><span class="co-label">THE FOUR QUESTIONS — NON-NEGOTIABLE</span>
+                    <p>Any decision you cannot explain in these four lines is not a decision — it is a preference. The
+                        pressure round (Section 6) will expose every preference you tried to smuggle in as a decision.
+                    </p>
+                </div>
+                <div class="asg-progress rv">
+                    <div class="asg-bar"><i id="asgFill"></i></div><span class="asg-count" id="asgCount">0 / 20
+                        DONE</span>
+                </div>
+                <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>1</b>Requirement assumptions — what you decided when the interviewer was
+                        vague.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>2</b>Functional requirements — the features, prioritised.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>3</b>Non-functional requirements — latency, availability, consistency, with
+                        numbers.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>4</b>Traffic assumptions — registered → DAU → concurrent → peak
+                        RPS.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>5</b>High-level architecture diagram — boxes and arrows, one
+                        page.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>6</b>Main components — each with one job, one sentence.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>7</b>Database strategy — SQL vs NoSQL, replicas, indexing, scaling
+                        path.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>8</b>Tenant strategy — isolation model and the noisy-tenant
+                        answer.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>9</b>Cache strategy — what, TTL, invalidation, cache-down plan.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>10</b>Messaging strategy — sync vs async, queues, DLQ,
+                        idempotency.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>11</b>Payment flow — happy path and the failure paths, end to
+                        end.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>12</b>Failure handling — DB down, cache down, gateway down, region
+                        down.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>13</b>Security approach — auth, authorization, tenant isolation, what you
+                        never store.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>14</b>Scaling approach — what scales out, up, and the triggers for
+                        each.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="15"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>15</b>Monitoring approach — metrics, thresholds, and what each alarm
+                        means.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="16"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>16</b>Backup and recovery — RPO, RTO, restore testing.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="17"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>17</b>Cost considerations — what the design costs, and what you would
+                        cut.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="18"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>18</b>Top 5 risks — and the mitigation for each.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="19"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>19</b>10 architecture decisions — each in choose / why / reject /
+                        why-not.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="20"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>20</b>Alternatives rejected — with the trigger that would make you revisit
+                        each.</span></label>
+            </section>
+
+            <section class="sec" id="s6">
+                <div class="sec-kicker">SECTION 06 — THE PRESSURE ROUND</div>
+                <h2 class="sec-title rv">Ten Surprise Changes</h2>
+                <p class="sec-lead rv">Your design is on the board. Now the interviewer leans forward. For each change,
+                    answer: <b>"What would you change in your architecture — and why?"</b> No answers provided. These
+                    are the ten questions that separate architects from developers.</p>
+                <div class="surprise rv">
+                    <div class="sp"><b>1 · Traffic becomes 10× higher</b>
+                        <p>Your peak is now 50,000 RPS. Which part of your design breaks first, and what do you change?
+                        </p><span class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>2 · Redis is unavailable</b>
+                        <p>The cache is down for 20 minutes at peak. Walk the user through what happens.</p><span
+                            class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>3 · Database CPU reaches 95%</b>
+                        <p>You have replicas and a cache. What do you check, in what order?</p><span class="ask">WHAT
+                            WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>4 · Payment provider is unavailable</b>
+                        <p>The gateway is down mid-checkout. What does the customer see?</p><span class="ask">WHAT WOULD
+                            YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>5 · Queue processing falls behind</b>
+                        <p>The backlog is growing faster than consumers drain it.</p><span class="ask">WHAT WOULD YOU
+                            CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>6 · One tenant consumes most resources</b>
+                        <p>A single company is now 40% of your traffic and slowing everyone else.</p><span
+                            class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>7 · Product wants real-time reporting</b>
+                        <p>Reports must now be live, not minutes old. What breaks in your reporting design?</p><span
+                            class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>8 · Security requires stronger isolation</b>
+                        <p>A compliance rule now demands physical tenant isolation.</p><span class="ask">WHAT WOULD YOU
+                            CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>9 · Budget is reduced by 30%</b>
+                        <p>What do you remove from your design first — and what do you keep at all costs?</p><span
+                            class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                    <div class="sp"><b>10 · The system must support another region</b>
+                        <p>A second geography, with data residency rules. How does your design change?</p><span
+                            class="ask">WHAT WOULD YOU CHANGE, AND WHY?</span>
+                    </div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">HOW TO SCORE THIS ROUND</span>
+                    <p>Each answer should name: the component that breaks · the metric that tells you · the change you
+                        make · the new trade-off you accept. If your answer is "add more servers" more than twice,
+                        revisit Day 2. If it is "the cache will handle it" more than twice, revisit Day 5.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">SECTION 07 — THE SCORE</div>
+                <h2 class="sec-title rv">Self-Evaluation — 100 Points</h2>
+                <p class="sec-lead rv">Score each area honestly. The total updates live — and so does the band. This is
+                    for you, so a generous score only cheats one person.</p>
+                <div class="panel rv">
+                    <h4>SCORING SHEET</h4>
+                    <div class="score-row"><label>Requirement understanding<small>DID I ASK BEFORE I
+                                DREW?</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Architecture<small>SHAPE, COMPONENTS, CLARITY</small></label><input
+                            type="number" class="sc" data-max="15" value="0" min="0" max="15"> / 15</div>
+                    <div class="score-row"><label>Scalability<small>NUMBERS, TRIGGERS, SCALE PATH</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Database<small>CHOICE, CONSISTENCY, SCALING</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Caching<small>WHAT, TTL, FAILURE PLAN</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Messaging<small>SYNC/ASYNC, DLQ, IDEMPOTENCY</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Reliability &amp; failure handling<small>FAILURE PATHS,
+                                RECOVERY</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Security<small>AUTH, TENANT, LEAST PRIVILEGE</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Trade-offs &amp; decision making<small>CHOOSE / REJECT /
+                                WHY</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Communication<small>CLARITY UNDER PRESSURE</small></label><input
+                            type="number" class="sc" data-max="5" value="0" min="0" max="5"> / 5</div>
+                    <div class="score-total">
+                        <span class="big" id="scoreBig">0<span
+                                style="font-size:20px;color:var(--ink3)">/100</span></span>
+                        <span class="band" id="scoreBand">Score as you go — the band will appear here.</span>
+                    </div>
+                    <div class="band-bar"><i id="scoreBar"></i></div>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>SCORE</th>
+                                <th>WHAT IT MEANS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b class="pros">80 – 100</b></td>
+                                <td><b>Strong Architect readiness.</b> You think in trade-offs, name failure paths
+                                    unprompted, and communicate the shape clearly. Ready for Week 2.</td>
+                            </tr>
+                            <tr>
+                                <td><b>70 – 79</b></td>
+                                <td><b>Good Technical Lead, architect transition needed.</b> The knowledge is there; the
+                                    habits — questions, numbers, alternatives — are still forming.</td>
+                            </tr>
+                            <tr>
+                                <td><b>60 – 69</b></td>
+                                <td><b>Strong technical base, major architecture gaps.</b> You build well; you do not
+                                    yet design across failure, scale, and cost.</td>
+                            </tr>
+                            <tr>
+                                <td><b class="cons">Below 60</b></td>
+                                <td><b>More preparation required.</b> Revisit the days where the pressure round hurt
+                                    most, then retake this assessment.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">SECTION 08 — THE HONEST LOOK</div>
+                <h2 class="sec-title rv">Where Did I Think Like a Developer Instead of an Architect?</h2>
+                <p class="sec-lead rv">Tick everything that happened during your mock. No judgement — just the list that
+                    tells you what Week 2 must fix.</p>
+                <ul class="devlist rv" id="devList">
+                    <li data-d="1"><span class="cb"></span><b>Jumping to technology too early</b> — I named RabbitMQ or
+                        Redis before I knew the numbers.</li>
+                    <li data-d="2"><span class="cb"></span><b>Not asking enough questions</b> — I designed before I
+                        understood who and what.</li>
+                    <li data-d="3"><span class="cb"></span><b>Ignoring business impact</b> — I optimised for the call,
+                        not for the customer or the money.</li>
+                    <li data-d="4"><span class="cb"></span><b>Ignoring cost</b> — I never mentioned what the design
+                        would cost to run.</li>
+                    <li data-d="5"><span class="cb"></span><b>Overengineering</b> — I added microservices, sharding, or
+                        event sourcing nobody asked for.</li>
+                    <li data-d="6"><span class="cb"></span><b>Not explaining alternatives</b> — I gave one answer and
+                        never said what I rejected.</li>
+                    <li data-d="7"><span class="cb"></span><b>Designing only the happy path</b> — I walked the success
+                        and skipped the failure.</li>
+                    <li data-d="8"><span class="cb"></span><b>Forgetting failure scenarios</b> — no answer for the cache
+                        dying or the region failing.</li>
+                    <li data-d="9"><span class="cb"></span><b>Focusing on implementation details</b> — I described code,
+                        schemas, or config instead of the architecture.</li>
+                    <li data-d="10"><span class="cb"></span><b>No numbers</b> — I said "fast" and "scalable" without
+                        attaching a figure.</li>
+                </ul>
+                <div class="callout co-warn rv"><span class="co-label">THE RULE</span>
+                    <p>Every tick is not a failure — it is a map. Week 2 targets whatever you ticked most. If you ticked
+                        more than four, retake the mock before moving on; the gaps are habits, and habits need
+                        repetition, not new content.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">SECTION 09 — THE REPORT</div>
+                <h2 class="sec-title rv">Day 7 Final Report</h2>
+                <p class="sec-lead rv">One page. Fill it honestly, then print it (or save it) — this is your Week 1
+                    snapshot. It autosaves as you type.</p>
+                <div class="panel rv report">
+                    <h4>WEEK 1 REPORT</h4>
+                    <div class="rgrid">
+                        <div class="rfield"><label>WEEK 1 SCORE (AUTO-FILLED)</label><input id="repScore" type="text"
+                                value="0 / 100" readonly></div>
+                        <div class="rfield"><label>STRONGEST AREA</label><input id="repStrong" type="text"
+                                placeholder="e.g. database design"></div>
+                        <div class="rfield"><label>WEAKEST AREA</label><input id="repWeak" type="text"
+                                placeholder="e.g. failure handling"></div>
+                        <div class="rfield"><label>BIGGEST ARCHITECTURE MISTAKE</label><input id="repMistake"
+                                type="text" placeholder="the one you keep replaying"></div>
+                        <div class="rfield"><label>MOST IMPORTANT LESSON</label><input id="repLesson" type="text"
+                                placeholder="one sentence"></div>
+                        <div class="rfield"><label>THREE THINGS TO IMPROVE</label><textarea id="repImprove"
+                                placeholder="1 ·&#10;2 ·&#10;3 ·"></textarea></div>
+                        <div class="rfield"><label>CONFIDENCE BEFORE WEEK 1</label><input id="repConfBefore"
+                                type="number" min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>CONFIDENCE AFTER WEEK 1</label><input id="repConfAfter" type="number"
+                                min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>TECHNICAL LEAD READINESS</label><input id="repLead" type="number"
+                                min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>TECHNICAL ARCHITECT READINESS</label><input id="repArch"
+                                type="number" min="0" max="10" value="0"> / 10</div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn" id="repPrint">PRINT THIS REPORT</button>
+                        <button class="btn" id="repClear">CLEAR REPORT</button>
+                    </div>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">WHY THE REPORT MATTERS</span>
+                    <p>Week 2 builds on Week 1. If you do not write down what was weak today, next week you will
+                        re-learn the same lesson at twice the cost. The report is not for show — it is the instruction
+                        manual for the next seven days.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">WEEK 1 — CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">The Architect Mindset, One Week In</h2>
+            <p class="sec-lead rv">Five rules you should now be able to say without looking. These are the whole of Week
+                1.</p>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Ask before you draw.</h3>
+                    <p>Who, how many, how much, what fails, what may it cost. The first five minutes of any design are
+                        questions — the boxes come after.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Numbers, or it did not happen.</h3>
+                    <p>"Fast" and "scalable" are feelings. p95 under 300ms, 99.9% availability, 10× load for 15 minutes
+                        — those are requirements.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>The weakest part wins.</h3>
+                    <p>Find the bottleneck, protect the database, plan the failure. Strengthening anything else changes
+                        nothing.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Every choice is a trade.</h3>
+                    <p>Choose, reject, and say why — for both. If you cannot name what you gave up, you did not make a
+                        decision.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Simple until proven otherwise.</h3>
+                    <p>The best design is the smallest one that survives the real constraints, with a cheap path to
+                        grow. Complexity is earned, one measured pain at a time.</p>
+                </div>
+            </div>
+            <p class="mind-close rv">Six days of learning, one day of proof. If the mock humbled you — good. That is the
+                point. Week 2 starts tomorrow, and it assumes you carry these five rules with you.</p>
+        </div>
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 07 / 30 — WEEK 1 ASSESSMENT</div>
+            <div class="f-r">END OF WEEK 1 · <b>DAY 8 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () {
+            if (window.jQuery) return;
+            function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; }
+            Q.prototype = {
+                each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); },
+                addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); },
+                removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); },
+                toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); },
+                closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); }
+            };
+            function $(s) {
+                if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; }
+                if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s));
+            }
+            window.jQuery = window.$ = $;
+        })();
+    </script>
+    <script>
+        $(function () {
+            function $(s) { return document.querySelector(s); }
+            function $$(s) { return [].slice.call(document.querySelectorAll(s)); }
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop');
+            var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 'mindset'];
+            var tocLinks = $$('.tn[data-spy]'), ticking = false;
+            function onScroll() {
+                if (ticking) return; ticking = true; requestAnimationFrame(function () {
+                    var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop;
+                    if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')';
+                    if (toTop) toTop.classList.toggle('show', y > 900);
+                    var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; });
+                    tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false;
+                });
+            }
+            window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll();
+            toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+            var rvs = $$('.rv');
+            if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); }
+            else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); }
+            var themeBtn = document.getElementById('themeBtn');
+            function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } }
+            var st = null; try { st = localStorage.getItem('arch-day7-theme'); } catch (e) { }
+            applyTheme(st === 'dark');
+            themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day7-theme', d ? 'dark' : 'light'); } catch (e) { } });
+            var toc = document.getElementById('toc'), scrim = document.getElementById('scrim');
+            function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); }
+            document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); });
+            scrim.addEventListener('click', closeToc);
+            toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); });
+            document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+
+            /* ---- Section 5 checklist ---- */
+            var asg = $$('.asg-item input[type=checkbox]'), fill = document.getElementById('asgFill'), cnt = document.getElementById('asgCount');
+            var sv = []; try { sv = JSON.parse(localStorage.getItem('arch-day7-asg') || '[]'); } catch (e) { }
+            function upAsg() { var d = 0; asg.forEach(function (c) { if (c.checked) d++; }); if (fill) fill.style.width = Math.round((d / asg.length) * 100) + '%'; if (cnt) cnt.textContent = d + ' / ' + asg.length + ' DONE'; }
+            asg.forEach(function (c) {
+                var id = c.getAttribute('data-asg'); if (sv.indexOf(id) !== -1) c.checked = true;
+                c.addEventListener('change', function () { var s = []; asg.forEach(function (x) { if (x.checked) s.push(x.getAttribute('data-asg')); }); try { localStorage.setItem('arch-day7-asg', JSON.stringify(s)); } catch (e) { } upAsg(); });
+            });
+            upAsg();
+
+            /* ---- Section 8 dev checklist ---- */
+            var devs = $$('#devList li');
+            var dv = []; try { dv = JSON.parse(localStorage.getItem('arch-day7-dev') || '[]'); } catch (e) { }
+            devs.forEach(function (li) {
+                var id = li.getAttribute('data-d'); if (dv.indexOf(id) !== -1) li.classList.add('checked');
+                li.addEventListener('click', function () { li.classList.toggle('checked'); var s = []; devs.forEach(function (x) { if (x.classList.contains('checked')) s.push(x.getAttribute('data-d')); }); try { localStorage.setItem('arch-day7-dev', JSON.stringify(s)); } catch (e) { } });
+            });
+
+            /* ---- Section 7 scoring ---- */
+            var sc = $$('.sc');
+            function recalcScore() {
+                var total = 0;
+                sc.forEach(function (inp) { var v = parseInt(inp.value, 10); if (isNaN(v) || v < 0) v = 0; var m = parseInt(inp.getAttribute('data-max'), 10); if (v > m) v = m; inp.value = v; total += v; });
+                var big = document.getElementById('scoreBig'); if (big) big.innerHTML = total + '<span style="font-size:20px;color:var(--ink3)">/100</span>';
+                var bar = document.getElementById('scoreBar'); if (bar) bar.style.width = total + '%';
+                var band = document.getElementById('scoreBand'); var txt;
+                if (total >= 80) txt = '<b style="color:var(--ok)">Strong Architect readiness.</b> You think in trade-offs and name failure unprompted. Ready for Week 2.';
+                else if (total >= 70) txt = '<b style="color:var(--blue)">Good Technical Lead, architect transition needed.</b> Knowledge is there; the habits — questions, numbers, alternatives — are still forming.';
+                else if (total >= 60) txt = '<b style="color:var(--gold)">Strong technical base, major architecture gaps.</b> You build well; you do not yet design across failure, scale and cost.';
+                else txt = '<b style="color:var(--red)">More preparation required.</b> Revisit the days where the pressure round hurt most, then retake.';
+                if (band) band.innerHTML = txt;
+                var rs = document.getElementById('repScore'); if (rs) rs.value = total + ' / 100';
+                try { localStorage.setItem('arch-day7-score', String(total)); } catch (e) { }
+            }
+            var savedScore = null; try { savedScore = localStorage.getItem('arch-day7-score'); } catch (e) { }
+            sc.forEach(function (inp) { inp.addEventListener('input', recalcScore); });
+            recalcScore();
+
+            /* ---- Section 9 report ---- */
+            var repIds = ['repStrong', 'repWeak', 'repMistake', 'repLesson', 'repImprove', 'repConfBefore', 'repConfAfter', 'repLead', 'repArch'];
+            function loadRep() { try { var r = JSON.parse(localStorage.getItem('arch-day7-report') || '{}'); repIds.forEach(function (id) { var el = document.getElementById(id); if (el && r[id] !== undefined) el.value = r[id]; }); } catch (e) { } }
+            function saveRep() { var r = {}; repIds.forEach(function (id) { var el = document.getElementById(id); if (el) r[id] = el.value; }); try { localStorage.setItem('arch-day7-report', JSON.stringify(r)); } catch (e) { } }
+            repIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('input', saveRep); });
+            loadRep();
+            document.getElementById('repPrint').addEventListener('click', function () { window.print(); });
+            document.getElementById('repClear').addEventListener('click', function () {
+                repIds.forEach(function (id) { var el = document.getElementById(id); if (el && id !== 'repScore') el.value = (el.tagName === 'TEXTAREA' || el.type === 'text') ? '' : '0'; });
+                var rs = document.getElementById('repScore'); var t = 0; try { t = localStorage.getItem('arch-day7-score') || 0; } catch (e) { } if (rs) rs.value = t + ' / 100';
+                try { localStorage.removeItem('arch-day7-report'); } catch (e) { } saveRep();
+            });
+        });
+    </script>
+</body>
+
+</html>
