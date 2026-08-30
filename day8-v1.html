@@ -1788,7 +1788,7 @@
                         stroke-linecap="round" />
                 </svg></button>
             <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
-            <span class="day-badge">DAY 08 / 30</span>
+            <span class="day-badge" onclick="window.location.href='roadmap.html#roadmap'">DAY 08 / 30</span>
         </div>
         <div class="tb-actions">
             <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
@@ -1966,7 +1966,8 @@
                     <p>Picking "AKS" or "Cosmos DB" first is a <b>preference wearing a costume</b>. It makes the
                         business bend to fit the technology. When you start with the ten questions, the service is the
                         <b>output</b> of your thinking — and you can always say which alternative you rejected and why.
-                        That sentence, spoken calmly, is what architect interviews hear.</p>
+                        That sentence, spoken calmly, is what architect interviews hear.
+                    </p>
                 </div>
             </section>
 
@@ -2254,7 +2255,8 @@
                 <div class="sec-kicker">SECTION 04 — DATA CHOICE</div>
                 <h2 class="sec-title rv">Azure SQL vs Cosmos DB</h2>
                 <p class="sec-lead rv">Same decision as Day 3, now in Azure terms. It is never "which is better" — it is
-                    <b>"what does this data need?"</b></p>
+                    <b>"what does this data need?"</b>
+                </p>
                 <div class="tblwrap rv">
                     <table class="t">
                         <thead>
@@ -2497,7 +2499,8 @@
                         <b>Authorization</b> = what you may do ("Priya is an Admin, so she may approve refunds"). One
                         verifies identity; the other decides permissions. In Azure: <b>Entra ID</b> handles
                         authentication, and <b>roles + policies</b> handle authorization — you can be authenticated and
-                        still forbidden from a resource. Both, always. One is not enough.</p>
+                        still forbidden from a resource. Both, always. One is not enough.
+                    </p>
                 </div>
             </section>
 
@@ -2618,7 +2621,8 @@
                     <p><b>Azure Monitor</b> is the umbrella — metrics, logs, alerts across every resource.
                         <b>Application Insights</b> is the app-shaped lens inside it — your requests, dependencies,
                         exceptions and traces, correlated into a single transaction trace. Build the dashboards in
-                        Monitor, read the app's behaviour in Insights.</p>
+                        Monitor, read the app's behaviour in Insights.
+                    </p>
                 </div>
             </section>
 
@@ -2659,11 +2663,13 @@
                             <h4>Data: Azure SQL (core) + Cosmos DB (catalog) + Blob (files)</h4>
                             <p>Orders, payments, inventory, tenants → <b>Azure SQL</b> (ACID, shared tables + row-level
                                 security, read replicas). Product catalog (flexible, read-heavy, global later) →
-                                <b>Cosmos DB</b>. Images and PDFs → <b>Blob Storage</b> with a CDN.</p>
+                                <b>Cosmos DB</b>. Images and PDFs → <b>Blob Storage</b> with a CDN.
+                            </p>
                             <div class="whybox"><b>WHY SPLIT · NOT ONE DB</b>Each data type gets the engine that fits it
                                 — the money stays ACID, the catalog scales reads, the files stay cheap.
                                 <b>Trade-off:</b> three stores to manage instead of one, but each does its job without
-                                contorting.</div>
+                                contorting.
+                            </div>
                         </div>
                     </div>
                     <div class="stage">
@@ -2688,7 +2694,8 @@
                             <div class="whybox"><b>WHY SERVICE BUS + FUNCTIONS</b>Commands that must not be lost need a
                                 reliable broker; Functions gives pay-per-message workers that scale with queue depth.
                                 <b>Trade-off:</b> eventual results (a "confirming payment" state) in exchange for
-                                resilience.</div>
+                                resilience.
+                            </div>
                         </div>
                     </div>
                     <div class="stage">
