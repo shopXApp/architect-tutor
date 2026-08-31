@@ -1,0 +1,3872 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 10 of the 30-Day Technical Architect Track: containers and Kubernetes at architect level — why containers, image vs container, when Kubernetes is justified, managed platforms vs AKS, deployment strategies, and operational trade-offs." />
+    <title>Day 10 — Containers &amp; Kubernetes Decisions · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(36px, 5.2vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 580px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 580px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red)
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .flow {
+            stroke-dasharray: 7 6;
+            animation: ants 1.4s linear infinite;
+            stroke: var(--accent)
+        }
+
+        @keyframes ants {
+            to {
+                stroke-dashoffset: -26
+            }
+        }
+
+        #sarr path {
+            fill: var(--ink3)
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .vcards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin: 28px 0
+        }
+
+        .vc {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--pc);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 22px 24px;
+            transition: transform .25s, box-shadow .25s
+        }
+
+        .vc:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow)
+        }
+
+        .vc h4 {
+            font-family: var(--disp);
+            font-size: 22px;
+            margin-bottom: 4px
+        }
+
+        .vc .v-tag {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--pc);
+            text-transform: uppercase;
+            display: block;
+            margin-bottom: 12px
+        }
+
+        .vc p {
+            font-size: 14.5px;
+            color: var(--ink2);
+            margin: 0 0 10px
+        }
+
+        .vc ul {
+            margin: 0 0 0 18px;
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .vc li {
+            margin: 6px 0
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .pgrid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 14px
+        }
+
+        .field label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .13em;
+            color: var(--ink3);
+            margin-bottom: 6px;
+            line-height: 1.5
+        }
+
+        .field input[type=number],
+        .field select,
+        .field input[type=text] {
+            width: 100%;
+            font-family: var(--mono);
+            font-size: 14.5px;
+            padding: 9px 11px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink)
+        }
+
+        .field input:focus,
+        .field select:focus {
+            outline: none;
+            border-color: var(--accent)
+        }
+
+        .field input[type=range] {
+            width: 100%;
+            accent-color: var(--accent);
+            margin-top: 8px
+        }
+
+        .field .rv2 {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .statrow {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 18px
+        }
+
+        .stat {
+            border: 1px dashed var(--line2);
+            border-radius: 5px;
+            padding: 12px 14px;
+            background: var(--card2)
+        }
+
+        .stat b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .15em;
+            color: var(--ink3);
+            margin-bottom: 5px
+        }
+
+        .stat span {
+            font-family: var(--mono);
+            font-size: 18px;
+            color: var(--accent);
+            font-weight: 600
+        }
+
+        .stat small {
+            display: block;
+            font-family: var(--mono);
+            font-size: 8.6px;
+            color: var(--ink3);
+            margin-top: 4px
+        }
+
+        .bars {
+            display: flex;
+            gap: 22px;
+            align-items: flex-end;
+            height: 150px;
+            border-bottom: 1px solid var(--line2);
+            padding: 0 6px;
+            margin-top: 16px
+        }
+
+        .bars .bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            height: 100%;
+            text-align: center
+        }
+
+        .bars .bar em {
+            font-family: var(--mono);
+            font-style: normal;
+            font-size: 12.5px;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 5px
+        }
+
+        .bars .bar i {
+            display: block;
+            width: 100%;
+            height: 20%;
+            background: var(--accent);
+            border-radius: 3px 3px 0 0;
+            transition: height .6s cubic-bezier(.3, .7, .3, 1)
+        }
+
+        .bars .bar i.blue {
+            background: var(--blue)
+        }
+
+        .bars .bar i.red {
+            background: var(--red)
+        }
+
+        .bars .bar i.teal {
+            background: var(--teal)
+        }
+
+        .bars .bar span {
+            font-family: var(--mono);
+            font-size: 8.6px;
+            letter-spacing: .1em;
+            color: var(--ink3);
+            margin-top: 8px;
+            display: block
+        }
+
+        .tabbtns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 24px 0 16px
+        }
+
+        .tabbtn {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .06em;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink2);
+            padding: 11px 16px;
+            border-radius: 4px;
+            transition: all .25s
+        }
+
+        .tabbtn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .tabbtn.on {
+            background: var(--ink);
+            border-color: var(--ink);
+            color: var(--paper)
+        }
+
+        .tobody {
+            display: none
+        }
+
+        .tobody.on {
+            display: block;
+            animation: fadeUp .45s ease
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .toggles {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 14px 0
+        }
+
+        .tgl {
+            display: inline-flex;
+            gap: 9px;
+            align-items: center;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .06em;
+            border: 1px solid var(--line2);
+            padding: 8px 12px;
+            border-radius: 4px;
+            background: transparent;
+            color: var(--ink2);
+            cursor: pointer;
+            transition: all .22s
+        }
+
+        .tgl input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0
+        }
+
+        .tgl i {
+            width: 26px;
+            height: 14px;
+            border-radius: 99px;
+            background: var(--line2);
+            position: relative;
+            transition: background .25s;
+            flex: none
+        }
+
+        .tgl i::after {
+            content: "";
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--card);
+            transition: transform .25s
+        }
+
+        .tgl.on {
+            border-color: var(--accent);
+            color: var(--ink)
+        }
+
+        .tgl.on i {
+            background: var(--accent)
+        }
+
+        .tgl.on i::after {
+            transform: translateX(12px)
+        }
+
+        .outline {
+            margin-top: 14px;
+            font-size: 15px;
+            color: var(--ink2);
+            border-top: 1px dashed var(--line);
+            padding-top: 14px
+        }
+
+        .outline b {
+            color: var(--ink)
+        }
+
+        .podrow {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin: 14px 0
+        }
+
+        .podcell {
+            width: 52px;
+            height: 44px;
+            border: 1.5px solid var(--ink);
+            border-radius: 4px;
+            background: var(--card2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-size: 9px;
+            color: var(--ink2);
+            transition: all .3s;
+            position: relative
+        }
+
+        .podcell.hot {
+            background: var(--accent-tint);
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .podcell.ok {
+            background: rgba(47, 109, 92, .08);
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .podcell.bad {
+            background: var(--warnbg);
+            border-color: var(--red);
+            color: var(--red);
+            stroke-dasharray: 0
+        }
+
+        .worked {
+            display: grid;
+            gap: 14px;
+            margin: 26px 0
+        }
+
+        .wk {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 24px
+        }
+
+        .wk-head {
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            flex-wrap: wrap
+        }
+
+        .wk-tag {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .16em;
+            color: var(--paper);
+            background: var(--ink);
+            padding: 3px 9px;
+            border-radius: 3px
+        }
+
+        .wk-head h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            margin: 0
+        }
+
+        .wk-steps {
+            margin-top: 12px;
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .wk-steps .st {
+            display: flex;
+            gap: 12px;
+            padding: 6px 0;
+            border-top: 1px dashed var(--line)
+        }
+
+        .wk-steps .st:first-child {
+            border-top: 0
+        }
+
+        .wk-steps .st b {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--accent);
+            min-width: 96px;
+            letter-spacing: .07em;
+            padding-top: 2px
+        }
+
+        .wk-result {
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--ink);
+            border: 1px dashed var(--line2);
+            background: var(--card2);
+            border-radius: 4px;
+            padding: 10px 14px
+        }
+
+        .wk-result em {
+            color: var(--accent);
+            font-style: normal;
+            font-weight: 600
+        }
+
+        .mistake {
+            display: grid;
+            grid-template-columns: 74px 1fr;
+            gap: 20px;
+            padding: 24px 0;
+            border-bottom: 1px dashed var(--line)
+        }
+
+        .mistake:last-of-type {
+            border-bottom: 0
+        }
+
+        .m-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 40px;
+            color: var(--accent);
+            line-height: 1;
+            opacity: .85
+        }
+
+        .mistake h4 {
+            font-family: var(--disp);
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 8px
+        }
+
+        .m-why,
+        .m-fix {
+            font-size: 15px;
+            color: var(--ink2);
+            margin: 0 0 8px;
+            max-width: 800px
+        }
+
+        .m-why::before {
+            content: "WHY IT HAPPENS — ";
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            color: var(--ink3)
+        }
+
+        .m-fix::before {
+            content: "FIX — ";
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            color: var(--ok)
+        }
+
+        .asg-spec {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 28px 0
+        }
+
+        .asg-spec>div {
+            padding: 17px 20px;
+            border-top: 1px solid var(--line)
+        }
+
+        .asg-spec>div:nth-child(-n+3) {
+            border-top: 0
+        }
+
+        .asg-spec>div:nth-child(3n+1),
+        .asg-spec>div:nth-child(3n+2) {
+            border-right: 1px solid var(--line)
+        }
+
+        .asg-spec b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .18em;
+            color: var(--ink3);
+            margin-bottom: 5px
+        }
+
+        .asg-spec span {
+            font-size: 15px;
+            color: var(--ink)
+        }
+
+        .asg-progress {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin: 26px 0 14px;
+            max-width: 840px
+        }
+
+        .asg-bar {
+            flex: 1;
+            height: 8px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            overflow: hidden;
+            background: var(--card)
+        }
+
+        .asg-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .5s ease
+        }
+
+        .asg-count {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--ink2);
+            letter-spacing: .1em;
+            white-space: nowrap
+        }
+
+        .asg-item {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 15px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            transition: all .25s;
+            max-width: 840px
+        }
+
+        .asg-item:hover {
+            border-color: var(--accent);
+            transform: translateX(3px)
+        }
+
+        .asg-item input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none
+        }
+
+        .asg-cb {
+            flex: none;
+            width: 22px;
+            height: 22px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 2px;
+            position: relative;
+            background: var(--paper);
+            transition: all .25s
+        }
+
+        .asg-item input:checked~.asg-cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .asg-item input:checked~.asg-cb::after {
+            content: "";
+            position: absolute;
+            left: 6px;
+            top: 2.5px;
+            width: 5px;
+            height: 10px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .asg-item .asg-tx {
+            font-size: 15.5px;
+            color: var(--ink2)
+        }
+
+        .asg-item .asg-tx b {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 2px
+        }
+
+        .asg-item input:checked~.asg-tx {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .iq-list {
+            list-style: none;
+            counter-reset: iq;
+            margin: 26px 0;
+            max-width: 880px
+        }
+
+        .iq-list li {
+            counter-increment: iq;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 16px 20px 16px 58px;
+            margin-bottom: 9px;
+            position: relative;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4
+        }
+
+        .iq-list li::before {
+            content: "Q" counter(iq);
+            position: absolute;
+            left: 18px;
+            top: 19px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent);
+            letter-spacing: .05em
+        }
+
+        .iq-list li span {
+            display: block;
+            font-weight: 400;
+            font-size: 13px;
+            color: var(--ink3);
+            margin-top: 4px;
+            font-family: var(--mono);
+            letter-spacing: .04em
+        }
+
+        .success {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--ok);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 28px;
+            margin: 34px 0;
+            max-width: 880px
+        }
+
+        .success h4 {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .2em;
+            color: var(--ok);
+            margin-bottom: 14px
+        }
+
+        .success ul {
+            list-style: none;
+            columns: 2;
+            column-gap: 34px
+        }
+
+        .success li {
+            display: flex;
+            gap: 14px;
+            align-items: baseline;
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--line);
+            font-size: 15px;
+            color: var(--ink2);
+            break-inside: avoid
+        }
+
+        .success li::before {
+            content: "✓";
+            font-family: var(--mono);
+            color: var(--ok);
+            font-weight: 600
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+
+            .pgrid,
+            .statrow {
+                grid-template-columns: 1fr 1fr
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid,
+            .vcards,
+            .asg-spec {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd),
+            .asg-spec>div {
+                border-right: 0 !important
+            }
+
+            .pgrid,
+            .statrow {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .mistake {
+                grid-template-columns: 52px 1fr
+            }
+
+            .m-num {
+                font-size: 30px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+
+            .success ul {
+                columns: 1
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .tobody {
+                display: block !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge" onclick="window.location.href='roadmap.html#roadmap'">DAY 10 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 10 / 30</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">One image.</span></span>
+                    <span class="mask"><span class="line d2">Every machine.</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">Who <em>orchestrates</em>
+                            it?</span></span>
+                </h1>
+                <p class="hero-sub">Day 10 is not a Kubernetes course. It is a decision chain: <b>why containers → when
+                        they help → when they don't → when Kubernetes is actually justified → what you owe the
+                        operations bill.</b> You will not run a cluster today. You will be able to argue, in an
+                    interview, why the SaaS <i>doesn't</i> need one.</p>
+                <div class="hero-meta"><span class="chip">≈ 100 MIN</span><span
+                        class="chip">INTERVIEW-FOCUSED</span><span class="chip">BUILDS ON DAY 8</span><span
+                        class="chip">DEPLOYMENT CASE STUDY</span></div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS PAGE</h4>
+                    <ol>
+                        <li><b>01</b> Run the three tools first — pod scaling, deployment strategies, failure drill.
+                        </li>
+                        <li><b>02</b> Read Sections 10 and 11 twice. They are the interview.</li>
+                        <li><b>03</b> Do the assignment (Section 18) before the self-test.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">20 SECTIONS · 3 LIVE TOOLS · 10 NOT-NEEDED CASES · 8 JUSTIFIED CASES · 15
+                    QUESTIONS · 14 DELIVERABLES</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 420" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="400" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 394h12M26 410v-12M510 394h-12M494 410v-12"
+                        stroke-width="1" />
+                    <text x="36" y="44" class="ta" font-size="9">TWO PROBLEMS, ONE WORD EACH</text>
+                    <text x="36" y="70" class="t3 st2">PROBLEM 1 · IT RUNS ON MY MACHINE, NOT ON THE SERVER</text>
+                    <rect class="box" x="36" y="82" width="96" height="40" /><text x="84" y="99" font-size="8.5"
+                        class="t1" text-anchor="middle">APP + LIBS</text><text x="84" y="112" class="st2 t3"
+                        text-anchor="middle">built for .NET 8</text>
+                    <path class="flow" d="M132 102 H 168" stroke-width="1.3" />
+                    <rect class="box bad" x="172" y="82" width="96" height="40" /><text x="220" y="99" font-size="8.5"
+                        class="tr" text-anchor="middle">SERVER</text><text x="220" y="112" class="st2 t3"
+                        text-anchor="middle" fill="var(--red)">has .NET 6 only</text>
+                    <text x="290" y="100" font-size="8.5" class="tr">✗ version</text><text x="290" y="114"
+                        font-size="8.5" class="tr">mismatch</text>
+                    <text x="36" y="142" class="tt st2" style="fill:var(--ok)">ANSWER → CONTAINER: THE APP CARRIES ITS
+                        OWN RUNTIME.</text>
+                    <path class="fr" d="M36 158 H 484" stroke-dasharray="3 4" />
+                    <text x="36" y="184" class="t3 st2">PROBLEM 2 · 40 CONTAINERS, WHO RESTARTS THE DEAD ONE?</text>
+                    <rect class="box" x="36" y="196" width="96" height="40" /><text x="84" y="217" font-size="8.5"
+                        class="t1" text-anchor="middle">CONTAINERS</text><text x="84" y="231" class="st2 t3"
+                        text-anchor="middle">40 of them</text>
+                    <path class="flow" d="M132 216 H 168" stroke-width="1.3" />
+                    <rect class="box hot" x="172" y="196" width="96" height="40" /><text x="220" y="214" font-size="8.5"
+                        class="ta" text-anchor="middle" style="font-weight:600">K8s</text><text x="220" y="231"
+                        class="st2 t3" text-anchor="middle">restart · scale · route</text>
+                    <text x="290" y="214" font-size="8.5" class="tt">✓ heals</text><text x="290" y="228" font-size="8.5"
+                        class="tt">✓ scales</text>
+                    <text x="36" y="256" class="tr st2" style="fill:var(--red)">BUT K8s ANSWERS A QUESTION 40 CONTAINERS
+                        MAY NOT HAVE.</text>
+                    <g>
+                        <rect class="fr" x="36" y="276" width="448" height="84" />
+                        <path class="fr" d="M190 276v84M330 276v84" />
+                        <text x="50" y="298" class="st2 t3">CONTAINERS SOLVE</text><text x="50" y="320" font-size="10"
+                            class="tt" style="font-family:var(--disp);font-weight:700">packaging</text><text x="50"
+                            y="338" class="st2 t3">"runs everywhere"</text>
+                        <text x="204" y="298" class="st2 t3">KUBERNETES SOLVES</text><text x="204" y="320"
+                            font-size="10" class="tb"
+                            style="font-family:var(--disp);font-weight:700">management</text><text x="204" y="338"
+                            class="st2 t3">"many containers, at scale"</text>
+                        <text x="344" y="298" class="st2 t3">THE ARCHITECT ASKS</text><text x="344" y="320"
+                            font-size="10" class="tr" style="font-family:var(--disp);font-weight:700">do I have the
+                            second problem?</text>
+                    </g>
+                    <text x="36" y="392" class="st2 ta">AKS IS NOT A PRIZE. IT IS A MONTHLY OPERATIONS BILL YOU PAY ONLY
+                        WHEN THE PROBLEM EXISTS.</text>
+                    <defs>
+                        <marker id="sarr" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                            <path d="M0 0 L8 4 L0 8 Z" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 8v5M12 16.5v.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Problem</span><span class="p-tg">WHY CONTAINERS</span></span></a>
+            <a class="pstrip" href="#s5" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12a8 8 0 1 1 2.6 5.9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Real Question</span><span class="p-tg">WHY
+                        KUBERNETES</span></span></a>
+            <a class="pstrip" href="#s8" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="8" width="4" height="8" rx="1" stroke="currentColor" stroke-width="1.5" />
+                    <rect x="10" y="5" width="4" height="11" rx="1" stroke="currentColor" stroke-width="1.5" />
+                    <rect x="16" y="3" width="4" height="13" rx="1" stroke="currentColor" stroke-width="1.5" />
+                </svg><span><span class="p-nm">Scaling</span><span class="p-tg">2 → 10 → 50 PODS</span></span></a>
+            <a class="pstrip" href="#s9" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M8 20L4 12l4-8M16 20l4-8-4-8" stroke="currentColor" stroke-width="1.7"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Compare Platforms</span><span class="p-tg">APP SERVICE · CA · AKS ·
+                        ECS</span></span></a>
+            <a class="pstrip" href="#s15" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 4h16v16H4z" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Decision</span><span class="p-tg">A vs B vs C</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> The real problem</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> What is a container</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> Containers vs VMs</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> Docker for .NET</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Why Kubernetes?</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> K8s in plain English</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> K8s architecture</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Scaling</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Platform comparison</a>
+            <a class="tn" href="#s10" data-spy="s10"><span>10</span> When NOT to use K8s</a>
+            <a class="tn" href="#s11" data-spy="s11"><span>11</span> When K8s makes sense</a>
+            <a class="tn" href="#s12" data-spy="s12"><span>12</span> Production concerns</a>
+            <a class="tn" href="#s13" data-spy="s13"><span>13</span> Failure scenarios</a>
+            <a class="tn" href="#s14" data-spy="s14"><span>14</span> Deployment strategies</a>
+            <a class="tn" href="#s15" data-spy="s15"><span>15</span> Case study: A vs B vs C</a>
+            <a class="tn" href="#s16" data-spy="s16"><span>16</span> 10 decisions</a>
+            <a class="tn" href="#s17" data-spy="s17"><span>17</span> 10 mistakes</a>
+            <a class="tn" href="#s18" data-spy="s18"><span>18</span> Day 10 assignment</a>
+            <a class="tn" href="#s19" data-spy="s19"><span>19</span> Self-test</a>
+            <a class="tn" href="#s20" data-spy="s20"><span>20</span> Success criteria</a>
+            <a class="tn" href="#mindset" data-spy="mindset"><span>★</span> Mindset, Day 10</a>
+        </aside>
+        <main class="doc">
+            <section class="sec" id="s1">
+                <div class="sec-kicker">SECTION 01 — THE REAL PROBLEM</div>
+                <h2 class="sec-title rv">Why Teams Move to Containers</h2>
+                <p class="sec-lead rv">Before any technology: the six problems that make "it works on my machine" a
+                    deployment strategy. A simple .NET API shows all six at once.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 860 160" fill="none">
+                        <text x="16" y="22" class="s-note">SAME CODE, TWO HOMES — AND EVERYTHING BETWEEN THEM IS THE
+                            PROBLEM</text>
+                        <rect x="16" y="44" width="170" height="52" class="s-box ok" /><text x="101" y="66"
+                            class="s-lab" text-anchor="middle" font-size="9.5">MY MACHINE</text><text x="101" y="82"
+                            class="s-sub" text-anchor="middle">.NET 8 · appsettings.Dev</text>
+                        <path class="flow" d="M186 70 H 230" stroke-width="1.4" marker-end="url(#sarr)" />
+                        <text x="200" y="60" class="s-lbl">deploy</text>
+                        <path d="M234 44 C 280 30 300 24 340 24" class="s-line" />
+                        <rect x="344" y="10" width="180" height="30" class="s-box" /><text x="434" y="29" class="s-lab"
+                            text-anchor="middle" font-size="9">RUNTIME MISMATCH</text>
+                        <path d="M234 70 C 280 70 300 60 340 60" class="s-line" />
+                        <rect x="344" y="44" width="180" height="30" class="s-box" /><text x="434" y="63" class="s-lab"
+                            text-anchor="middle" font-size="9">DEPENDENCY DRIFT</text>
+                        <path d="M234 96 C 280 112 300 118 340 116" class="s-line" />
+                        <rect x="344" y="100" width="180" height="30" class="s-box" /><text x="434" y="119"
+                            class="s-lab" text-anchor="middle" font-size="9">LEGACY ON THE BOX</text>
+                        <rect x="560" y="44" width="130" height="52" class="s-box bad" /><text x="625" y="66"
+                            class="s-lab" text-anchor="middle" font-size="9.5" fill="var(--red)">THE SERVER</text><text
+                            x="625" y="82" class="s-sub" text-anchor="middle">.NET 6 · legacy config</text>
+                        <text x="710" y="60" class="s-sub" fill="var(--red)">❌ crashes</text>
+                        <text x="710" y="76" class="s-sub" fill="var(--red)">❌ wrong config</text>
+                        <text x="710" y="92" class="s-sub" fill="var(--red)">❌ who restarts it?</text>
+                        <text x="16" y="150" class="s-note">NONE OF THIS IS A CODE BUG. IT IS ALL ENVIRONMENT — AND THE
+                            CONTAINER PACKAGES THE ENVIRONMENT WITH THE CODE.</text>
+                    </svg>
+                </div>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>DIFFERENT ENVIRONMENTS</b><span>Dev has .NET 8, staging has .NET 8 Service
+                            Pack 2, prod has .NET 6. The same code behaves differently in each — and the difference is
+                            invisible until 2 a.m.</span></div>
+                    <div class="topic"><b>DEPENDENCY CONFLICTS</b><span>Service A needs OpenSSL 1.1, Service B needs
+                            1.0. On one server they fight; in containers each gets its own copy and the fight
+                            disappears.</span></div>
+                    <div class="topic"><b>"WORKS ON MY MACHINE"</b><span>The honest translation: the machine is part of
+                            the application. Any environment difference — SDK, fonts, region settings, timezone — is an
+                            unshipped dependency.</span></div>
+                    <div class="topic"><b>DEPLOYMENT INCONSISTENCY</b><span>Dev deploys with a script, ops deploys by
+                            hand, the CI pipeline deploys a third way. Three deployments, three results, one
+                            ticket.</span></div>
+                    <div class="topic"><b>DIFFICULT SCALING</b><span>One machine, one app, one instance. To run two
+                            copies you copy the whole machine's configuration — and pray you remember every
+                            difference.</span></div>
+                    <div class="topic"><b>DIFFICULT ROLLBACK</b><span>Uninstalling version 2 means restoring files,
+                            config, and the runtime state of the machine. Rollback becomes archaeology instead of one
+                            command.</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THESIS</span>
+                    <p>Containers solve <b>packaging</b>: the code, the runtime and the libraries travel as one unit, so
+                        "it runs on my machine" becomes "it runs anywhere a container runtime exists." That is the whole
+                        win — and it is a big one. Everything else in this page is about a <i>different</i> problem.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">SECTION 02 — THE FOUR WORDS</div>
+                <h2 class="sec-title rv">What Is a Container?</h2>
+                <p class="sec-lead rv">Four words, one flow. No commands needed.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 860 130" fill="none">
+                        <rect x="16" y="36" width="110" height="44" class="s-box" /><text x="71" y="55" class="s-lab"
+                            text-anchor="middle" font-size="9.5">CODE</text><text x="71" y="70" class="s-sub"
+                            text-anchor="middle">C# + project</text>
+                        <path d="M126 58 H 156" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="160" y="36" width="130" height="44" class="s-box hot" /><text x="225" y="55"
+                            class="s-lab" text-anchor="middle" font-size="9.5">IMAGE</text><text x="225" y="70"
+                            class="s-sub" text-anchor="middle">read-only recipe</text>
+                        <path d="M290 58 H 320" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="324" y="36" width="130" height="44" class="s-box" /><text x="389" y="55" class="s-lab"
+                            text-anchor="middle" font-size="9.5">REGISTRY</text><text x="389" y="70" class="s-sub"
+                            text-anchor="middle">where images are stored</text>
+                        <path d="M454 58 H 484" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="488" y="36" width="130" height="44" class="s-box" /><text x="553" y="55" class="s-lab"
+                            text-anchor="middle" font-size="9.5">CONTAINER</text><text x="553" y="70" class="s-sub"
+                            text-anchor="middle">a running image</text>
+                        <path d="M618 58 H 648" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="652" y="36" width="110" height="44" class="s-box" /><text x="707" y="55" class="s-lab"
+                            text-anchor="middle" font-size="9.5">APPLICATION</text><text x="707" y="70" class="s-sub"
+                            text-anchor="middle">serving traffic</text>
+                        <text x="16" y="112" class="s-note">THE IMAGE IS THE SHIP. THE CONTAINER IS THE SHIP AT SEA. THE
+                            SAME SHIP SAILS ANYWHERE.</text>
+                    </svg>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:20%">WORD</th>
+                                <th>PLAIN ENGLISH</th>
+                                <th>WHY IT MATTERS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Dockerfile</b></td>
+                                <td>The recipe: "put the compiled app here, add the runtime there, expose this port, run
+                                    this command." A text file the build reads.</td>
+                                <td>It is <b>code</b>. Versioned, reviewed, reproducible — the environment becomes part
+                                    of the repository instead of tribal knowledge.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Image</b></td>
+                                <td>The packaged result of the recipe: the app + its runtime + its libraries, frozen as
+                                    read-only layers. Never changes once built.</td>
+                                <td>Immutable = testable. The image you tested in CI is <i>exactly</i> the image that
+                                    runs in production — the mismatch problem is gone by construction.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Registry</b></td>
+                                <td>The library where images are stored and versioned (Azure Container Registry, Docker
+                                    Hub, ECR). </td>
+                                <td>One copy, many machines. Pull the same version anywhere: local, staging, prod,
+                                    another region.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Container</b></td>
+                                <td>A running instance of an image — a process with its own filesystem view, network and
+                                    resource limits. Start one, or fifty, from the same image.</td>
+                                <td>This is where scaling and healing happen: containers are cheap to start, replace and
+                                    duplicate.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE ONE-LINE TEST</span>
+                    <p><b>Image = what it is. Container = what is running.</b> You can have a hundred containers from
+                        one image, and — because the image is immutable — every one of them is identical. That identity
+                        is the entire point.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">SECTION 03 — THE RIGHT TOOL</div>
+                <h2 class="sec-title rv">Containers vs Virtual Machines</h2>
+                <p class="sec-lead rv">They look similar. They are different tools for different problems.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:18%">AREA</th>
+                                <th>CONTAINER</th>
+                                <th>VIRTUAL MACHINE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Startup</b></td>
+                                <td class="pros">Seconds — the host OS is already running.</td>
+                                <td class="cons">Minutes — a whole OS must boot.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Resource usage</b></td>
+                                <td class="pros">Light — they share the host kernel; no duplicated OS per unit.</td>
+                                <td class="cons">Heavy — each VM runs its own full OS, doubling memory for the same
+                                    workload.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Isolation</b></td>
+                                <td class="cons">Process-level — kernel is shared, so isolation is weaker at the
+                                    security boundary.</td>
+                                <td class="pros">Strong — a separate kernel per VM; a breach of one does not reach the
+                                    host's kernel.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling</b></td>
+                                <td class="pros">Cheap and fast — adding a unit is milliseconds and a few megabytes.
+                                </td>
+                                <td class="cons">Slower and costlier — each unit is an operating system.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Operating system</b></td>
+                                <td>Shares the host's kernel (each container is a package of app + libraries, not an
+                                    OS).</td>
+                                <td>Each VM owns a complete guest OS.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Typical use</b></td>
+                                <td class="pros">Applications, APIs, workers, microservices — where you want many small
+                                    cheap units.</td>
+                                <td class="cons">Legacy apps needing a full OS, different OS families side by side, hard
+                                    isolation requirements.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE RULE</span>
+                    <p>VMs give you <b>strong isolation at high cost per unit</b>. Containers give you <b>cheap light
+                            units at slightly weaker isolation</b>. For .NET services: containers, almost always. For
+                        "this legacy app needs Windows Server 2016 and nothing else will do": a VM, gladly. The choice
+                        is the trade, not the trend.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">SECTION 04 — THE .NET VIEW</div>
+                <h2 class="sec-title rv">Docker for an ASP.NET Core Application</h2>
+                <p class="sec-lead rv">No Dockerfile required to think about it. The flow and the five things that
+                    change — that is what an architect reasons about.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 860 110" fill="none">
+                        <rect x="16" y="32" width="130" height="44" class="s-box" /><text x="81" y="52" class="s-lab"
+                            text-anchor="middle" font-size="9.5">SOURCE CODE</text><text x="81" y="67" class="s-sub"
+                            text-anchor="middle">C# · csproj</text>
+                        <path d="M146 54 H 176" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="180" y="32" width="130" height="44" class="s-box hot" /><text x="245" y="52"
+                            class="s-lab" text-anchor="middle" font-size="9.5">DOCKER IMAGE</text><text x="245" y="67"
+                            class="s-sub" text-anchor="middle">app + .NET runtime</text>
+                        <path d="M310 54 H 340" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="344" y="32" width="130" height="44" class="s-box" /><text x="409" y="52" class="s-lab"
+                            text-anchor="middle" font-size="9.5">CONTAINERS ×N</text><text x="409" y="67" class="s-sub"
+                            text-anchor="middle">same image, many units</text>
+                        <path d="M474 54 H 504" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="508" y="32" width="130" height="44" class="s-box" /><text x="573" y="52" class="s-lab"
+                            text-anchor="middle" font-size="9.5">LOAD BALANCER</text><text x="573" y="67" class="s-sub"
+                            text-anchor="middle">routes to all</text>
+                        <path d="M638 54 H 668" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="672" y="32" width="110" height="44" class="s-box" /><text x="727" y="52" class="s-lab"
+                            text-anchor="middle" font-size="9.5">USERS</text>
+                        <text x="16" y="104" class="s-note">THE SAME IMAGE SAILS TO DEV, STAGING, PROD AND A SECOND
+                            REGION — UNCHANGED.</text>
+                    </svg>
+                </div>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>CONFIGURATION</b><span>Config leaves the image. The image is immutable; the
+                            environment provides the values — via environment variables, config files mounted from
+                            outside, or a platform's config service. Never bake a URL or a flag into the image.</span>
+                    </div>
+                    <div class="topic"><b>ENVIRONMENT VARIABLES</b><span>The standard injection channel:
+                            <code>ASPNETCORE_ENVIRONMENT</code>, connection strings (references, not values), feature
+                            flags. One image, many configurations — that is the point.</span></div>
+                    <div class="topic"><b>SECRETS</b><span>Never in the image, never in the layers, never in the repo.
+                            Secrets arrive at runtime — environment variables, mounted secrets, or the platform's secret
+                            store (Day 8's Key Vault). The image is public by design; it must contain nothing
+                            secret.</span></div>
+                    <div class="topic"><b>LOGGING</b><span>One container is ephemeral — its filesystem disappears with
+                            it. Logs go to stdout/stderr and are collected by the platform, not written to a local file
+                            you will lose when the container restarts.</span></div>
+                    <div class="topic"><b>PERSISTENT DATA</b><span>The container has no memory. Anything that must
+                            survive a restart — files, uploads, the database itself — lives outside on a volume or in a
+                            service (Blob, Azure SQL, Redis). The rule from Day 8, now inside the container world:
+                            <b>state never lives in the unit of compute.</b></span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">WHAT ACTUALLY CHANGES</span>
+                    <p>Nothing about your C# logic changes. What changes: <b>the environment is now code</b> (the
+                        Dockerfile), <b>the unit is disposable</b> (restart any container, any time), and <b>everything
+                            you were not supposed to do anyway — hardcoded config, local files, machine-specific state —
+                            becomes physically impossible.</b> That is the quiet win architects like.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">SECTION 05 — THE REAL QUESTION</div>
+                <h2 class="sec-title rv">Why Do I Need Kubernetes?</h2>
+                <p class="sec-lead rv">Containers solved packaging. Containers did <b>not</b> solve management. The
+                    moment you run forty of them in production, eight ordinary questions appear — and that is the entire
+                    case for orchestration.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>MANAGEMENT NEED</th>
+                                <th>WHAT HAPPENS WITHOUT IT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Many containers</b></td>
+                                <td>Forty units deployed by hand, in a sequence that only one person remembers.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling</b></td>
+                                <td>Traffic rises; somebody manually starts five more containers and hopes the load
+                                    balancer notices.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Restarting failed containers</b></td>
+                                <td>A container dies at 3 a.m.; it stays dead until a human looks at the dashboard.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Traffic distribution</b></td>
+                                <td>Every new container needs a load-balancer entry — by hand, again.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Deployment</b></td>
+                                <td>Replacing version 1 with version 2 is a manual sequence with a window of downtime.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Rollback</b></td>
+                                <td>Version 2 is buggy; restoring version 1 is another manual sequence — if the old
+                                    image was even kept.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Service discovery</b></td>
+                                <td>Service A needs Service B's address; containers get new addresses when they restart.
+                                    Someone must maintain the map.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Health checks</b></td>
+                                <td>"Is the container running?" is a different question from "is it actually serving
+                                    requests?" Nobody asked the second one.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE BRIDGE</span>
+                    <p>Each question alone has a manual answer. Together, they are a full-time job — and the answers
+                        must be <b>repeated, automated and reliable</b>. That is what orchestration is: the automation
+                        of these eight questions. Kubernetes is the most famous orchestrator; it is not the only one,
+                        and it is not the answer to a system that has not asked these questions yet.</p>
+                </div>
+            </section>
+            <section class="sec" id="s6">
+                <div class="sec-kicker">SECTION 06 — THE TEN WORDS</div>
+                <h2 class="sec-title rv">Kubernetes in Simple English</h2>
+                <p class="sec-lead rv">No internals. Ten concepts, each with a job and an example — enough for any
+                    architect conversation.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:16%">CONCEPT</th>
+                                <th>WHAT IT DOES</th>
+                                <th>WHY IT MATTERS</th>
+                                <th>SIMPLE EXAMPLE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Cluster</b></td>
+                                <td>The whole managed system — one control plane plus the machines that run your work.
+                                </td>
+                                <td>The unit you pay for and the boundary of a region.</td>
+                                <td>"We have one cluster in West Europe."</td>
+                            </tr>
+                            <tr>
+                                <td><b>Node</b></td>
+                                <td>A machine (VM) inside the cluster that runs containers.</td>
+                                <td>Node count = capacity. A dead node means work moves to the others.</td>
+                                <td>3 nodes, each with 4 vCPU.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Pod</b></td>
+                                <td>The smallest unit of work: one or a few containers that run together on a node.</td>
+                                <td>Pods are ephemeral — they are born, die, and are replaced. The orchestrator counts
+                                    pods.</td>
+                                <td>4 pods running the API, each = 1 container.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Deployment</b></td>
+                                <td>The declaration: "I want 4 replicas of this image, version 3."</td>
+                                <td>It is the desired state. The cluster's job is making reality match it —
+                                    automatically.</td>
+                                <td>"Keep 4 API pods running; roll out v3 when I say so."</td>
+                            </tr>
+                            <tr>
+                                <td><b>Service</b></td>
+                                <td>A stable address in front of a set of pods, so callers stop chasing pod addresses.
+                                </td>
+                                <td>Pods come and go; the Service name stays. That name is the contract.</td>
+                                <td><code>http://orders-api</code> always works.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Ingress</b></td>
+                                <td>The front door: routes external traffic by URL path to Services.</td>
+                                <td>One public entry, clean routing — the Day 8 gateway idea, native to the cluster.
+                                </td>
+                                <td><code>/api/orders</code> → orders Service.</td>
+                            </tr>
+                            <tr>
+                                <td><b>ConfigMap</b></td>
+                                <td>Non-secret configuration injected into pods as env vars or files.</td>
+                                <td>Config leaves the image; the image stays immutable.</td>
+                                <td>API URLs, feature flags.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Secret</b></td>
+                                <td>Same as ConfigMap, for things that must not be readable.</td>
+                                <td>Secrets are mounted, not baked — and never in the image.</td>
+                                <td>DB passwords pulled from the platform vault.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Health check</b></td>
+                                <td>Two probes: "is the process up?" and "is it serving requests?"</td>
+                                <td>The second probe is what actually saves you — a process can be alive and useless.
+                                </td>
+                                <td>Liveness = startup OK. Readiness = DB reachable.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Auto scaling</b></td>
+                                <td>Adjust pod count on a signal — CPU, memory, queue depth, or requests.</td>
+                                <td>This is the answer to "what happens when traffic 10×s" inside the cluster.</td>
+                                <td>4 pods → 40 pods when CPU crosses 70%.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE ONE SENTENCE</span>
+                    <p>Kubernetes is a <b>loop</b>: you declare the desired state (Deployment, Service, scaling rule),
+                        and the cluster continuously compares it to reality and repairs the difference. A dead pod is
+                        replaced. A new version is rolled out. Traffic is routed. That loop is the entire product.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">SECTION 07 — THE LOOP</div>
+                <h2 class="sec-title rv">How Kubernetes Keeps the App Running</h2>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 860 260" fill="none">
+                        <text x="16" y="22" class="s-note">THE SHAPE — USERS → INGRESS → SERVICE → PODS →
+                            CONTAINERS</text>
+                        <rect x="380" y="36" width="100" height="34" class="s-box" /><text x="430" y="55" class="s-lab"
+                            text-anchor="middle" font-size="9.5">USERS</text>
+                        <path d="M430 70 V 96" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="340" y="98" width="180" height="34" class="s-box hot" /><text x="430" y="119"
+                            class="s-lab" text-anchor="middle" font-size="9.5">INGRESS</text>
+                        <path d="M430 132 V 156" class="s-line" marker-end="url(#sarr)" />
+                        <rect x="340" y="158" width="180" height="34" class="s-box" /><text x="430" y="179"
+                            class="s-lab" text-anchor="middle" font-size="9.5">SERVICE</text>
+                        <path d="M340 186 H 220 M340 186 H 130" class="s-line" />
+                        <rect x="60" y="170" width="110" height="32" class="s-box" /><text x="115" y="181" class="s-lab"
+                            text-anchor="middle" font-size="8.5">POD 1</text><text x="115" y="194" class="s-sub"
+                            text-anchor="middle" font-size="8">container</text>
+                        <rect x="200" y="170" width="110" height="32" class="s-box ok" /><text x="255" y="181"
+                            class="s-lab" text-anchor="middle" font-size="8.5">POD 2</text><text x="255" y="194"
+                            class="s-sub" text-anchor="middle" font-size="8">container</text>
+                        <rect x="200" y="212" width="110" height="32" class="s-box bad" /><text x="255" y="223"
+                            class="s-lab" text-anchor="middle" font-size="8.5" fill="var(--red)">POD 3 ✗</text><text
+                            x="255" y="236" class="s-sub" text-anchor="middle" font-size="8">crashed</text>
+                        <rect x="60" y="212" width="110" height="32" class="s-box" /><text x="115" y="223" class="s-lab"
+                            text-anchor="middle" font-size="8.5">POD 4</text><text x="115" y="236" class="s-sub"
+                            text-anchor="middle" font-size="8">container</text>
+                        <path d="M340 201 H 330" class="s-line" stroke-dasharray="4 3" marker-end="url(#sarr)" />
+                        <text x="600" y="60" class="s-sub" fill="var(--ok)">POD 2, POD 1, POD 4 serve traffic.</text>
+                        <text x="600" y="78" class="s-sub" fill="var(--red)">POD 3 CRASHES → the orchestrator sees the
+                            failed health check,</text>
+                        <text x="600" y="94" class="s-sub" fill="var(--red)">terminates it and starts a fresh one.
+                            Service address never changes.</text>
+                        <text x="600" y="120" class="s-sub" fill="var(--ok)">TRAFFIC 10× → CPU crosses the threshold →
+                            pods scale 4 → 40 automatically.</text>
+                        <text x="600" y="138" class="s-sub" fill="var(--blue)">BIGGER MACHINES → nodes joined to the
+                            cluster; pods spread across them.</text>
+                        <text x="600" y="156" class="s-sub" fill="var(--teal)">NEW VERSION → rolling update: one pod at
+                            a time, health-gated, reversible.</text>
+                        <text x="600" y="174" class="s-sub" fill="var(--red)">BUGGY RELEASE → deploys from v2 to v1 in
+                            one command, traffic never stops.</text>
+                        <text x="600" y="200" class="s-note">EVERY CASE IS THE SAME LOOP: DESIRED STATE → COMPARE →
+                            REPAIR.</text>
+                    </svg>
+                </div>
+                <div class="worked">
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">POD CRASHES</span>
+                            <h4>What happens in the next 30 seconds</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>DETECT</b><span>The readiness probe fails → the Service stops sending
+                                    traffic to that pod. The liveness probe fails → the orchestrator kills it.</span>
+                            </div>
+                            <div class="st"><b>REPLACE</b><span>Pods are declared, not owned: "4 replicas" stays true,
+                                    so a new pod starts from the same image on the same node (or another one).</span>
+                            </div>
+                        </div>
+                        <div class="wk-result">⇒ <em>HEALING IS AUTOMATIC — IF THE HEALTH CHECK IS HONEST. A POD WITH NO
+                                READINESS PROBE IS A POD YOU CANNOT PROTECT.</em></div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">TRAFFIC INCREASES</span>
+                            <h4>Scaling the application</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>SIGNAL</b><span>CPU or memory crosses the threshold (say 70%), or queue
+                                    depth rises.</span></div>
+                            <div class="st"><b>ACTION</b><span>More pods. 4 → 10 → 50. Each carries the same immutable
+                                    image; the Service distributes across them.</span></div>
+                        </div>
+                        <div class="wk-result">⇒ <em>APP SCALING = MORE PODS (CHEAP, FAST). CLUSTER SCALING = MORE
+                                MACHINES (THE EXPENSIVE PART).</em></div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">NEW VERSION</span>
+                            <h4>Rolling deployment of v2</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>ACTION</b><span>The Deployment is updated to image v2; pods are replaced
+                                    gradually, health-gated.</span></div>
+                            <div class="st"><b>GATE</b><span>A pod that fails its readiness probe halts the rollout —
+                                    the bug never reaches all traffic.</span></div>
+                        </div>
+                        <div class="wk-result">⇒ <em>DEPLOY AND ROLLBACK BECOME ORDINARY OPERATIONS, NOT EVENTS.</em>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">NODE FAILS</span>
+                            <h4>The machine dies</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>DETECT</b><span>Heartbeats stop; the node is marked unhealthy.</span>
+                            </div>
+                            <div class="st"><b>ACTIONS</b><span>Its pods are recreated on healthy nodes — one cluster,
+                                    no single machine matters. Replicas across nodes are why 3 nodes beat 1 big
+                                    node.</span></div>
+                        </div>
+                        <div class="wk-result">⇒ <em>NODE FAILURE IS A NON-EVENT — IF REPLICAS ARE SPREAD AND THE APP IS
+                                STATELESS (DAY 2'S RULE, STILL TRUE).</em></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">SECTION 08 — TWO LEVERS</div>
+                <h2 class="sec-title rv">Scaling the App vs Scaling the Cluster</h2>
+                <p class="sec-lead rv">Two different levers, two different bills. Architects confuse them constantly —
+                    and the bill teaches the difference.</p>
+                <div class="vcards">
+                    <div class="vc rv" style="--pc:var(--teal)">
+                        <h4>Scaling the application</h4><span class="v-tag">More pods</span>
+                        <p>Add containers from the same image: 2 pods → 10 → 50. This is the cheap lever — seconds to
+                            start, fine-grained, and it is exactly what the autoscaler does when CPU rises.</p>
+                    </div>
+                    <div class="vc rv" style="--pc:var(--red)">
+                        <h4>Scaling the cluster</h4><span class="v-tag">More machines</span>
+                        <p>Add nodes — bigger or more VMs — so the pods have somewhere to land. This is the expensive
+                            lever: machines cost money whether they are busy or not, and node pools are monthly
+                            commitments.</p>
+                    </div>
+                </div>
+                <div class="panel rv">
+                    <h4>SIMULATOR — 10,000 REQUESTS PER MINUTE AT THE API</h4>
+                    <div class="pgrid" style="grid-template-columns:repeat(4,1fr)">
+                        <div class="field"><label>REQUESTS / MIN</label><input id="pReq" type="number" value="10000"
+                                min="100" step="500"></div>
+                        <div class="field"><label>REQUESTS PER POD</label><input id="pPer" type="number" value="500"
+                                min="50" step="50"></div>
+                        <div class="field"><label>PODS NEEDED (AUTO)</label><input id="pPods" type="number" value="20"
+                                min="1" max="60" step="1"></div>
+                        <div class="field"><label>CPU PER POD AT LOAD (%)</label><input id="pCpu" type="number"
+                                value="70" min="1" max="100" step="5"></div>
+                    </div>
+                    <div class="podrow" id="podRow"></div>
+                    <div class="statrow">
+                        <div class="stat"><b>CAPACITY</b><span id="oCap">—</span><small>req/min at current pods</small>
+                        </div>
+                        <div class="stat"><b>SHORTFALL</b><span id="oShort">—</span><small>req/min unserved</small>
+                        </div>
+                        <div class="stat"><b>SCALES TO</b><span id="oAuto">—</span><small>pods the autoscaler would
+                                create</small></div>
+                        <div class="stat"><b>CLUSTER NODES</b><span id="oNodes">—</span><small>at ~10 pods per
+                                node</small></div>
+                    </div>
+                    <div class="outline" id="pNote"></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE WORKED EXAMPLE</span>
+                    <p><b>2 pods → 10 → 50.</b> Each pod handles ~500 req/min. At 1,000 req/min: 2 pods, done. At
+                        10,000: 20 pods needed — the autoscaler adds them in minutes. At 100,000: 200 pods — and now you
+                        need the machines to hold them, which is the cluster-scale decision. <b>Pods are where traffic
+                            is absorbed; nodes are where capacity is paid for.</b> Know which lever you are pulling — in
+                        the design and in the interview.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">SECTION 09 — THE COMPARISON</div>
+                <h2 class="sec-title rv">App Service vs Container Apps vs AKS (vs ECS/EKS)</h2>
+                <p class="sec-lead rv">The most asked comparison in interviews. Five platforms, one table — and the rule
+                    that ends the argument.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:17%">PLATFORM</th>
+                                <th>EASE OF USE</th>
+                                <th>CONTROL</th>
+                                <th>OPERATIONAL EFFORT</th>
+                                <th>SCALING</th>
+                                <th>BEST USE CASE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Azure App Service</b></td>
+                                <td class="pros">Highest — deploy a container (or plain code) and go.</td>
+                                <td class="cons">Low — the platform decides a lot.</td>
+                                <td class="pros">Lowest — nearly serverless for the team.</td>
+                                <td>Autoscale by rules; coarse but simple.</td>
+                                <td>APIs, web apps, one or a few deployables, small to mid teams.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Azure Container Apps</b></td>
+                                <td class="pros">High — containers without a cluster.</td>
+                                <td>Moderate — container-level control, no Kubernetes API.</td>
+                                <td>Low-to-moderate.</td>
+                                <td class="pros">Scale to zero and per-revision scaling built in.</td>
+                                <td>Containerised services and background workers that want scaling without Kubernetes.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>AKS</b></td>
+                                <td class="cons">Lowest — a learning curve and a cluster to babysit.</td>
+                                <td class="pros">Highest — full Kubernetes control.</td>
+                                <td class="cons">Highest — upgrades, nodes, networking, monitoring.</td>
+                                <td class="pros">Everything: pods, nodes, custom autoscaling.</td>
+                                <td>Many services, platform-engineering needs, teams that live in Kubernetes.</td>
+                            </tr>
+                            <tr>
+                                <td><b>AWS ECS</b></td>
+                                <td>High — AWS's simpler container service.</td>
+                                <td>Moderate.</td>
+                                <td>Low-to-moderate.</td>
+                                <td>Good, service-level.</td>
+                                <td>The AWS equivalent of Container Apps: containers on AWS without EKS.</td>
+                            </tr>
+                            <tr>
+                                <td><b>AWS EKS</b></td>
+                                <td class="cons">Lowest (Kubernetes).</td>
+                                <td class="pros">Highest.</td>
+                                <td class="cons">Highest.</td>
+                                <td class="pros">Full.</td>
+                                <td>Same as AKS, on AWS.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">WHY AKS/EKS MUST NOT BE THE DEFAULT</span>
+                    <p>Because the choice is not "how powerful" — it is <b>how much operations can the team afford</b>.
+                        Kubernetes is a platform you <i>operate</i>: upgrades, node failure, networking, monitoring,
+                        capacity. If the requirement can be satisfied by a managed platform — and for most applications
+                        it can — the cluster is not an upgrade, it is a second job. <b>Power you are not using is cost
+                            you are still paying.</b> The interviewer is listening for exactly this sentence.</p>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE DECISION RULE</span>
+                    <p><b>Try App Service first. Reach for Container Apps when you need containers without the cluster.
+                            Reach for AKS when you need Kubernetes itself.</b> Each step up must be justified by a
+                        requirement, not by ambition.</p>
+                </div>
+            </section>
+            <section class="sec" id="s10">
+                <div class="sec-kicker">SECTION 10 — THE HONEST SECTION</div>
+                <h2 class="sec-title rv">When NOT to Use Kubernetes</h2>
+                <p class="sec-lead rv"><b>Kubernetes solves real problems — and it creates real operational
+                        complexity.</b> List the problems you have; if the list does not match the second column below,
+                    the complexity is not justified. Ten situations where the answer is "no thank you":</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:34%">SITUATION</th>
+                                <th>WHY KUBERNETES IS OVERKILL</th>
+                                <th>WHAT TO USE INSTEAD</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Small application (1–2 services)</b></td>
+                                <td>You have one deployable and one database. Orchestration manages many; you do not
+                                    have many.</td>
+                                <td>App Service.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Small team (2–5 engineers)</b></td>
+                                <td class="cons">The team must now run the platform, not the product. Every hour on node
+                                    upgrades is an hour off features.</td>
+                                <td>App Service or Container Apps.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Low traffic</b></td>
+                                <td>No scaling problem → autoscaling buys nothing. You are paying for a control plane to
+                                    manage two pods.</td>
+                                <td>One or two App Service plans.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Few services</b></td>
+                                <td>Service discovery and orchestration solve "many things, many addresses." With three
+                                    services, the map fits on a napkin.</td>
+                                <td>App Service + simple config.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Simple deployment</b></td>
+                                <td>A rolling deploy via the platform's slots is already smooth. The cluster adds
+                                    ceremony, not capability.</td>
+                                <td>Deploy slots, CI/CD to App Service.</td>
+                            </tr>
+                            <tr>
+                                <td><b>No advanced orchestration need</b></td>
+                                <td>No custom schedulers, no node tuning, no platform team. The extra control has no
+                                    buyer.</td>
+                                <td>Managed containers.</td>
+                            </tr>
+                            <tr>
+                                <td><b>No team member knows Kubernetes</b></td>
+                                <td>You have bought a platform nobody can operate — the worst version of an investment.
+                                </td>
+                                <td>Start managed; learn later if needed.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Regulated environment with strict isolation</b></td>
+                                <td>Multi-tenant cluster security, network policies and audit trails are real work. A
+                                    per-service managed host may be simpler to prove compliant.</td>
+                                <td>Isolated App Service plans / VMs.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Budget-constrained</b></td>
+                                <td class="cons">The cluster bill runs 24/7 for capacity used 4 hours a day.</td>
+                                <td>Serverless Functions, scale-to-zero.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Monolith, one deployable, modest scale</b></td>
+                                <td>Everything the cluster offers is available from the platform, cheaper.</td>
+                                <td>App Service with autoscale.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">THE HONEST TRADE</span>
+                    <p>Kubernetes buys: automated healing, fine-grained scaling, rollouts, and a portable platform. It
+                        charges: <b>a team that knows it, a monthly bill for idle capacity, and a permanent operational
+                            tax</b> — upgrades, node pools, networking, monitoring, incident complexity. Both sides of
+                        the ledger are real. The mistake is counting only the first column.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s11">
+                <div class="sec-kicker">SECTION 11 — WHEN IT EARNED ITS BILL</div>
+                <h2 class="sec-title rv">When Kubernetes Makes Sense</h2>
+                <p class="sec-lead rv">Eight cases, each with the reason. Each one is a queue in a different costume:
+                    <b>the requirement exists, so the complexity is payment for it.</b></p>
+                <div class="worked">
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">1</span>
+                            <h4>Many services</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>20+ services with independent deploys. Orchestration,
+                                    service discovery and rollout coordination stop being nice and become
+                                    load-bearing.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">2</span>
+                            <h4>Large production workloads</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>High traffic, many replicas, aggressive autoscaling — the
+                                    fine-grained control near the platform's ceiling becomes worth its cost.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">3</span>
+                            <h4>Frequent deployments</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>Ten releases a day. Rolling updates, canaries and instant
+                                    rollbacks are exactly what the orchestration loop provides.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">4</span>
+                            <h4>Multiple environments that must match</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>Same cluster machinery (or the same charts) across dev /
+                                    staging / prod means environments cannot drift — the mismatch problem from Section
+                                    1, solved again.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">5</span>
+                            <h4>Advanced scaling needs</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>Custom metrics (queue depth, response time), per-service
+                                    scaling, scheduled bursts — beyond what a simple autoscale rule offers.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">6</span>
+                            <h4>Large engineering team</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>Twenty engineers, five squads, one product: shared
+                                    infrastructure with per-team boundaries is a real coordination problem that the
+                                    cluster's namespaces and quotas answer.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">7</span>
+                            <h4>Strong container control required</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>Custom images, sidecars, init containers, node-level
+                                    tuning — the platform's abstractions are too coarse for the requirement.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">8</span>
+                            <h4>Platform engineering requirements</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>REASON</b><span>The company has made Kubernetes its internal standard —
+                                    every team ships the same way, with the same tooling, retrained once. That is an
+                                    organizational decision, and it is a legitimate one.</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE PATTERN IN ALL EIGHT</span>
+                    <p>Each case is a <b>measured requirement</b>: many services, high deploys, big team, hard scaling.
+                        Not "someday maybe." If you can point at the trigger — "we have 12 services and 3 squads" — the
+                        cluster is justified. If the trigger is "it is powerful," it is not.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s12">
+                <div class="sec-kicker">SECTION 12 — BEFORE PRODUCTION</div>
+                <h2 class="sec-title rv">What an Architect Must Consider</h2>
+                <p class="sec-lead rv">Thirteen concerns, one line each. Not implementation — the checklist you use
+                    before anyone says "ship it."</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>HEALTH CHECKS</b><span>Liveness (is it alive?) and readiness (can it serve?).
+                            A pod with no readiness probe is a pod you cannot protect.</span></div>
+                    <div class="topic"><b>LOGS</b><span>Structured, with correlation ids, to stdout. Ephemeral
+                            containers lose local files; the platform collects streams, not files.</span></div>
+                    <div class="topic"><b>MONITORING</b><span>Metrics per pod and per service: request rate, p95,
+                            errors, resource use — plus the platform metrics for the cluster itself.</span></div>
+                    <div class="topic"><b>SECRETS</b><span>Mounted from the platform's store, never in the image. The
+                            image is public by design.</span></div>
+                    <div class="topic"><b>CONFIGURATION</b><span>ConfigMaps/secrets for what varies; nothing
+                            environment-specific baked into the image.</span></div>
+                    <div class="topic"><b>NETWORKING</b><span>Ingress rules, service-to-service routing, and network
+                            policies where the security model demands east-west isolation.</span></div>
+                    <div class="topic"><b>STORAGE</b><span>What is ephemeral (fine) vs what must persist (a volume or an
+                            external service — Day 8's rule: state never lives in the unit of compute).</span></div>
+                    <div class="topic"><b>SCALING</b><span>Autoscale rules with sane minimums and maximums. The minimum
+                            protects latency; the maximum protects the bill.</span></div>
+                    <div class="topic"><b>SECURITY</b><span>Least privilege on the image, no root, resource quotas per
+                            namespace, and the platform's managed identities for service-to-service calls.</span></div>
+                    <div class="topic"><b>DEPLOYMENT</b><span>Strategy chosen per service, health-gated, with the
+                            rollout failure handled automatically.</span></div>
+                    <div class="topic"><b>ROLLBACK</b><span>The old image is kept, versioned, and one command away.
+                            Tested, not assumed.</span></div>
+                    <div class="topic"><b>BACKUP</b><span>Containers need no backup — but the <i>data</i> behind them
+                            does. This is Day 3/8's backup story: the cluster is disposable; the data is not.</span>
+                    </div>
+                    <div class="topic"><b>COST</b><span>Cluster capacity is a 24/7 bill. Right-size nodes, scale to zero
+                            where possible, and know what idle costs per month.</span></div>
+                </div>
+            </section>
+
+            <section class="sec" id="s13">
+                <div class="sec-kicker">SECTION 13 — WHEN IT BREAKS</div>
+                <h2 class="sec-title rv">Failure Scenarios</h2>
+                <p class="sec-lead rv">The same drill — failure, impact, response — inside the container world. Run the
+                    drill below, then read the walkthroughs.</p>
+                <div class="panel rv">
+                    <h4>DRILL — WHAT DOES THE CLUSTER DO?</h4>
+                    <div class="toggles">
+                        <span class="tgl" data-f="pod"><input type="checkbox"><i></i>A CONTAINER CRASHES</span>
+                        <span class="tgl" data-f="node"><input type="checkbox"><i></i>A NODE DIES</span>
+                        <span class="tgl" data-f="traffic"><input type="checkbox"><i></i>TRAFFIC JUMPS 10×</span>
+                        <span class="tgl" data-f="deploy"><input type="checkbox"><i></i>BAD RELEASE GOES OUT</span>
+                        <span class="tgl" data-f="db"><input type="checkbox"><i></i>POD CAN'T REACH THE DATABASE</span>
+                    </div>
+                    <button class="btn solid" id="failRun">RUN THE SCENARIO →</button>
+                    <div class="bars" style="height:120px">
+                        <div class="bar"><em id="fPods">4</em><i id="fPodsB" style="height:20%"></i><span>PODS
+                                RUNNING</span></div>
+                        <div class="bar"><em id="fErr">0%</em><i class="red" id="fErrB"
+                                style="height:4%"></i><span>ERROR RATE</span></div>
+                        <div class="bar"><em id="fTime">2 min</em><i class="teal" id="fTimeB"
+                                style="height:30%"></i><span>TIME TO RECOVER</span></div>
+                        <div class="bar"><em id="fUser">✓</em><i class="blue" id="fUserB"
+                                style="height:10%"></i><span>USER IMPACT</span></div>
+                    </div>
+                    <div class="outline" id="fOut"></div>
+                </div>
+                <div class="worked">
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">1</span>
+                            <h4>A container crashes</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>None — other replicas serve.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>Probe fails → pod replaced from the same image in
+                                    seconds. Honest health checks are the difference between "recovered silently" and
+                                    "half traffic lost until someone looks."</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">2</span>
+                            <h4>A pod crashes</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Small — one replica gone. The Service keeps routing to
+                                    the rest.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>Desired state says "4 replicas"; the cluster counts 3
+                                    and starts a fourth. The loop repairs it, automatically, every time.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">3</span>
+                            <h4>A node fails</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Capacity drops by a node's worth; its pods go down with
+                                    it.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>Workloads are rescheduled on healthy nodes. This is why
+                                    replicas are spread across nodes — and why a cluster of several small nodes beats
+                                    one big one. Alert on node health.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">4</span>
+                            <h4>Traffic becomes 10×</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Latency grows; pods saturate.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>Autoscaler adds pods on the signal. If pods are finite,
+                                    the next lever is nodes — and the third is asking why the database is not the
+                                    bottleneck (Day 2, still true inside the cluster).</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">5</span>
+                            <h4>New deployment has a bug</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Escalating errors on the new version.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>Rollout halts on failed health gates; the cluster keeps
+                                    old pods serving. One command rolls back to the previous image. This is why rollback
+                                    is designed before release day, not during it.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">6</span>
+                            <h4>Container can't reach the database</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>The pod is alive and useless — the classic readiness
+                                    trap.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>The readiness probe fails, so the Service stops routing
+                                    to the pod; surviving pods carry on; the app retries the connection. Liveness would
+                                    only restart the loop — readiness is what protects the user.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">7</span>
+                            <h4>Redis becomes unavailable</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Degraded reads for the app.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>The Day 5 story, unchanged: rate-limited DB fallback,
+                                    serve-stale, hit-ratio alarm, warm-up. The cluster restarts pods fine — it cannot
+                                    fix a cache outage for you.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">8</span>
+                            <h4>External API fails</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>IMPACT</b><span>Payment or notification failures.</span></div>
+                            <div class="st"><b>RESPONSE</b><span>The Day 4 rules: timeout, retry with backoff,
+                                    dead-letter, honest state to the user. The cluster restarts pods; the <i>design</i>
+                                    handles the dependency.</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE PATTERN</span>
+                    <p>The cluster handles <b>container and node failures beautifully</b> — and handles nothing else.
+                        Database outages, cache outages, vendor failures: all still your design's job. <b>Every failure
+                            scenario on this page was already covered by Days 2–8. Containers changed the machinery, not
+                            the rules.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s14">
+                <div class="sec-kicker">SECTION 14 — THE RELEASE</div>
+                <h2 class="sec-title rv">Deployment Strategies</h2>
+                <p class="sec-lead rv">Three ways to ship version 2 of a .NET API. Watch the traffic move.</p>
+                <div class="tabbtns rv">
+                    <button class="tabbtn on" data-dep="rolling">1 · ROLLING</button>
+                    <button class="tabbtn" data-dep="bluegreen">2 · BLUE-GREEN</button>
+                    <button class="tabbtn" data-dep="canary">3 · CANARY</button>
+                </div>
+                <div class="tobody on" id="rolling">
+                    <div class="figbox" style="margin:0 0 16px">
+                        <svg viewBox="0 0 860 150" fill="none">
+                            <rect x="16" y="40" width="110" height="34" class="s-box" /><text x="71" y="61"
+                                class="s-lab" text-anchor="middle" font-size="9.5">INGRESS</text>
+                            <path d="M126 57 H 160" class="s-line" marker-end="url(#sarr)" />
+                            <rect x="164" y="24" width="100" height="26" class="s-box ok" /><text x="214" y="41"
+                                class="s-lab" text-anchor="middle" font-size="8">V2 · NEW</text>
+                            <rect x="164" y="56" width="100" height="26" class="s-box" /><text x="214" y="73"
+                                class="s-lab" text-anchor="middle" font-size="8">V2 · NEW</text>
+                            <rect x="164" y="88" width="100" height="26" class="s-box" /><text x="214" y="105"
+                                class="s-lab" text-anchor="middle" font-size="8">V1</text>
+                            <path d="M264 57 H 300" class="s-line" marker-end="url(#sarr)" />
+                            <rect x="304" y="40" width="60" height="34" class="s-box" /><text x="334" y="61"
+                                class="s-lab" text-anchor="middle" font-size="8">USERS</text>
+                            <text x="400" y="52" class="s-sub">old pods replaced <b>one at a time</b></text>
+                            <text x="400" y="68" class="s-sub">each new pod must pass health before the next</text>
+                            <circle r="3.4" class="pkt">
+                                <animateMotion dur="2.2s" repeatCount="indefinite" path="M126 57 H 160" />
+                            </circle>
+                            <circle r="3.4" class="pkt late">
+                                <animateMotion dur="2.6s" begin="-0.7s" repeatCount="indefinite" path="M264 57 H 300" />
+                            </circle>
+                        </svg>
+                    </div>
+                    <div class="tblwrap" style="margin-top:0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>HOW IT WORKS</th>
+                                    <th>BENEFIT</th>
+                                    <th>RISK</th>
+                                    <th>SUITABLE WHEN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Pods are replaced gradually — one per wave, health-gated.</td>
+                                    <td class="pros">No extra capacity needed. Zero downtime if probes are honest.</td>
+                                    <td class="cons">Old and new versions run together briefly; a subtle bug can hit
+                                        some users before the rollout is stopped.</td>
+                                    <td>The default for most services. A bug is fully rolled back in one command.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tobody" id="bluegreen">
+                    <div class="figbox" style="margin:0 0 16px">
+                        <svg viewBox="0 0 860 150" fill="none">
+                            <rect x="16" y="40" width="110" height="34" class="s-box" /><text x="71" y="61"
+                                class="s-lab" text-anchor="middle" font-size="9.5">INGRESS</text>
+                            <path d="M126 57 H 160" class="s-line" marker-end="url(#sarr)" />
+                            <rect x="164" y="24" width="90" height="26" class="s-box ok" /><text x="209" y="41"
+                                class="s-lab" text-anchor="middle" font-size="8">GREEN · V2</text>
+                            <rect x="164" y="56" width="90" height="26" class="s-box" /><text x="209" y="73"
+                                class="s-lab" text-anchor="middle" font-size="8">BLUE · V1</text>
+                            <path d="M279 57 H 315" class="s-line" marker-end="url(#sarr)" />
+                            <text x="320" y="40" class="s-sub">ALL traffic switches at once after</text>
+                            <text x="320" y="56" class="s-sub">smoke-testing the green environment</text>
+                            <rect x="320" y="76" width="120" height="26" class="s-box" /><text x="380" y="93"
+                                class="s-sub" text-anchor="middle" font-size="8">switch is instant; rollback is a switch
+                                back</text>
+                            <circle r="3.4" class="pkt">
+                                <animateMotion dur="2.4s" repeatCount="indefinite" path="M126 57 H 160" />
+                            </circle>
+                        </svg>
+                    </div>
+                    <div class="tblwrap" style="margin-top:0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>HOW IT WORKS</th>
+                                    <th>BENEFIT</th>
+                                    <th>RISK</th>
+                                    <th>SUITABLE WHEN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Two full environments; traffic flips entirely to the new one.</td>
+                                    <td class="pros">Instant switch, instant rollback. No mixed-version state during the
+                                        release.</td>
+                                    <td class="cons">Double the running capacity for the release window. The "switch"
+                                        needs a fast DB-compatible version pair.</td>
+                                    <td>Big-bang risks: a new UI, a major API change, a release you want to watch in
+                                        full before committing.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="tobody" id="canary">
+                    <div class="figbox" style="margin:0 0 16px">
+                        <svg viewBox="0 0 860 150" fill="none">
+                            <rect x="16" y="40" width="110" height="34" class="s-box" /><text x="71" y="61"
+                                class="s-lab" text-anchor="middle" font-size="9.5">INGRESS</text>
+                            <path d="M126 57 H 160" class="s-line" marker-end="url(#sarr)" />
+                            <rect x="164" y="20" width="110" height="24" class="s-box" /><text x="219" y="36"
+                                class="s-lab" text-anchor="middle" font-size="8">V1 · 90%</text>
+                            <rect x="164" y="50" width="110" height="24" class="s-box" /><text x="219" y="66"
+                                class="s-lab" text-anchor="middle" font-size="8">V1 · 90%</text>
+                            <rect x="164" y="80" width="110" height="24" class="s-box" /><text x="219" y="96"
+                                class="s-lab" text-anchor="middle" font-size="8">V1 · 90%</text>
+                            <rect x="164" y="110" width="110" height="24" class="s-box ok" /><text x="219" y="126"
+                                class="s-lab" text-anchor="middle" font-size="8">V2 · 10%</text>
+                            <path d="M274 37 H 310 M274 62 H 310 M274 87 H 310 M274 122 H 310" class="s-line"
+                                marker-end="url(#sarr)" />
+                            <rect x="314" y="40" width="110" height="34" class="s-box" /><text x="369" y="61"
+                                class="s-lab" text-anchor="middle" font-size="8">WATCH METRICS</text>
+                            <text x="440" y="52" class="s-sub">if errors stay flat → grow to 50%, then 100%</text>
+                            <text x="440" y="68" class="s-sub">if errors rise → drain the canary, zero user harm</text>
+                            <circle r="3.4" class="pkt">
+                                <animateMotion dur="2.2s" repeatCount="indefinite" path="M126 57 H 160" />
+                            </circle>
+                            <circle r="3.4" class="pkt late">
+                                <animateMotion dur="2.8s" begin="-0.6s" repeatCount="indefinite"
+                                    path="M274 122 H 310" />
+                            </circle>
+                        </svg>
+                    </div>
+                    <div class="tblwrap" style="margin-top:0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>HOW IT WORKS</th>
+                                    <th>BENEFIT</th>
+                                    <th>RISK</th>
+                                    <th>SUITABLE WHEN</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>A small slice of traffic hits the new version; watch real metrics; widen
+                                        gradually.</td>
+                                    <td class="pros">Real-world validation before full exposure. A bug affects the
+                                        smallest possible audience.</td>
+                                    <td class="cons">Slower rollout. Needs good metrics and the discipline to act on
+                                        them — a canary nobody watches is just a v2 that 10% of users see.</td>
+                                    <td>High-risk, high-value changes where real traffic is the only honest test.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE CHOICE, IN ONE LINE</span>
+                    <p><b>Rolling</b> for routine releases · <b>blue-green</b> when the switch must be atomic and
+                        reversibility perfect · <b>canary</b> when the cost of being wrong is highest. The platforms
+                        (App Service slots, Container Apps revisions, Kubernetes rollouts) all implement these — the
+                        architect chooses the <i>strategy</i>, the platform executes it.</p>
+                </div>
+            </section>
+            <section class="sec" id="s15">
+                <div class="sec-kicker">SECTION 15 — CASE STUDY</div>
+                <h2 class="sec-title rv">The SaaS, Three Ways</h2>
+                <p class="sec-lead rv">The same multi-tenant e-commerce SaaS. Three deployment options, honestly
+                    compared — then a reasoned recommendation that is <b>not</b> "AKS because it scales."</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:14%">DIMENSION</th>
+                                <th>OPTION A · APP SERVICE</th>
+                                <th>OPTION B · CONTAINER APPS</th>
+                                <th>OPTION C · AKS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Architecture</b></td>
+                                <td>App Service plan running the API (and a second plan or Function for workers).</td>
+                                <td>Container Apps environment: API + worker, each its own app/revision.</td>
+                                <td>A cluster: deployments, services, ingress, workers as separate workloads.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Benefits</b></td>
+                                <td class="pros">Least operations. Slots for blue-green. Autoscale. Your team ships
+                                    features, not infrastructure.</td>
+                                <td class="pros">Containers without the cluster; scale-to-zero; per-revision rollouts;
+                                    background workers first-class.</td>
+                                <td class="pros">Full control; fine-grained autoscaling; canaries; the standard platform
+                                    if the team lives in K8s.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Risks</b></td>
+                                <td class="cons">Coarse scaling; platform limits hit sooner at very high traffic; less
+                                    control over the image environment.</td>
+                                <td class="cons">Newer platform; some Kubernetes-style control pleasantly missing.</td>
+                                <td class="cons">You operate it: upgrades, nodes, networking, monitoring, capacity. A
+                                    team and a monthly bill.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Operational effort</b></td>
+                                <td class="pros">Low — deploy and go.</td>
+                                <td>Low-to-medium.</td>
+                                <td class="cons">High — platform engineering is a job now.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td class="pros">Predictable; scale rules control the bill directly.</td>
+                                <td>Per-use friendly; scale to zero saves at night.</td>
+                                <td class="cons">Cluster nodes run 24/7; idle capacity is a monthly number.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Select it when</b></td>
+                                <td>The API and a few workers are the whole story, and the team is small.</td>
+                                <td>You want containers and real background workers, without operating a cluster.</td>
+                                <td>Many services, many squads, frequent deploys, custom scaling — or Kubernetes is
+                                    already the company standard.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE RECOMMENDATION — WITH THE REASON</span>
+                    <p><b>Start with Option A and keep B in the pocket.</b> At this scale — one ASP.NET Core API,
+                        background workers, Redis, Service Bus, Azure SQL — the honest architecture needs
+                        <i>capability</i>, not a control plane. App Service gives autoscaling, slots, and a cost that
+                        matches traffic; the workers are the one thing it does not do brilliantly, which is exactly
+                        where Container Apps earns its place. <b>AKS enters on a written trigger, not on ambition.</b>
+                    </p>
+                    <p>Triggers, written now: <b>1)</b> the platform's autoscale ceiling is hit and measured — not
+                        predicted. <b>2)</b> three or more independent deployables with separate release cadences.
+                        <b>3)</b> a need for canary or custom-metric scaling that the platform cannot express. <b>4)</b>
+                        the company standardises on Kubernetes. Until one fires, the cluster is a bill with a control
+                        plane attached.</p>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">INTERVIEW ANGLE</span>
+                    <p>Say it like this: "For these requirements I would use App Service with Container Apps for the
+                        workers. Kubernetes would solve a problem I do not have yet — and I can name the triggers that
+                        would make me revisit it." <b>That answer is the whole day.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s16">
+                <div class="sec-kicker">SECTION 16 — DECISIONS</div>
+                <h2 class="sec-title rv">10 Questions Before Choosing Kubernetes</h2>
+                <div class="worked">
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q1</span>
+                            <h4>How many services do we have?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Orchestration solves many-things coordination.
+                                    One or two deployables do not have the problem.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>1–3 services → managed platform. 15+ with
+                                    independent releases → the conversation changes.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q2</span>
+                            <h4>How much traffic, and how spiky?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Autoscaling is only valuable when scaling is
+                                    actually needed.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>Modest traffic → platform autoscale. Big
+                                    spikes with custom metrics → cluster.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q3</span>
+                            <h4>How often do we deploy?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Frequent deploys are where rollouts, canaries and
+                                    instant rollback pay rent.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>Weekly → slots/revisions are enough. Ten a day
+                                    → rollouts and health-gated deploys become valuable.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q4</span>
+                            <h4>Does the team know Kubernetes?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>An unoperated cluster is the most expensive way
+                                    to run a service.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>No → managed, and learn when the platform
+                                    stops being enough.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q5</span>
+                            <h4>What level of control is actually required?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Sidecars, init containers, node tuning, custom
+                                    schedulers — each has a buyer; if none exist, the control has no value.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>No exotic needs → managed containers. Realised
+                                    needs → cluster.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q6</span>
+                            <h4>Can a managed platform solve the problem?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>The question is not "is Kubernetes powerful" but
+                                    "is anything missing from the simpler option."</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>If nothing is missing, nothing is
+                                    justified.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q7</span>
+                            <h4>What is the operational cost — honestly?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Upgrades, nodes, networking, monitoring, incident
+                                    complexity — a permanent tax per month.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>Write the tax down. If the bill exceeds the
+                                    benefit, the answer writes itself.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q8</span>
+                            <h4>What happens when the platform team is unavailable?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Cluster ownership needs a grown-up on call. A
+                                    cluster nobody can run is a vendor with no phone number.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>No owner → managed platform, today.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q9</span>
+                            <h4>What breaks at 10× — and would K8s have fixed it?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>Usually the answer is the database or a vendor —
+                                    and the cluster fixes neither (Day 2, still true).</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>If the 10× bottleneck is not the compute,
+                                    don't buy compute.</span></div>
+                        </div>
+                    </div>
+                    <div class="wk rv">
+                        <div class="wk-head"><span class="wk-tag">Q10</span>
+                            <h4>Is Kubernetes the company standard?</h4>
+                        </div>
+                        <div class="wk-steps">
+                            <div class="st"><b>WHY IT MATTERS</b><span>A platform decision can be organisational: one
+                                    shared way to ship, one onboarding, one security model.</span></div>
+                            <div class="st"><b>POSSIBLE DECISION</b><span>If it is the standard, the argument is over —
+                                    the question becomes how well you use it.</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE MAIN LESSON</span>
+                    <p>All ten questions are <b>requirement questions, not technology questions</b> — and that is the
+                        point. Kubernetes is justified by service count, deploy frequency, team size and control needs.
+                        When those numbers exist, the platform is the answer. When they do not, it is the question
+                        nobody asked.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s17">
+                <div class="sec-kicker">SECTION 17 — HONEST LIST</div>
+                <h2 class="sec-title rv">10 Container &amp; Kubernetes Mistakes</h2>
+                <div class="mistake rv">
+                    <div class="m-num">01</div>
+                    <div>
+                        <h4>Using Kubernetes because it is fashionable</h4>
+                        <p class="m-why">"Senior architects use AKS" — so a two-service app gets a cluster, a node pool,
+                            and an operations bill nobody budgeted.</p>
+                        <p class="m-fix">Requirement first. The ten questions, answered out loud, before the cluster
+                            appears.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">02</div>
+                    <div>
+                        <h4>Running databases inside containers without a reason</h4>
+                        <p class="m-why">The database is state; the container is disposable. State in a disposable unit
+                            means data loss on restart — and a DB you must now back up, patch and operate yourself.</p>
+                        <p class="m-fix">Managed database service (Azure SQL, Cosmos, managed Postgres). Containers for
+                            compute; managed services for state.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">03</div>
+                    <div>
+                        <h4>Ignoring operational complexity</h4>
+                        <p class="m-why">The diagram shows six boxes and a cluster; the calendar shows a team that now
+                            upgrades nodes and argues about networking.</p>
+                        <p class="m-fix">Count the complexity honestly before committing — it is a permanent tax, not a
+                            setup cost.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">04</div>
+                    <div>
+                        <h4>No health checks</h4>
+                        <p class="m-why">A pod with a dead readiness probe keeps serving traffic to a broken process —
+                            the cluster thinks everything is fine.</p>
+                        <p class="m-fix">Liveness (is it alive) and readiness (can it serve). A readiness probe that
+                            checks the database is worth its weight.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">05</div>
+                    <div>
+                        <h4>No resource limits</h4>
+                        <p class="m-why">One hungry pod can starve the node, and "no limit" is an invitation to a noisy
+                            neighbour — or a whole node going down.</p>
+                        <p class="m-fix">Requests and limits on every pod, per namespace where teams share a cluster.
+                        </p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">06</div>
+                    <div>
+                        <h4>No monitoring</h4>
+                        <p class="m-why">The cluster restarts pods silently — beautiful — until the tenth restart in a
+                            minute is an outage nobody's dashboard saw.</p>
+                        <p class="m-fix">Application metrics + platform metrics + restarts and crash-loop alerts. A
+                            restart is a signal, not a secret.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">07</div>
+                    <div>
+                        <h4>No rollback plan</h4>
+                        <p class="m-why">Version 2 is bad, and the "plan" is a conversation about how to get version 1
+                            back.</p>
+                        <p class="m-fix">Tag every image, keep the previous one, and one-command rollback — tested in
+                            staging before release day.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">08</div>
+                    <div>
+                        <h4>Hardcoding secrets</h4>
+                        <p class="m-why">In the image, in the chart, in the repo. The image is public by design — a
+                            secret in it is a secret published.</p>
+                        <p class="m-fix">Secrets mounted at runtime from the platform's vault. The image contains
+                            nothing secret, ever.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">09</div>
+                    <div>
+                        <h4>Ignoring networking</h4>
+                        <p class="m-why">Services reach each other "somehow" — until a redeploy changes an address, or
+                            everything is exposed because nobody wrote an ingress rule.</p>
+                        <p class="m-fix">Ingress first (one public door), service-to-service names, and network policies
+                            where isolation is required.</p>
+                    </div>
+                </div>
+                <div class="mistake rv">
+                    <div class="m-num">10</div>
+                    <div>
+                        <h4>Ignoring cloud cost</h4>
+                        <p class="m-why">The cluster runs 24/7 and the workload peaks 4 hours a day. The gap is a
+                            monthly line item.</p>
+                        <p class="m-fix">Scale pods to zero where possible, rightsize nodes, schedule the idle, and name
+                            the idle cost out loud.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" id="s18">
+                <div class="sec-kicker">SECTION 18 — PRACTICE</div>
+                <h2 class="sec-title rv">Day 10 Assignment: Choose the Deployment Architecture</h2>
+                <p class="sec-lead rv"><b>No solution on this page.</b> Decide App Service vs Container Apps vs AKS for
+                    the multi-tenant SaaS, defend it, and — the part that matters — <b>define the triggers</b> that
+                    would move you to AKS.</p>
+                <div class="asg-spec rv">
+                    <div><b>TENANTS</b><span>10,000 companies</span></div>
+                    <div><b>PEAK</b><span>5,000 requests/sec</span></div>
+                    <div><b>APIs</b><span>ASP.NET Core, several</span></div>
+                    <div><b>WORKERS</b><span>Background processing</span></div>
+                    <div><b>STATE</b><span>Redis, Service Bus, SQL</span></div>
+                    <div><b>DEPLOYS</b><span>Frequent, multi-team</span></div>
+                    <div><b>PLATFORM</b><span>Azure or AWS</span></div>
+                    <div><b>REQUIRED</b><span>High availability</span></div>
+                </div>
+                <div class="asg-progress rv">
+                    <div class="asg-bar"><i id="asgFill"></i></div><span class="asg-count" id="asgCount">0 / 14
+                        DONE</span>
+                </div>
+                <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>1</b>Requirements and assumptions — the numbers you decided when they were
+                        vague.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>2</b>Deployment diagram — where each component runs, and what the request path
+                        looks like.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>3</b>Recommended option — App Service, Container Apps, or AKS, with the
+                        reason.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>4</b>Why I selected it — the requirement each choice satisfies.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>5</b>Why I rejected the other two — the specific cost each would have
+                        added.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>6</b>Scaling approach — what autoscales, the signals, and the max you guard
+                        against.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>7</b>Failure handling — pod, node, region: what the platform does and what
+                        your design does.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>8</b>Deployment strategy — rolling, blue-green or canary per service, with the
+                        risk each accepts.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>9</b>Monitoring — application and platform metrics, thresholds, and who owns
+                        each alert.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>10</b>Security — image hygiene, non-root, secrets, network exposure, least
+                        privilege.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>11</b>Configuration and secrets — what is in ConfigMaps, what is in the vault,
+                        what never enters the image.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>12</b>Cost considerations — monthly picture, idle cost, and the cheaper
+                        alternative you rejected.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>13</b>Top 5 risks — with the mitigation for each.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>14</b>The triggers — <b>at what point would you move to AKS?</b> Business and
+                        technical triggers, written, with numbers.</span></label>
+                <div class="callout co-warn rv"><span class="co-label">THE POINT OF DELIVERABLE 14</span>
+                    <p>The triggers are the architecture. "We would move to AKS when…" — with a number — is the
+                        difference between a decision and an opinion. If you cannot write them, you have not decided;
+                        you have hoped.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s19">
+                <div class="sec-kicker">SECTION 19 — SELF-TEST</div>
+                <h2 class="sec-title rv">15 Scenario Questions</h2>
+                <p class="sec-lead rv">Situations, not definitions. Attempt each before you look for any answer.</p>
+                <ol class="iq-list rv">
+                    <li>A single ASP.NET Core API with a SQL database. Containers or not? Which host?<span>DECISION ·
+                            THE SIMPLE CASE</span></li>
+                    <li>Why would you put a background worker on Container Apps rather than App Service?<span>COMPUTE ·
+                            WORKLOAD SHAPE</span></li>
+                    <li>Your pod is "running" but users get errors. What did you forget?<span>HEALTH · READINESS VS
+                            LIVENESS</span></li>
+                    <li>Traffic doubles every month. What do you scale first — pods or nodes — and why?<span>SCALING ·
+                            THE TWO LEVERS</span></li>
+                    <li>When is ECS the right answer over EKS?<span>AWS · SIMPLEST THAT WORKS</span></li>
+                    <li>A new release fails health checks mid-rollout. What happens, and what did you
+                        prepare?<span>DEPLOY · THE ROLLBACK HABIT</span></li>
+                    <li>Why is "the database in a container" usually a mistake?<span>STATE · DISPOSABLE UNITS</span>
+                    </li>
+                    <li>Your cluster restarted a pod six times in a minute. What are you checking?<span>OPERATIONS ·
+                            CRASH LOOPS</span></li>
+                    <li>When would you choose blue-green over rolling?<span>DEPLOY · THE RISK TRADE</span></li>
+                    <li>How would you explain to a CFO why the cluster costs more than the old platform?<span>COST · THE
+                            HONEST ANSWER</span></li>
+                    <li>What must be true before you say "we are moving to AKS"?<span>DECISION · THE TRIGGERS</span>
+                    </li>
+                    <li>A teammate says "Kubernetes is the future, we should start now." Your answer?<span>MINDSET ·
+                            REQUIREMENT FIRST</span></li>
+                    <li>How do secrets reach your containers without ever touching the image?<span>SECURITY · THE
+                            MOUNTED VAULT</span></li>
+                    <li>If the platform team of two leaves, what happens to the cluster?<span>OPERATIONS · WHO OWNS
+                            IT</span></li>
+                    <li>What does "container-native" mean for your .NET app — what changes in how you think about
+                        it?<span>MINDSET · IMMUTABLE, EPHEMERAL, STATELESS</span></li>
+                </ol>
+            </section>
+
+            <section class="sec" id="s20">
+                <div class="sec-kicker">SECTION 20 — CHECK</div>
+                <h2 class="sec-title rv">Day 10 Success Criteria</h2>
+                <div class="success rv">
+                    <h4>BY NOW YOU SHOULD BE ABLE TO:</h4>
+                    <ul>
+                        <li>Explain why containers are useful — packaging, environments, consistency.</li>
+                        <li>Explain image vs container — what it is vs what is running.</li>
+                        <li>Explain Docker at architecture level — image, registry, runtime, immutable.</li>
+                        <li>Explain why Kubernetes exists — the eight management needs.</li>
+                        <li>Understand basic Kubernetes components — pod, deployment, service, ingress, probes.</li>
+                        <li>Explain Kubernetes scaling — pods vs nodes, and what triggers each.</li>
+                        <li>Compare managed container platforms with Kubernetes — and when each wins.</li>
+                        <li>Identify when Kubernetes is unnecessary — ten situations, without hesitation.</li>
+                        <li>Design a container-based deployment — config, secrets, logging, persistent data.</li>
+                        <li>Explain deployment and rollback approaches — rolling, blue-green, canary.</li>
+                        <li>Discuss production risks — probes, limits, monitoring, cost, ownership.</li>
+                        <li>Defend a container/Kubernetes decision in an Architect interview.</li>
+                    </ul>
+                </div>
+                <p class="rv">Missing any? Return to its section. All twelve? The assignment in Section 18 — with the
+                    triggers — is the proof.</p>
+            </section>
+        </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">FINAL — CARRY THESE FORWARD</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">Architect Mindset, Day 10</h2>
+            <p class="sec-lead rv">Five rules. Not about containers — about the difference between solving a problem and
+                paying for prestige.</p>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Containers solve packaging. They solve nothing else.</h3>
+                    <p>Different environments, dependency drift, inconsistent deploys — solved. Scaling, failure,
+                        traffic, and the database: <b>not solved</b>. Do not sell containers as a scaling strategy.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>The image is immutable. The container is disposable.</h3>
+                    <p>Config arrives at runtime, secrets arrive at runtime, state lives outside. Everything that made
+                        deployments unpredictable becomes impossible by design.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Kubernetes is a loop, not a feature.</h3>
+                    <p>Declare the desired state; the cluster repairs the difference. But the loop is only as good as
+                        your probes — and it fixes nothing about your database, your cache or your vendor.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Pods are cheap. Nodes are a bill.</h3>
+                    <p>Scaling the app is adding containers. Scaling the cluster is adding machines — a 24/7 cost. Know
+                        which lever you are pulling, always.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>AKS is not a prize. It is a second job.</h3>
+                    <p>Every cluster needs an owner, a budget and a reason. If you cannot write the trigger that
+                        justifies it, the answer is the managed platform. <b>That restraint is the senior answer.</b>
+                    </p>
+                </div>
+            </div>
+            <p class="mind-close rv">Day 10 done. You did not learn to run a cluster — you learned when one is worth
+                running, and how to defend the simpler answer. Day 11 stays behind the curtain until the assignment is
+                yours.</p>
+        </div>
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 10 / 30 — CONTAINERS &amp; KUBERNETES</div>
+            <div class="f-r">PREV: DAY 08 — AZURE ARCHITECTURE · <b>DAY 11 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () {
+            if (window.jQuery) return;
+            function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; }
+            Q.prototype = {
+                each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); },
+                addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); },
+                removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); },
+                toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); },
+                closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); }
+            };
+            function $(s) {
+                if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; }
+                if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s));
+            }
+            window.jQuery = window.$ = $;
+        })();
+    </script>
+    <script>
+        $(function () {
+            function set(id, t) { var e = document.getElementById(id); if (e) e.textContent = t; }
+            function setH(id, p) { var e = document.getElementById(id); if (e) e.style.height = Math.max(2, Math.min(100, p)) + '%'; }
+            function fmt(n) { return Math.round(n).toLocaleString('en-US'); }
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop');
+            var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 'mindset'];
+            var tocLinks = document.querySelectorAll('.tn[data-spy]'), ticking = false;
+            function onScroll() {
+                if (ticking) return; ticking = true; requestAnimationFrame(function () {
+                    var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop;
+                    if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')';
+                    if (toTop) toTop.classList.toggle('show', y > 900);
+                    var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; });
+                    tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false;
+                });
+            }
+            $(window).on('scroll resize', onScroll); onScroll();
+            $(toTop).on('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+            var rvs = document.querySelectorAll('.rv');
+            if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); }
+            else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); }
+            var themeBtn = document.getElementById('themeBtn');
+            function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } }
+            var st = null; try { st = localStorage.getItem('arch-day10-theme'); } catch (e) { }
+            applyTheme(st === 'dark');
+            $(themeBtn).on('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day10-theme', d ? 'dark' : 'light'); } catch (e) { } });
+            var toc = document.getElementById('toc'), scrim = document.getElementById('scrim');
+            function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); }
+            $('#tocToggle').on('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); });
+            $(scrim).on('click', closeToc); $(toc).on('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); });
+            $('#printBtn').on('click', function () { window.print(); });
+
+            /* ---- section 8: pod scaling ---- */
+            function human(m) { if (m < 60) return Math.round(m) + ' min'; var h = Math.floor(m / 60), mm = Math.round(m % 60); return h + 'h ' + (mm ? mm + 'm' : ''); }
+            function podScale() {
+                var req = parseFloat(document.getElementById('pReq').value) || 0,
+                    per = parseFloat(document.getElementById('pPer').value) || 1,
+                    pods = parseInt(document.getElementById('pPods').value, 10) || 1,
+                    cpu = parseFloat(document.getElementById('pCpu').value) || 50;
+                var cap = pods * per, short = Math.max(0, req - cap);
+                var auto = Math.ceil(req / per), auto2 = Math.max(pods, auto);
+                var nodes = Math.ceil(auto2 / 10);
+                set('oCap', fmt(cap) + ' / min');
+                set('oShort', short > 0 ? fmt(short) + ' / min' : 'none ✓');
+                set('oAuto', auto2 + ' pods');
+                set('oNodes', nodes + ' nodes');
+                var row = document.getElementById('podRow');
+                if (row) {
+                    var html = ''; var show = Math.min(Math.max(pods, auto2), 40);
+                    for (var i = 0; i < show; i++) {
+                        var cls = '';
+                        if (i < Math.min(pods, auto2)) cls = (cpu >= 70 ? 'hot' : 'ok');
+                        else if (i < auto2) cls = 'hot';
+                        else cls = '';
+                        if (i >= pods && i < auto2) cls = 'hot';
+                        html += '<span class="podcell ' + cls + '">P' + (i + 1) + '</span>';
+                    }
+                    if (show < auto2) html += '<span class="podcell" style="border-style:dashed">+' + (auto2 - show) + '</span>';
+                    row.innerHTML = html;
+                }
+                var note = document.getElementById('pNote');
+                if (note) {
+                    if (short > 0) note.innerHTML = '<b>Under capacity.</b> ' + fmt(req) + ' req/min but only <b>' + fmt(cap) + '</b> served. The autoscaler (CPU ' + cpu + '%) would raise the Deployment to <b>' + auto2 + ' pods</b> — and if the cluster cannot hold them, you buy <b>nodes</b>, which is the expensive lever. Notice the order: pods first, machines second.';
+                    else note.innerHTML = '<b>Covered.</b> ' + fmt(req) + ' req/min fit in <b>' + pods + ' pods</b> with headroom. Nothing scales. This is the honest state of most systems most of the time — and the reason a cluster is often unnecessary.';
+                }
+            }
+            ['pReq', 'pPer', 'pPods', 'pCpu'].forEach(function (id) { var e = document.getElementById(id); if (e) e.addEventListener('input', podScale); });
+            podScale();
+
+            /* ---- deployment strategy tabs ---- */
+            $(document).on('click', '[data-dep]', function () {
+                document.querySelectorAll('[data-dep]').forEach(function (b) { b.classList.remove('on'); });
+                this.classList.add('on');
+                document.querySelectorAll('#rolling,#bluegreen,#canary').forEach(function (p) { p.classList.remove('on'); });
+                var el = document.getElementById(this.getAttribute('data-dep')); if (el) el.classList.add('on');
+            });
+
+            /* ---- section 13: failure drill ---- */
+            function fOn(t) { var e = document.querySelector('[data-f="' + t + '"]'); return e && e.classList.contains('on'); }
+            function renderFail() {
+                var pods = 4, err = 0, time = '—', user = '✓', txt;
+                if (fOn('node')) { pods = 2; time = '~3 min'; txt = '<b>Node dies.</b> Its pods are rescheduled on the survivors. Capacity dips (4 → 2 pods), recovery is minutes, and the user never knew — because replicas were spread across nodes. Alert on node health and capacity.'; }
+                else if (fOn('pod')) { pods = 4; time = '~30 s'; txt = '<b>Container crashes.</b> The probe fails, the pod is replaced from the same image, the count returns to 4. Users saw nothing, because the other replicas were serving. The honest probe is what made this look like nothing.'; }
+                else if (fOn('traffic')) { pods = 40; time = '~2 min'; txt = '<b>Traffic 10×.</b> CPU crosses the threshold, the autoscaler raises the Deployment to 40 pods, the Service shares the load. The <b>next</b> bottleneck is not the cluster — it is the database (Day 2, still true). Pods absorb; the truth is downstream.'; }
+                else if (fOn('deploy')) { pods = 4; time = '~1 min'; txt = '<b>Bad release.</b> New pods fail the readiness gate, the rollout halts, the old version keeps serving. One command rolls back to the previous image. This is why rollback is rehearsed before release day — the rehearsal is the feature.'; }
+                else if (fOn('db')) { pods = 4; time = '~20 s'; txt = '<b>Pod cannot reach the database.</b> The pod is alive and useless — the readiness probe fails, so the Service stops routing to it while it retries. Liveness alone would restart the same broken loop; readiness is what protects the user.'; }
+                else { txt = '<b>Baseline.</b> 4 pods, healthy, normal traffic. Now pick a failure — or several — and watch what the cluster does — and what it cannot do.'; }
+                set('fPods', pods); setH('fPodsB', Math.min(100, pods * 2.2));
+                set('fErr', fOn('deploy') ? '8%' : '0%'); setH('fErrB', fOn('deploy') ? 40 : 3);
+                set('fTime', time); setH('fTimeB', time === '—' ? 8 : Math.min(100, (time === '~30 s' ? 20 : time === '~1 min' ? 35 : time === '~2 min' ? 55 : 75)));
+                set('fUser', user); setH('fUserB', 10);
+                var o = document.getElementById('fOut'); if (o) o.innerHTML = txt;
+            }
+            $('#failRun').on('click', renderFail);
+            $(document).on('click', '.tgl', function (e) {
+                if (e.target.tagName === 'INPUT') { var l = e.target.closest('.tgl'); if (l) l.classList.toggle('on', e.target.checked); return; }
+                var on = this.classList.toggle('on'), i = this.querySelector('input'); if (i) i.checked = on; renderFail();
+            });
+            $(document).on('change', '.tgl input', function () { var l = this.closest('.tgl'); if (l) l.classList.toggle('on', this.checked); renderFail(); });
+            renderFail();
+
+            /* ---- assignment checklist ---- */
+            var asg = document.querySelectorAll('.asg-item input[type=checkbox]'), fill = document.getElementById('asgFill'), cnt = document.getElementById('asgCount');
+            var sv = []; try { sv = JSON.parse(localStorage.getItem('arch-day10-asg') || '[]'); } catch (e) { }
+            function upAsg() { var d = 0; asg.forEach(function (c) { if (c.checked) d++; }); if (fill) fill.style.width = Math.round((d / asg.length) * 100) + '%'; if (cnt) cnt.textContent = d + ' / ' + asg.length + ' DONE'; }
+            asg.forEach(function (c) {
+                var id = c.getAttribute('data-asg'); if (sv.indexOf(id) !== -1) c.checked = true;
+                c.addEventListener('change', function () { var s = []; asg.forEach(function (x) { if (x.checked) s.push(x.getAttribute('data-asg')); }); try { localStorage.setItem('arch-day10-asg', JSON.stringify(s)); } catch (e) { } upAsg(); });
+            });
+            upAsg();
+        });
+    </script>
+</body>
+
+</html>
