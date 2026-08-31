@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day 11: Designing a Secure Application</title>
+    <style>
+        :root {
+            --bg: #f5f5f5;
+            --card: #ffffff;
+            --text: #333;
+            --accent: #e74c3c;
+            --accent-dark: #c0392b;
+            --border: #ddd;
+            --muted: #666;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+            color: white;
+            padding: 40px 30px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+            margin-bottom: 20px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-right: 10px;
+        }
+
+        section {
+            background: var(--card);
+            padding: 30px;
+            margin-bottom: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        h2 {
+            color: var(--accent);
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid var(--accent);
+        }
+
+        h3 {
+            color: var(--accent-dark);
+            font-size: 1.4em;
+            margin: 25px 0 15px 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+        }
+
+        ul,
+        ol {
+            margin: 15px 0 15px 25px;
+        }
+
+        li {
+            margin-bottom: 10px;
+        }
+
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: "Courier New", monospace;
+            font-size: 0.95em;
+            color: #e74c3c;
+        }
+
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 20px;
+            border-radius: 6px;
+            overflow-x: auto;
+            margin: 15px 0;
+            font-family: "Courier New", monospace;
+            line-height: 1.5;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .warning {
+            background: #f8d7da;
+            border-left: 4px solid var(--red);
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th,
+        td {
+            border: 1px solid var(--border);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        .layer-diagram {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+            line-height: 1.8;
+        }
+
+        .layer {
+            background: white;
+            border: 2px solid var(--accent);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .arrow {
+            text-align: center;
+            font-size: 1.5em;
+            color: var(--accent);
+            margin: 5px 0;
+        }
+
+        .checklist {
+            background: #e8f5e9;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .checklist h3 {
+            color: #2e7d32;
+            margin-top: 0;
+        }
+
+        .checklist ul {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .checklist li {
+            padding: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .checklist li::before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 1.2em;
+            color: #2e7d32;
+        }
+
+        .quiz-box {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .quiz-box h3 {
+            color: #1976d2;
+            margin-top: 0;
+        }
+
+        .quiz-item {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+        }
+
+        .answer-reveal {
+            display: none;
+            background: #f5f5f5;
+            padding: 15px;
+            margin-top: 10px;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #1976d2;
+        }
+
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: var(--muted);
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            h2 {
+                font-size: 1.4em;
+            }
+
+            h3 {
+                font-size: 1.2em;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 Day 11: Designing a Secure Application</h1>
+            <p class="subtitle">Security Architecture for Modern Applications</p>
+            <span class="badge">30-Day Architect Track</span>
+            <span class="badge">Security Focus</span>
+            <span class="badge">.NET & Cloud</span>
+        </header>
+
+        <section>
+            <h2>Today's Goals</h2>
+            <p>By the end of today, you will:</p>
+            <ul>
+                <li>Design a secure authentication and authorization system</li>
+                <li>Implement role-based access control (RBAC)</li>
+                <li>Protect APIs from common security threats</li>
+                <li>Implement multi-tenant security</li>
+                <li>Handle security incidents and failures</li>
+            </ul>
+        </section>
+
+        <section>
+            <h2>1. Authentication and Authorization</h2>
+            <h3>Authentication (Who are you?)</h3>
+            <p>Authentication verifies the identity of a user or service. Common methods:</p>
+            <ul>
+                <li><strong>JWT Tokens:</strong> Stateless tokens containing user claims</li>
+                <li><strong>OAuth 2.0:</strong> Delegated authorization framework</li>
+                <li><strong>OpenID Connect:</strong> Authentication layer on top of OAuth</li>
+                <li><strong>API Keys:</strong> Simple tokens for service-to-service communication</li>
+            </ul>
+
+            <div class="highlight">
+                <strong>Best Practice:</strong> Use Azure AD B2C or IdentityServer for authentication. Never store
+                passwords in plain text.
+            </div>
+
+            <h3>Authorization (What can you do?)</h3>
+            <p>Authorization determines what resources a user can access. Common approaches:</p>
+            <ul>
+                <li><strong>Role-Based Access Control (RBAC):</strong> Users assigned to roles, roles have permissions
+                </li>
+                <li><strong>Claims-Based:</strong> Fine-grained permissions based on user claims</li>
+                <li><strong>Policy-Based:</strong> Complex authorization rules based on multiple factors</li>
+            </ul>
+
+            <h3>Implementation Example: JWT + RBAC</h3>
+            <pre>
+// 1. Authentication (JWT)
+[HttpPost("login")]
+public async Task&lt;IActionResult&gt; Login([FromBody] LoginRequest request)
+{
+    var user = await _userService.AuthenticateAsync(request.Username, request.Password);
+    if (user == null)
+        return Unauthorized();
+
+    var claims = new[]
+    {
+        new Claim(ClaimTypes.Name, user.Username),
+        new Claim(ClaimTypes.Role, user.Role),
+        new Claim("TenantId", user.TenantId.ToString())
+    };
+
+    var key = new SymmetricSecurityKey(_config.GetRaw("Jwt:Key"));
+    var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+    
+    var token = new JwtSecurityToken(
+        issuer: _config["Jwt:Issuer"],
+        audience: _config["Jwt:Audience"],
+        claims: claims,
+        expires: DateTime.UtcNow.AddHours(1),
+        signingCredentials: creds
+    );
+
+    return Ok(new { token = new JwtSecurityTokenHandler().WriteToken(token) });
+}
+
+// 2. Authorization (Role-based)
+[Authorize(Roles = "Admin")]
+[HttpGet("users")]
+public IActionResult GetAllUsers()
+{
+    // Only admins can access this
+    return Ok(_userService.GetAllUsers());
+}
+
+[Authorize]
+[HttpGet("orders")]
+public IActionResult GetMyOrders()
+{
+    // Any authenticated user can access their own orders
+    var userId = User.FindFirst(ClaimTypes.NameIdentifier).Value;
+    return Ok(_orderService.GetUserOrders(userId));
+}
+
+// 3. Policy-based authorization
+[Authorize(Policy = "CanApproveOrders")]
+[HttpPost("orders/{id}/approve")]
+public IActionResult ApproveOrder(int id)
+{
+    // Custom policy checks multiple claims
+    return Ok();
+}
+    </pre>
+
+            <h3>Multi-Tenant Authorization</h3>
+            <pre>
+// Ensure users can only access their tenant's data
+public class TenantAuthorizationHandler : AuthorizationHandler&lt;TenantRequirement&gt;
+{
+    protected override Task HandleRequirementAsync(
+        AuthorizationHandlerContext context, 
+        TenantRequirement requirement)
+    {
+        var tenantId = int.Parse(
+            context.User.FindFirst("TenantId")?.Value ?? "0");
+        
+        var requestedTenantId = int.Parse(
+            context.Resource?.ToString() ?? "0");
+
+        if (tenantId == requestedTenantId)
+        {
+            context.Succeed(requirement);
+        }
+
+        return Task.CompletedTask;
+    }
+}
+
+// Usage
+[Authorize(Policy = "TenantAccess")]
+[HttpGet("tenants/{tenantId}/data")]
+public IActionResult GetTenantData(int tenantId)
+{
+    // Only users from this tenant can access
+    return Ok(_service.GetData(tenantId));
+}
+    </pre>
+        </section>
+
+        <section>
+            <h2>2. API Security</h2>
+            <h3>Input Validation and Sanitization</h3>
+            <pre>
+// Validate input at the API boundary
+public class CreateOrderRequest
+{
+    [Required]
+    [StringLength(100)]
+    public string CustomerName { get; set; }
+
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+
+    [Required]
+    [Range(0.01, 10000)]
+    public decimal Amount { get; set; }
+}
+
+// Sanitize to prevent injection attacks
+public string SanitizeInput(string input)
+{
+    // Remove dangerous characters
+    return input.Replace("&lt;", "&lt;")
+                .Replace("&gt;", "&gt;")
+                .Replace("'", "''")
+                .Replace("\"", "\"\"");
+}
+    </pre>
+
+            <h3>Rate Limiting</h3>
+            <pre>
+// Rate limiting to prevent abuse
+services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create&lt;HttpContext, string&gt;(
+        httpContext => RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: httpContext.User.Identity?.Name ?? httpContext.Connection.RemoteIpAddress.ToString(),
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+
+    options.RejectionStatusCode = 429; // Too Many Requests
+});
+    </pre>
+
+            <h3>Security Headers</h3>
+            <pre>
+// Add security headers to all responses
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+    context.Response.Headers.Add("X-Frame-Options", "DENY");
+    context.Response.Headers.Add("X-XSS-Protection", "1; mode=block");
+    context.Response.Headers.Add("Strict-Transport-Security", "max-age=31536000");
+    await next();
+});
+    </pre>
+        </section>
+
+        <section>
+            <h2>3. Data Protection</h2>
+            <h3>Encryption at Rest</h3>
+            <ul>
+                <li><strong>Azure SQL:</strong> Transparent Data Encryption (TDE)</li>
+                <li><strong>Azure Blob Storage:</strong> Server-side encryption</li>
+                <li><strong>Azure Key Vault:</strong> Encrypt sensitive configuration</li>
+            </ul>
+
+            <h3>Encryption in Transit</h3>
+            <ul>
+                <li>Always use HTTPS/TLS for all communication</li>
+                <li>Use managed certificates (Azure Key Vault or App Service)</li>
+                <li>Enforce HTTPS in ASP.NET Core: <code>app.UseHttpsRedirection();</code></li>
+            </ul>
+
+            <h3>Sensitive Data Handling</h3>
+            <pre>
+// Never log sensitive data
+public class RedactingLogger : ILogger
+{
+    public void Log&lt;TState&gt;(LogLevel logLevel, EventId eventId, 
+        TState state, Exception exception, 
+        Func&lt;TState, Exception, string&gt; formatter)
+    {
+        var message = formatter(state, exception);
+        
+        // Redact sensitive information
+        message = Regex.Replace(message, 
+            @"password=([^&]+)", "password=***", RegexOptions.IgnoreCase);
+        
+        // Log the sanitized message
+        _logger.Log(logLevel, eventId, message, exception, 
+            (s, ex) => s);
+    }
+}
+
+// Encrypt sensitive fields in database
+public class User
+{
+    public int Id { get; set; }
+    public string Username { get; set; }
+    
+    [Encrypted]
+    public string SSN { get; set; } // Encrypted at rest
+    
+    [Encrypted]
+    public string CreditCardNumber { get; set; }
+}
+    </pre>
+        </section>
+
+        <section>
+            <h2>4. Multi-Tenant Security</h2>
+            <p class="warning">
+                <strong>Critical:</strong> Tenant isolation must be enforced at EVERY layer:
+            </p>
+            <ul>
+                <li>Database queries (WHERE clauses)</li>
+                <li>API authorization (policies)</li>
+                <li>Cache keys (tenant-specific prefixes)</li>
+                <li>Logging (tenant context)</li>
+                <li>Background jobs (tenant scope)</li>
+            </ul>
+
+            <h3>Database-Level Tenant Isolation</h3>
+            <pre>
+// EF Core Global Query Filter
+public class ApplicationDbContext : DbContext
+{
+    private readonly int _tenantId;
+
+    public ApplicationDbContext(DbContextOptions options, 
+        ITenantProvider tenantProvider) : base(options)
+    {
+        _tenantId = tenantProvider.GetTenantId();
+    }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        // Apply tenant filter to all entities with TenantId
+        modelBuilder.Entity&lt;Order&gt;()
+            .HasQueryFilter(o => o.TenantId == _tenantId);
+        
+        modelBuilder.Entity&lt;Customer&gt;()
+            .HasQueryFilter(c => c.TenantId == _tenantId);
+    }
+}
+
+// Tenant provider from JWT
+public class JwtTenantProvider : ITenantProvider
+{
+    private readonly IHttpContextAccessor _httpContext;
+
+    public int GetTenantId()
+    {
+        var tenantClaim = _httpContext.HttpContext
+            .User.FindFirst("TenantId");
+        
+        return int.Parse(tenantClaim?.Value ?? "0");
+    }
+}
+    </pre>
+
+            <h3>Multi-Tenant Caching</h3>
+            <pre>
+// Tenant-specific cache keys
+public class TenantCacheService
+{
+    private readonly IDistributedCache _cache;
+    private readonly int _tenantId;
+
+    public async Task&lt;T&gt; GetAsync&lt;T&gt;(string key)
+    {
+        // Include tenant ID in cache key
+        var tenantKey = $"tenant:{_tenantId}:{key}";
+        var value = await _cache.GetStringAsync(tenantKey);
+        
+        return value != null ? JsonSerializer.Deserialize&lt;T&gt;(value) : default;
+    }
+
+    public async Task SetAsync&lt;T&gt;(string key, T value, TimeSpan expiration)
+    {
+        var tenantKey = $"tenant:{_tenantId}:{key}";
+        await _cache.SetStringAsync(tenantKey, 
+            JsonSerializer.Serialize(value),
+            new DistributedCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = expiration
+            });
+    }
+}
+    </pre>
+        </section>
+
+        <section>
+            <h2>5. Security Failure Scenarios</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Failure Scenario</th>
+                        <th>Business Impact</th>
+                        <th>Architecture Response</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>JWT token stolen</td>
+                        <td>Attacker impersonates user</td>
+                        <td>Short token lifetime (1 hour), refresh token rotation, token revocation list</td>
+                    </tr>
+                    <tr>
+                        <td>User role changed</td>
+                        <td>User retains old permissions</td>
+                        <td>Token validation checks current role, force re-authentication on role change</td>
+                    </tr>
+                    <tr>
+                        <td>API key leaked</td>
+                        <td>Unauthorized service access</td>
+                        <td>Key rotation, rate limiting, IP whitelisting</td>
+                    </tr>
+                    <tr>
+                        <td>Tenant isolation breach</td>
+                        <td>Data leak between tenants</td>
+                        <td>Database-level filters, API-level policies, audit logging</td>
+                    </tr>
+                    <tr>
+                        <td>Brute force attack</td>
+                        <td>Account takeover</td>
+                        <td>Rate limiting, account lockout, CAPTCHA, MFA</td>
+                    </tr>
+                    <tr>
+                        <td>Sensitive data logged</td>
+                        <td>Compliance violation, data breach</td>
+                        <td>Log sanitization, structured logging with redaction</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>6. Case Study: Multi-Tenant E-Commerce SaaS</h2>
+            <h3>Requirements</h3>
+            <ul>
+                <li>10,000 companies (tenants)</li>
+                <li>1 million users</li>
+                <li>Web + mobile clients</li>
+                <li>Roles: Admin, Manager, Employee</li>
+                <li>Orders, payments, inventory</li>
+                <li>Reports and audit history</li>
+            </ul>
+
+            <h3>Security Architecture Decisions</h3>
+            <div class="layer-diagram">
+                <div class="layer">🔐 Azure AD B2C (Authentication)</div>
+                <div class="arrow">↓</div>
+                <div class="layer">🛡️ API Gateway + Rate Limiting</div>
+                <div class="arrow">↓</div>
+                <div class="layer">🔑 JWT Token Validation + Tenant Filter</div>
+                <div class="arrow">↓</div>
+                <div class="layer">👥 Role-Based Authorization</div>
+                <div class="arrow">↓</div>
+                <div class="layer">🏢 Tenant-Scoped Data Access (Global Query Filters)</div>
+                <div class="arrow">↓</div>
+                <div class="layer">💾 Encrypted Database + Audit Logging</div>
+            </div>
+
+            <h3>Key Security Decisions</h3>
+            <div class="checklist">
+                <h3>✅ Security Checklist</h3>
+                <ul>
+                    <li>✅ JWT tokens with 1-hour expiration</li>
+                    <li>✅ Refresh token rotation (sliding window)</li>
+                    <li>✅ Multi-tenant isolation at database level</li>
+                    <li>✅ Role-based access control (Admin, Manager, Employee)</li>
+                    <li>✅ Rate limiting per tenant and per user</li>
+                    <li>✅ Input validation and sanitization</li>
+                    <li>✅ HTTPS everywhere</li>
+                    <li>✅ Sensitive data encryption at rest</li>
+                    <li>✅ Audit logging for all sensitive operations</li>
+                    <li>✅ Security headers on all responses</li>
+                    <li>✅ API versioning for breaking changes</li>
+                    <li>✅ CORS policy for web/mobile clients</li>
+                </ul>
+            </div>
+        </section>
+
+        <section>
+            <h2>7. Security Architecture Diagram</h2>
+            <div class="layer-diagram">
+                <div class="layer">👤 Users (Web / Mobile)</div>
+                <div class="arrow">↓</div>
+                <div class="layer">🔐 Azure AD B2C (Authentication)</div>
+                <div class="arrow">↓</div>
+                <div class="layer">🌐 API Gateway (Azure API Management)</div>
+                <div style="padding: 10px; background: #fff3cd;">
+                    <strong>Security:</strong> Rate limiting, JWT validation, CORS, IP filtering
+                </div>
+                <div class="arrow">↓</div>
+                <div class="layer">🔧 ASP.NET Core APIs</div>
+                <div style="padding: 10px; background: #fff3cd;">
+                    <strong>Security:</strong> Role-based auth, tenant filtering, input validation
+                </div>
+                <div class="arrow">↓</div>
+                <div class="layer">💼 Business Services</div>
+                <div style="padding: 10px; background: #fff3cd;">
+                    <strong>Security:</strong> Tenant isolation, authorization checks
+                </div>
+                <div class="arrow">↓</div>
+                <div class="layer">💾 Azure SQL (Encrypted)</div>
+                <div style="padding: 10px; background: #fff3cd;">
+                    <strong>Security:</strong> TDE, global query filters, audit logging
+                </div>
+                <div class="arrow">↓</div>
+                <div class="layer">🔑 Azure Key Vault</div>
+                <div style="padding: 10px; background: #d4edda;">
+                    <strong>Security:</strong> Secrets, certificates, encryption keys
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>8. 10 Security Architecture Decisions</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Question</th>
+                        <th>Decision</th>
+                        <th>Why</th>
+                        <th>Trade-off</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1</td>
+                        <td>Who can access this API?</td>
+                        <td>JWT authentication</td>
+                        <td>Stateless, scalable, standard</td>
+                        <td>Token management complexity</td>
+                    </tr>
+                    <tr>
+                        <td>2</td>
+                        <td>How do we verify identity?</td>
+                        <td>Azure AD B2C</td>
+                        <td>Managed service, MFA support</td>
+                        <td>Vendor dependency</td>
+                    </tr>
+                    <tr>
+                        <td>3</td>
+                        <td>How do we check permissions?</td>
+                        <td>Role-based authorization</td>
+                        <td>Simple, auditable</td>
+                        <td>Less flexible than claims-based</td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>How do we isolate tenants?</td>
+                        <td>Database-level filters</td>
+                        <td>Automatic, consistent</td>
+                        <td>Query performance impact</td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>Where are secrets stored?</td>
+                        <td>Azure Key Vault</td>
+                        <td>Centralized, audited</td>
+                        <td>Additional service dependency</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>How do we protect tokens?</td>
+                        <td>Short lifetime + refresh rotation</td>
+                        <td>Minimizes token theft impact</td>
+                        <td>Refresh token complexity</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td>How do we handle role changes?</td>
+                        <td>Force re-authentication</td>
+                        <td>Immediate permission update</td>
+                        <td>User experience impact</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td>How do we prevent API abuse?</td>
+                        <td>Rate limiting per tenant/user</td>
+                        <td>Prevents abuse, fair usage</td>
+                        <td>Configuration complexity</td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td>How do we secure data at rest?</td>
+                        <td>TDE + field encryption</td>
+                        <td>Defense in depth</td>
+                        <td>Performance overhead</td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td>How do we audit security events?</td>
+                        <td>Centralized audit logging</td>
+                        <td>Compliance, forensics</td>
+                        <td>Storage cost, log management</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section>
+            <h2>9. Day 11 Assignment</h2>
+            <div class="checklist">
+                <h3>📋 Your Task</h3>
+                <p>Design the security architecture for the multi-tenant SaaS platform:</p>
+                <ul>
+                    <li>☐ Authentication design (JWT + Azure AD B2C)</li>
+                    <li>☐ Authorization design (RBAC + policies)</li>
+                    <li>☐ Tenant isolation strategy</li>
+                    <li>☐ API security (rate limiting, validation, headers)</li>
+                    <li>☐ Service-to-service security</li>
+                    <li>☐ Secret management (Key Vault)</li>
+                    <li>☐ Sensitive data protection (encryption)</li>
+                    <li>☐ Rate limiting strategy</li>
+                    <li>☐ Audit logging design</li>
+                    <li>☐ Failure handling (token theft, role changes)</li>
+                    <li>☐ Security architecture diagram</li>
+                    <li>☐ 10 security decisions with reasons</li>
+                    <li>☐ 5 major security risks</li>
+                    <li>☐ 3 rejected security alternatives</li>
+                </ul>
+            </div>
+
+            <h3>🚨 Attack Scenarios to Handle</h3>
+            <div class="quiz-box">
+                <h3>Scenario 1: User changes tenant ID manually</h3>
+                <p><strong>Question:</strong> How does your architecture handle this?</p>
+                <button onclick="document.getElementById('answer1').style.display='block'">Show Answer</button>
+                <div id="answer1" class="answer-reveal">
+                    <strong>Solution:</strong> Tenant ID comes from JWT token, not from request body. Database-level
+                    global query filter ensures tenant isolation. API-level authorization validates tenant context.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Scenario 2: Stolen access token</h3>
+                <p><strong>Question:</strong> How does your architecture handle this?</p>
+                <button onclick="document.getElementById('answer2').style.display='block'">Show Answer</button>
+                <div id="answer2" class="answer-reveal">
+                    <strong>Solution:</strong> Short token lifetime (1 hour), refresh token rotation, token revocation
+                    list, suspicious activity detection.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Scenario 3: Leaked API key</h3>
+                <p><strong>Question:</strong> How does your architecture handle this?</p>
+                <button onclick="document.getElementById('answer3').style.display='block'">Show Answer</button>
+                <div id="answer3" class="answer-reveal">
+                    <strong>Solution:</strong> Key rotation, rate limiting, IP whitelisting, audit logging of key usage.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Scenario 4: Admin permission accidentally given to employee</h3>
+                <p><strong>Question:</strong> How does your architecture handle this?</p>
+                <button onclick="document.getElementById('answer4').style.display='block'">Show Answer</button>
+                <div id="answer4" class="answer-reveal">
+                    <strong>Solution:</strong> Role changes require re-authentication, audit logging of role
+                    assignments, approval workflow for admin roles.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Scenario 5: Login endpoint receives huge traffic</h3>
+                <p><strong>Question:</strong> How does your architecture handle this?</p>
+                <button onclick="document.getElementById('answer5').style.display='block'">Show Answer</button>
+                <div id="answer5" class="answer-reveal">
+                    <strong>Solution:</strong> Rate limiting on login endpoint, account lockout after failed attempts,
+                    CAPTCHA, DDoS protection.
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>10. Self-Test</h2>
+            <div class="quiz-box">
+                <h3>Question 1</h3>
+                <p>What is the difference between authentication and authorization?</p>
+                <button onclick="document.getElementById('test1').style.display='block'">Show Answer</button>
+                <div id="test1" class="answer-reveal">
+                    <strong>Answer:</strong> Authentication verifies identity (who you are). Authorization determines
+                    permissions (what you can do).
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Question 2</h3>
+                <p>Why use JWT tokens instead of sessions?</p>
+                <button onclick="document.getElementById('test2').style.display='block'">Show Answer</button>
+                <div id="test2" class="answer-reveal">
+                    <strong>Answer:</strong> JWT is stateless (no server-side storage), scalable (works across
+                    services), and self-contained (contains user claims).
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Question 3</h3>
+                <p>How do you prevent tenant isolation breaches?</p>
+                <button onclick="document.getElementById('test3').style.display='block'">Show Answer</button>
+                <div id="test3" class="answer-reveal">
+                    <strong>Answer:</strong> Multi-layer approach: database-level query filters, API-level
+                    authorization, tenant context from JWT, audit logging.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Question 4</h3>
+                <p>What happens when a user's role is changed?</p>
+                <button onclick="document.getElementById('test4').style.display='block'">Show Answer</button>
+                <div id="test4" class="answer-reveal">
+                    <strong>Answer:</strong> Force re-authentication to get new token with updated role claims. Old
+                    token becomes invalid.
+                </div>
+            </div>
+
+            <div class="quiz-box">
+                <h3>Question 5</h3>
+                <p>How do you secure service-to-service communication?</p>
+                <button onclick="document.getElementById('test5').style.display='block'">Show Answer</button>
+                <div id="test5" class="answer-reveal">
+                    <strong>Answer:</strong> Use managed identity or service principals, JWT tokens, HTTPS, API keys
+                    stored in Key Vault.
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <h2>11. Day 11 Success Criteria</h2>
+            <div class="success">
+                <h3>✅ By the end of today, you should be able to:</h3>
+                <ul>
+                    <li>✅ Design authentication using JWT and OAuth/OIDC</li>
+                    <li>✅ Implement role-based and policy-based authorization</li>
+                    <li>✅ Protect APIs from common security threats</li>
+                    <li>✅ Implement multi-tenant security at all layers</li>
+                    <li>✅ Handle security incidents (token theft, role changes)</li>
+                    <li>✅ Secure sensitive data (encryption, Key Vault)</li>
+                    <li>✅ Implement rate limiting and abuse prevention</li>
+                    <li>✅ Audit security events and sensitive operations</li>
+                    <li>✅ Design secure service-to-service communication</li>
+                    <li>✅ Explain security architecture decisions</li>
+                </ul>
+            </div>
+        </section>
+
+        <footer>
+            <p><strong>Day 11 Complete!</strong> 🎉</p>
+            <p>Tomorrow: Day 12 - Security Incident Response and Monitoring</p>
+            <p style="margin-top: 20px;">30-Day Technical Architect Track · Security Track</p>
+        </footer>
+    </div>
+
+    <script>
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+
+        // Add some interactivity
+        document.querySelectorAll('.layer').forEach(layer => {
+            layer.addEventListener('mouseenter', function () {
+                this.style.transform = 'scale(1.02)';
+                this.style.transition = 'transform 0.2s';
+            });
+            layer.addEventListener('mouseleave', function () {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+
+</html>
