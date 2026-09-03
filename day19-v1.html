@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html lang="en" option="A">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 19 of the 30-Day Technical Architect Track: Modular Monolith vs Microservices. When to choose a modular monolith, how to defend it in interviews, boundaries, migration, and trade-offs." />
+    <title>Day 19 — Modular Monolith vs Microservices · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 4 4
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .calc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 18px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--teal)
+        }
+
+        .calc-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px
+        }
+
+        .calc-card .step {
+            font-family: var(--body);
+            font-size: 14.5px;
+            color: var(--ink2);
+            line-height: 1.8;
+            padding: 4px 0
+        }
+
+        .calc-card .step b {
+            color: var(--ink);
+            font-weight: 700
+        }
+
+        .calc-card .step .res {
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .calc-card .step .note {
+            color: var(--ink3);
+            font-style: italic;
+            font-size: 13px
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 19 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 19 / 30 · SYSTEM DESIGN DECISIONS</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Modular Monolith</span></span>
+                    <span class="mask"><span class="line d2">vs Microservices:</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">The Architect's
+                            Choice.</span></span>
+                </h1>
+                <p class="hero-sub">How does a Solution Architect make, explain, and defend the decision to build a
+                    <b>Modular Monolith</b> instead of <b>Microservices</b>? Learn the architectural trade-offs, module
+                    boundary design, in-process communication, migration strategies, and interview defense.
+                </p>
+                <div class="hero-meta"><span class="chip hot">MODULAR MONOLITH</span><span
+                        class="chip">MICROSERVICES</span><span class="chip">20-ROW COMPARISON</span><span
+                        class="chip">12 SCENARIOS</span><span class="chip">20 INTERVIEW QUESTIONS</span></div>
+                <div class="howto">
+                    <h4>HOW TO STUDY THIS SESSION</h4>
+                    <ol>
+                        <li><b>01</b> Parts 1–4: Understand the trap of Monolith → Microservices and study the 20-row
+                            comparison.</li>
+                        <li><b>02</b> Parts 5–11: Deep dive into why Modular Monolith wins, module boundaries, DB
+                            ownership, and extraction signals.</li>
+                        <li><b>03</b> Parts 12–17: Scorecard framework, 12 scenarios, 20 interview Qs, hands-on
+                            exercise, and 20-min challenge.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">17 PARTS · 20-ROW MATRIX · 10 WINNING REASONS · 10 MIGRATION SIGNALS · 20
+                    INTERVIEW QUESTIONS</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 19 → ARCHITECTURAL MATURITY SPECTRUM</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 19.0 — THE PRAGMATIC
+                        EVOLUTION</text>
+
+                    <rect class="box" x="36" y="58" width="130" height="42" rx="3" /><text x="101" y="78" font-size="9"
+                        class="t1" text-anchor="middle">TRADITIONAL MONOLITH</text><text x="101" y="91" font-size="7.5"
+                        class="t3" text-anchor="middle">Layered · Tightly Coupled</text>
+
+                    <path class="thin" d="M166 79 H195" />
+                    <path d="M191 75 l8 4 -8 4 z" fill="var(--ink3)" />
+
+                    <rect class="box ok" x="195" y="58" width="130" height="42" rx="3" /><text x="260" y="78"
+                        font-size="9" class="tt" text-anchor="middle">MODULAR MONOLITH</text><text x="260" y="91"
+                        font-size="7.5" class="t3" text-anchor="middle">Bounded Contexts In-Memory</text>
+
+                    <path class="thin" d="M325 79 H354" />
+                    <path d="M350 75 l8 4 -8 4 z" fill="var(--ink3)" />
+
+                    <rect class="box hot" x="354" y="58" width="130" height="42" rx="3" /><text x="419" y="78"
+                        font-size="9" class="ta" text-anchor="middle">MICROSERVICES</text><text x="419" y="91"
+                        font-size="7.5" class="t3" text-anchor="middle">Extracted Network Services</text>
+
+                    <rect class="fr" x="36" y="118" width="448" height="76" rx="3" />
+                    <text x="52" y="140" font-size="9.5" class="ta">THE INDUSTRY FALLACY VS THE ARCHITECT PATH:</text>
+                    <text x="52" y="158" font-size="8.5" class="tr">❌ Industry Mistake: Monolith → Big Bang Rewrite into
+                        25 Microservices → Operational Collapse</text>
+                    <text x="52" y="174" font-size="8.5" class="tt">✔ Architect Path: Monolith → Clean Modular Monolith
+                        → Extract ONLY what hurts → Hybrid Success</text>
+
+                    <rect class="box" x="36" y="210" width="448" height="74" rx="3" />
+                    <text x="52" y="232" font-size="9" class="t1">WHY MODULAR MONOLITH IS OFTEN THE STRONGEST
+                        CHOICE:</text>
+                    <text x="52" y="250" font-size="8.5" class="tt">• In-memory communication (nanoseconds, zero
+                        serialization overhead)</text>
+                    <text x="52" y="264" font-size="8.5" class="tt">• Single deployment pipeline (zero distributed
+                        tracing/SRE overhead)</text>
+                    <text x="52" y="278" font-size="8.5" class="tt">• True ACID database transactions where business
+                        rules demand perfection</text>
+
+                    <rect class="fr" x="36" y="300" width="448" height="66" rx="3" />
+                    <text x="52" y="322" font-size="8.5" class="t1">KEY INTERVIEW QUESTION: "Why choose Modular Monolith
+                        over Microservices?"</text>
+                    <text x="52" y="338" font-size="8.5" class="ta">Answer: "Maximum domain autonomy with minimum
+                        operational tax."</text>
+                    <text x="52" y="352" font-size="7.5" class="t3">Architecture must solve customer problems, not
+                        create cloud engineering debt.</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#p1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path
+                        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">The Problem</span><span class="p-tg">AVOID THE JUMP</span></span></a>
+            <a class="pstrip" href="#p3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M3 10h18M3 14h18M10 3v18" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg><span><span class="p-nm">20-Row Matrix</span><span class="p-tg">SIDE-BY-SIDE</span></span></a>
+            <a class="pstrip" href="#p5" style="--pc:var(--ok)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Why Modular Wins</span><span class="p-tg">10 PROVEN
+                        REASONS</span></span></a>
+            <a class="pstrip" href="#p10" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Extraction Path</span><span class="p-tg">PRAGMATIC
+                        STEPS</span></span></a>
+            <a class="pstrip" href="#p15" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 8v4l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Interview Q&amp;A</span><span class="p-tg">20 SCENARIOS</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#p1" data-spy="p1"><span>01</span> The jump trap</a>
+            <a class="tn" href="#p2" data-spy="p2"><span>02</span> Three architectural options</a>
+            <a class="tn" href="#p3" data-spy="p3"><span>03</span> 20-Row comparison</a>
+            <a class="tn" href="#p4" data-spy="p4"><span>04</span> Business example (3 designs)</a>
+            <a class="tn" href="#p5" data-spy="p5"><span>05</span> 10 Reasons modular wins</a>
+            <a class="tn" href="#p6" data-spy="p6"><span>06</span> Structure a modular monolith</a>
+            <a class="tn" href="#p7" data-spy="p7"><span>07</span> Identifying boundaries</a>
+            <a class="tn" href="#p8" data-spy="p8"><span>08</span> Database strategies</a>
+            <a class="tn" href="#p9" data-spy="p9"><span>09</span> In-process communication</a>
+            <a class="tn" href="#p10" data-spy="p10"><span>10</span> Migration path</a>
+            <a class="tn" href="#p11" data-spy="p11"><span>11</span> 10 Extraction signals</a>
+            <a class="tn" href="#p12" data-spy="p12"><span>12</span> 10 Common mistakes</a>
+            <a class="tn" href="#p13" data-spy="p13"><span>13</span> Decision scorecard</a>
+            <a class="tn" href="#p14" data-spy="p14"><span>14</span> 12 Real scenarios</a>
+            <a class="tn" href="#p15" data-spy="p15"><span>15</span> 20 Interview Q&amp;A</a>
+            <a class="tn" href="#p16" data-spy="p16"><span>16</span> Hands-on exercise</a>
+            <a class="tn" href="#p17" data-spy="p17"><span>17</span> 20-Min challenge</a>
+            <a class="tn" href="#summary" data-spy="summary"><span>★</span> 10 Rules &amp; close</a>
+        </aside>
+        <main class="doc">
+
+            <!-- PART 1 -->
+            <section class="sec" id="p1">
+                <div class="sec-kicker">PART 1 — THE ARCHITECTURAL TRAP</div>
+                <h2 class="sec-title rv">The False Binary: Monolith vs Microservices</h2>
+                <p class="sec-lead rv">Over the past decade, hundreds of organizations fell into a devastating trap:
+                    when their initial monolith became messy, they assumed the only solution was to rewrite everything
+                    into <b>Microservices</b>.</p>
+
+                <p class="rv">This leap was almost always catastrophic. Why? Because they mistook an <b>internal code
+                        design failure</b> (tight coupling, spaghetti dependencies, lack of domain boundaries) for a
+                    <b>deployment unit failure</b>.
+                </p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>The Monolith Pain Point</b><span>"Our monolith is slow, hard to test, and
+                            deployments are scary. A change in Billing broke the Catalog!" <i>Real root cause:</i> Zero
+                            code isolation, shared SQL tables, direct global class references.</span></div>
+                    <div class="topic"><b>The False Solution</b><span>"Let's split into 25 microservices across 5
+                            Kubernetes clusters!" <i>Result:</i> Now the exact same spaghetti code is spread over an
+                            unreliable network with distributed latency and failure modes.</span></div>
+                    <div class="topic"><b>What Modular Monolith Solves</b><span>It solves code entanglement and team
+                            contention <b>inside a single deployment artifact</b>. It introduces strict domain
+                            boundaries, schema isolation, and modular contracts without network tax.</span></div>
+                    <div class="topic"><b>What Microservices Actually Solve</b><span>Microservices solve <b>massive team
+                                organizational scaling</b> (hundreds of developers) and <b>radically divergent hardware
+                                scaling</b> (1 component needing 100× instances).</span></div>
+                </div>
+
+                <div class="callout co-warn rv"><span class="co-label">REAL-WORLD INDUSTRY EXAMPLE</span>
+                    <p>Amazon Prime Video famously announced in 2023 that they migrated their video monitoring
+                        infrastructure from distributed serverless microservices back into a <b>monolithic
+                            architecture</b>, achieving a <b>90% reduction in infrastructure costs</b> and dramatically
+                        higher reliability. They didn't do it because microservices are bad; they did it because for
+                        that specific workload, microservices were an inappropriate, expensive over-engineering mistake.
+                    </p>
+                </div>
+            </section>
+
+            <!-- PART 2 -->
+            <section class="sec" id="p2">
+                <div class="sec-kicker">PART 2 — THE THREE OPTIONS EXPLAINED</div>
+                <h2 class="sec-title rv">Understanding the Three Architectural Shapes</h2>
+                <p class="sec-lead rv">Let's demystify the three options with clear technical definitions and structural
+                    diagrams.</p>
+
+                <h3>Option 1: Traditional Monolith</h3>
+                <p class="rv">Built as a single deployable unit, typically organized horizontally by technical layers
+                    (`Controllers`, `Services`, `Repositories`). Any layer or service can query any database table or
+                    invoke any other class directly.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 130" fill="none">
+                        <rect class="s-box" x="20" y="20" width="640" height="90" rx="4" />
+                        <text x="40" y="45" class="s-lab">TRADITIONAL MONOLITH (SINGLE PROCESS / CONTAINER)</text>
+                        <rect class="box" x="40" y="58" width="180" height="36" rx="2" /><text x="130" y="80"
+                            font-size="8.5" class="t1" text-anchor="middle">UI / API Controllers</text>
+                        <rect class="box" x="250" y="58" width="180" height="36" rx="2" /><text x="340" y="80"
+                            font-size="8.5" class="t1" text-anchor="middle">Shared Business Services</text>
+                        <rect class="box" x="460" y="58" width="180" height="36" rx="2" /><text x="550" y="80"
+                            font-size="8.5" class="t1" text-anchor="middle">Data Access Layer</text>
+                        <path class="s-line" d="M220 76 H250 M430 76 H460" />
+                    </svg>
+                    <div class="figcap">FIG. 19.1A — TRADITIONAL MONOLITH: LAYERED ARCHITECTURE WITH ZERO DOMAIN
+                        ENCAPSULATION</div>
+                </div>
+
+                <h3>Option 2: Modular Monolith</h3>
+                <p class="rv">Also deploys as a single executable binary, but organized vertically into
+                    <b>self-contained domain modules</b> (Orders, Inventory, Billing). Modules can only communicate
+                    through explicit public interfaces or in-process events. Direct database cross-queries are
+                    prohibited.
+                </p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 140" fill="none">
+                        <rect class="s-box ok" x="20" y="15" width="640" height="110" rx="4" />
+                        <text x="40" y="38" class="s-lab">MODULAR MONOLITH (SINGLE DEPLOYABLE BINARY)</text>
+                        <rect class="box" x="40" y="50" width="180" height="60" rx="2" />
+                        <text x="130" y="74" font-size="9" class="t1" text-anchor="middle">ORDER MODULE</text>
+                        <text x="130" y="94" font-size="7.5" class="tt" text-anchor="middle">Public:
+                            IOrderModuleApi</text>
+
+                        <rect class="box" x="250" y="50" width="180" height="60" rx="2" />
+                        <text x="340" y="74" font-size="9" class="t1" text-anchor="middle">INVENTORY MODULE</text>
+                        <text x="340" y="94" font-size="7.5" class="tt" text-anchor="middle">Public:
+                            IInventoryModuleApi</text>
+
+                        <rect class="box" x="460" y="50" width="180" height="60" rx="2" />
+                        <text x="550" y="74" font-size="9" class="t1" text-anchor="middle">BILLING MODULE</text>
+                        <text x="550" y="94" font-size="7.5" class="tt" text-anchor="middle">Public:
+                            IBillingModuleApi</text>
+
+                        <path class="s-line" d="M220 80 H250 M430 80 H460" />
+                        <text x="235" y="72" font-size="7" class="t3" text-anchor="middle">In-Memory</text>
+                        <text x="445" y="72" font-size="7" class="t3" text-anchor="middle">In-Memory</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.1B — MODULAR MONOLITH: STRICT DOMAIN ISOLATION INSIDE A SINGLE PROCESS
+                    </div>
+                </div>
+
+                <h3>Option 3: Microservices</h3>
+                <p class="rv">Divided into autonomous, independently deployable services running in isolated network
+                    processes (containers/Kubernetes pods). Each service completely owns its private data store and
+                    communicates over the network.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 150" fill="none">
+                        <rect class="s-box hot" x="20" y="15" width="190" height="70" rx="3" />
+                        <text x="115" y="40" class="s-lab" text-anchor="middle">ORDER SERVICE</text>
+                        <text x="115" y="58" font-size="8" class="t3" text-anchor="middle">Docker Container / Pod</text>
+                        <rect class="box" x="65" y="95" width="100" height="36" rx="2" /><text x="115" y="117"
+                            font-size="8" class="ta" text-anchor="middle">Order DB (SQL)</text>
+                        <path class="s-line" d="M115 85 V95" />
+
+                        <rect class="s-box hot" x="245" y="15" width="190" height="70" rx="3" />
+                        <text x="340" y="40" class="s-lab" text-anchor="middle">INVENTORY SERVICE</text>
+                        <text x="340" y="58" font-size="8" class="t3" text-anchor="middle">Docker Container / Pod</text>
+                        <rect class="box" x="290" y="95" width="100" height="36" rx="2" /><text x="340" y="117"
+                            font-size="8" class="ta" text-anchor="middle">Inv DB (SQL)</text>
+                        <path class="s-line" d="M340 85 V95" />
+
+                        <rect class="s-box hot" x="470" y="15" width="190" height="70" rx="3" />
+                        <text x="565" y="40" class="s-lab" text-anchor="middle">BILLING SERVICE</text>
+                        <text x="565" y="58" font-size="8" class="t3" text-anchor="middle">Docker Container / Pod</text>
+                        <rect class="box" x="515" y="95" width="100" height="36" rx="2" /><text x="565" y="117"
+                            font-size="8" class="ta" text-anchor="middle">Billing DB (Doc)</text>
+                        <path class="s-line" d="M565 85 V95" />
+
+                        <path class="dash-t" d="M210 50 H245 M435 50 H470" />
+                        <text x="228" y="42" font-size="7" class="tr" text-anchor="middle">gRPC/HTTP</text>
+                        <text x="453" y="42" font-size="7" class="tr" text-anchor="middle">RabbitMQ</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.1C — MICROSERVICES: INDEPENDENT NETWORK UNITS WITH INDEPENDENT DATABASES
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 3 -->
+            <section class="sec" id="p3">
+                <div class="sec-kicker">PART 3 — THE ARCHITECT'S MATRIX</div>
+                <h2 class="sec-title rv">20-Row Side-by-Side Comparison</h2>
+                <p class="sec-lead rv">Use this comprehensive reference matrix to compare architectural dimensions
+                    across all three choices.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:920px">
+                        <thead>
+                            <tr>
+                                <th style="width:16%">DIMENSION</th>
+                                <th>1. TRADITIONAL MONOLITH</th>
+                                <th>2. MODULAR MONOLITH</th>
+                                <th>3. MICROSERVICES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Development</b></td>
+                                <td>Simple local dev. Single repo. Fast setup.</td>
+                                <td>Simple local dev. Single repo. Clear module folder structure.</td>
+                                <td>Complex local dev. Multi-repo or monorepo. Requires Docker Compose.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Deployment</b></td>
+                                <td>One build artifact, one pipeline. All or nothing.</td>
+                                <td>One build artifact, one pipeline. Fast, deterministic releases.</td>
+                                <td>Independent pipelines per service. Highly complex orchestration.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Scaling</b></td>
+                                <td>Scale whole app horizontally (replicate instances).</td>
+                                <td>Scale whole app horizontally (replicate instances).</td>
+                                <td>Scale individual services independently based on demand.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Performance</b></td>
+                                <td>In-memory calls (nanoseconds). Fast.</td>
+                                <td>In-memory calls (nanoseconds). Ultra-fast.</td>
+                                <td>Network hops (5–50ms). JSON/gRPC overhead and serialization tax.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Database</b></td>
+                                <td>Single shared DB. Complex cross-table joins.</td>
+                                <td>Single DB, but strict logical/schema boundaries.</td>
+                                <td>Database-per-service. Zero shared databases. No SQL joins.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Testing</b></td>
+                                <td>Simple unit and integration tests. Easy DB seeding.</td>
+                                <td>Clean unit tests per module. In-memory integration tests.</td>
+                                <td>Requires contract testing (Pact), distributed mocks, end-to-end envs.</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Debugging</b></td>
+                                <td>F5 single process debugging in Visual Studio.</td>
+                                <td>F5 single process debugging. Clear call stacks.</td>
+                                <td>Distributed debugging. Requires Jaeger/OpenTelemetry correlation IDs.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Monitoring</b></td>
+                                <td>Single APM agent. Single log stream.</td>
+                                <td>Single APM agent, logs structured by `Module` property.</td>
+                                <td>Distributed tracing, service meshes, distributed log aggregators.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Failure Handling</b></td>
+                                <td>Uncaught exception can crash the entire host process.</td>
+                                <td>Domain errors isolated by module interfaces/handlers.</td>
+                                <td>Partial failure resilience. Circuit breakers, retries, dead-letter queues.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Team Ownership</b></td>
+                                <td>Poor. Code easily modified by anyone. Merge conflicts.</td>
+                                <td>Good. Teams assigned to specific domain module folders.</td>
+                                <td>Excellent. Teams independently own and operate distinct services.</td>
+                            </tr>
+                            <tr>
+                                <td><b>11. Release Independence</b></td>
+                                <td>Zero. All features ship together.</td>
+                                <td>Moderate. Features ship together, but isolated behind feature flags.</td>
+                                <td>High. Services ship to production multiple times daily independently.</td>
+                            </tr>
+                            <tr>
+                                <td><b>12. Infrastructure</b></td>
+                                <td>1 App Service / VM + 1 SQL Database. Simple.</td>
+                                <td>1 App Service / VM + 1 SQL Database. Clean and cheap.</td>
+                                <td>Kubernetes cluster, API Gateway, Service Mesh, Kafka, Registries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>13. Cost</b></td>
+                                <td>Lowest. Minimal idle compute overhead.</td>
+                                <td>Low. Maximum utilization of single hosting server.</td>
+                                <td>High. Baseline cluster overhead, network egress, multiple databases.</td>
+                            </tr>
+                            <tr>
+                                <td><b>14. Security</b></td>
+                                <td>Single auth boundary at the front door.</td>
+                                <td>Single auth boundary, in-memory domain authorization.</td>
+                                <td>Zero-trust network security, mTLS certificates, token propagation.</td>
+                            </tr>
+                            <tr>
+                                <td><b>15. Data Consistency</b></td>
+                                <td>Strong ACID transactions across all tables.</td>
+                                <td>Strong ACID transactions supported across modules if needed.</td>
+                                <td>Eventual consistency. Sagas, compensating transactions, outbox queues.</td>
+                            </tr>
+                            <tr>
+                                <td><b>16. Feature Speed (Early)</b></td>
+                                <td>Very fast initially. Declines as code tangles.</td>
+                                <td>Consistently high. Clean boundaries prevent degradation.</td>
+                                <td>Slow initially. Substantial time spent building plumbing &amp; CI/CD.</td>
+                            </tr>
+                            <tr>
+                                <td><b>17. Operational Complexity</b></td>
+                                <td>Minimal. Developers manage deployments.</td>
+                                <td>Low. Standard CI/CD pipeline, minimal SRE required.</td>
+                                <td>Very High. Requires dedicated Platform Engineering and 24/7 SRE.</td>
+                            </tr>
+                            <tr>
+                                <td><b>18. Maintenance Overhead</b></td>
+                                <td>Becomes high as legacy code coupling grows.</td>
+                                <td>Manageable. Modular boundaries isolate technical debt.</td>
+                                <td>High continuous maintenance (upgrading 20 container base images).</td>
+                            </tr>
+                            <tr>
+                                <td><b>19. Tech Flexibility</b></td>
+                                <td>Single tech stack (e.g., C# .NET throughout).</td>
+                                <td>Single tech stack (can use different libraries per module).</td>
+                                <td>Polyglot (C# for Orders, Python for AI, Go for Streaming).</td>
+                            </tr>
+                            <tr>
+                                <td><b>20. Future Migration</b></td>
+                                <td>Excruciating. Unravelling spaghetti code takes years.</td>
+                                <td><b>Easy.</b> Extracting an isolated module into a service takes days.</td>
+                                <td>Already distributed.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel rv">
+                    <h4>THE 5 CRITICAL DIFFERENCES SUMMARIZED IN PLAIN ENGLISH</h4>
+                    <p><b>1. Network vs In-Memory:</b> Microservices call each other over physical cables; Modular
+                        Monoliths call each other in RAM. RAM is 100,000 times faster and never drops a packet.</p>
+                    <p><b>2. Single Transaction vs Saga:</b> In a Modular Monolith, a database transaction is 3 lines of
+                        code. In Microservices, coordinating across 3 databases requires asynchronous message brokers
+                        and refund Sagas.</p>
+                    <p><b>3. Operational Tax:</b> Microservices require continuous container maintenance, Kubernetes
+                        networking, and distributed tracing. A Modular Monolith runs happily on a simple managed cloud
+                        PaaS.</p>
+                    <p><b>4. Team Fit:</b> Microservices are an organizational tool for 50+ developers. For teams under
+                        25, a Modular Monolith gives equal code cleanliness with 5× developer velocity.</p>
+                    <p><b>5. Reversibility:</b> A Modular Monolith can be easily split into microservices later when
+                        traffic justifies it. Reversing a messy microservice architecture back into a monolith is
+                        agonizing.</p>
+                </div>
+            </section>
+
+            <!-- PART 4 -->
+            <section class="sec" id="p4">
+                <div class="sec-kicker">PART 4 — ARCHITECTURE COMPARISON IN ACTION</div>
+                <h2 class="sec-title rv">Business Example: Multi-Company Inventory &amp; Order Platform</h2>
+                <p class="sec-lead rv">Let's apply all three options to our core business challenge: <b>10,000
+                        Companies, 1,000,000 Users, Heavy Dashboards, Heavy Reporting, and Frequent Orders.</b></p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Design A: Traditional Monolith</b><span><b>Structure:</b> Single ASP.NET Core
+                            API with layered architecture (`Controllers`, `Services`, `Data`). 1 shared SQL Server
+                            database.<br><b>Strength:</b> Fast initial delivery; simple deployment to 2 load-balanced
+                            instances.<br><b>Fatal Weakness:</b> Month-end reporting queries run on the same DB as
+                            checkout orders, locking tables and causing 504 Gateway Timeouts. Code becomes coupled as
+                            new developers join.</span></div>
+
+                    <div class="topic"><b>Design B: Modular Monolith (The Architect's
+                            Recommendation)</b><span><b>Structure:</b> Single ASP.NET Core process with strict Domain
+                            Modules (Order, Inventory, Customer, Reporting). Dedicated database schemas (`[orders]`,
+                            `[inv]`, `[reports]`).<br><b>Strength:</b> Reporting reads from a synchronous Read Replica
+                            database, eliminating lock contention. Core checkout uses atomic SQL transactions. Zero
+                            network overhead.<br><b>Weakness:</b> Deploying a minor UI fix still deploys the full
+                            compiled binary.</span></div>
+
+                    <div class="topic"><b>Design C: 11-Microservices Architecture</b><span><b>Structure:</b> 11
+                            independent services (Order Service, Inventory Service, Customer Service, Reporting Service,
+                            etc.) deployed to an Azure Kubernetes (AKS) cluster with 11 Azure SQL
+                            databases.<br><b>Strength:</b> Reporting service can be scaled to 10 nodes without touching
+                            Order service.<br><b>Fatal Weakness:</b> Cross-company inventory allocation checkout
+                            requires a distributed 3-service Saga. Massive cloud bill ($6,000/mo vs $600/mo). Small
+                            DevOps team is overwhelmed with Kubernetes incidents.</span></div>
+                </div>
+            </section>
+
+            <!-- PART 5 -->
+            <section class="sec" id="p5">
+                <div class="sec-kicker">PART 5 — THE JUSTIFICATION</div>
+                <h2 class="sec-title rv">10 Reasons Why a Modular Monolith Can Be the Best Choice</h2>
+                <p class="sec-lead rv">Here are ten practical, corporate situations where a Modular Monolith is superior
+                    to Microservices.</p>
+
+                <div class="calc-card rv">
+                    <h4>1. Team Size Under 30 Developers</h4>
+                    <div class="step"><b>Situation:</b> An engineering department with 15–25 software engineers building
+                        an enterprise product.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Developers spend 95% of their working hours
+                        building business features, not debugging Docker networking or managing Helm charts.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Managing 15 CI/CD pipelines and Kubernetes
+                        infrastructure for 20 developers creates severe operational drag.</div>
+                    <div class="step"><b>When to revisit:</b> When engineering expands to 50+ developers split across
+                        multiple independent business divisions.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>2. Limited or Non-Existent Dedicated SRE/Platform Team</h4>
+                    <div class="step"><b>Situation:</b> The company has software developers who manage their own
+                        deployments, but no dedicated 24/7 Platform/SRE team.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> It runs on standard managed PaaS (Azure App
+                        Service, AWS Elastic Beanstalk) with automated health checks and zero infrastructure overhead.
+                    </div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Operating Kubernetes clusters, ingress
+                        controllers, service meshes, and distributed tracing without dedicated SREs leads to
+                        unresolvable production outages.</div>
+                    <div class="step"><b>When to revisit:</b> After the company hires a full Platform Engineering team.
+                    </div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>3. Low Infrastructure Budget ($500 – $2,500/Month)</h4>
+                    <div class="step"><b>Situation:</b> A bootstrapped B2B SaaS company or mid-market firm with strict
+                        cloud expenditure targets.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Maximum resource utilization. One 4-core, 16GB
+                        server hosts all modules with shared memory efficiency. Cloud bill stays in the low hundreds.
+                    </div>
+                    <div class="step"><b>Why Microservices are excessive:</b> 15 microservices with idle CPU headroom
+                        and 15 separate managed databases cost thousands of dollars every month regardless of traffic.
+                    </div>
+                    <div class="step"><b>When to revisit:</b> When revenue justifies a 5× increase in infrastructure
+                        spending.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>4. High Need for Immediate Multi-Entity Consistency</h4>
+                    <div class="step"><b>Situation:</b> Core financial billing, tax calculations, or inventory
+                        reservations where partial updates are unacceptable.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Single-database SQL ACID transactions guarantee
+                        that balance deductions and invoice records succeed together or fail together cleanly.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Coordinating cross-service Sagas with
+                        compensating refunds introduces edge-case failure states and reconciliation headaches.</div>
+                    <div class="step"><b>When to revisit:</b> If the business explicitly accepts eventual consistency
+                        across domains.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>5. Closely Connected Business Operations</h4>
+                    <div class="step"><b>Situation:</b> Validating an order requires checking customer credit status,
+                        product active flags, pricing tier rules, and inventory levels synchronously.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> In-memory C# method calls execute in
+                        <b>microseconds</b> with compile-time type safety.
+                    </div>
+                    <div class="step"><b>Why Microservices are excessive:</b> 4 sequential HTTP network calls turn a
+                        15ms checkout into a 300ms bottleneck vulnerable to partial network timeouts.</div>
+                    <div class="step"><b>When to revisit:</b> When domain rules decouple and can be processed
+                        asynchronously.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>6. Ultra-Fast Local Development Setup</h4>
+                    <div class="step"><b>Situation:</b> Onboarding new developers and daily feature development cycles.
+                    </div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Clone repo, press `F5` in Visual Studio, and the
+                        entire platform runs locally in 5 seconds. Full breakpoint debugging across all modules.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Developers must run 12 Docker containers
+                        locally, consuming 28GB of RAM, with constant mock database drift.</div>
+                    <div class="step"><b>When to revisit:</b> When remote cloud development environments (Codespaces)
+                        are universally mandated.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>7. Compile-Time Contract Validation</h4>
+                    <div class="step"><b>Situation:</b> Preventing breaking interface changes from reaching production
+                        environments.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> If an Order contract parameter changes, the C#
+                        compiler immediately flags all calling modules at build time. Zero runtime surprise breaks.
+                    </div>
+                    <div class="step"><b>Why Microservices are excessive:</b> A renamed JSON property silently breaks
+                        downstream services at runtime unless complex contract testing (Pact) is configured.</div>
+                    <div class="step"><b>When to revisit:</b> When teams must ship completely decoupled semantic
+                        versions independently.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>8. Fast End-to-End Automated Testing</h4>
+                    <div class="step"><b>Situation:</b> Running comprehensive integration tests in CI/CD before merging
+                        pull requests.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Uses ASP.NET Core `WebApplicationFactory` with
+                        an in-memory or ephemeral test database. 500 integration tests run in 30 seconds.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> End-to-end tests require spinning up
+                        multiple containers, queues, and mock servers, causing slow, flaky CI builds.</div>
+                    <div class="step"><b>When to revisit:</b> When services are truly decoupled and tested solely via
+                        contract stubs.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>9. Simple and Cohesive Observability</h4>
+                    <div class="step"><b>Situation:</b> Production incident triage and error troubleshooting.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> One unified log stream. Exceptions include full
+                        stack traces tracing from API controller down to SQL execution. Triage takes minutes.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Tracing a 500 error requires correlating
+                        W3C headers across 6 log stores and verifying queue consumer dead-letter queues.</div>
+                    <div class="step"><b>When to revisit:</b> When enterprise observability platforms
+                        (Datadog/Dynatrace) are maturely integrated.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>10. Early-Stage / Fluid Domain Understanding</h4>
+                    <div class="step"><b>Situation:</b> A product that is only 1–2 years old where customer requirements
+                        and business workflows are shifting rapidly.</div>
+                    <div class="step"><b>Why Modular Monolith wins:</b> Refactoring domain concepts, splitting entities,
+                        or moving logic between modules takes minutes using automated IDE refactoring tools.</div>
+                    <div class="step"><b>Why Microservices are excessive:</b> Moving code between two microservices
+                        requires database data migrations, schema deprecations, API re-routing, and dual deployments.
+                    </div>
+                    <div class="step"><b>When to revisit:</b> When bounded contexts have remained stable and unchanged
+                        for 12+ months.</div>
+                </div>
+            </section>
+
+            <!-- PART 6 -->
+            <section class="sec" id="p6">
+                <div class="sec-kicker">PART 6 — THE BLUEPRINT</div>
+                <h2 class="sec-title rv">How to Structure a Production Modular Monolith</h2>
+                <p class="sec-lead rv">A Modular Monolith is NOT just a monolith with multiple folders. If Module A can
+                    query Module B's database tables or instantiate Module B's private classes, you have built a <b>Fake
+                        Modular Monolith</b>.</p>
+
+                <div class="panel rv">
+                    <h4>THE RULES OF TRUE MODULAR ENCAPSULATION</h4>
+                    <p><b>1. Strict Assembly / Project Separation:</b> Each module is an independent C# project
+                        (`Order.Domain.dll`, `Order.Infrastructure.dll`). Internal classes are marked `internal`. Only
+                        contracts are `public`.</p>
+                    <p><b>2. Schema Isolation in Database:</b> All modules share one physical database server, but each
+                        module owns a private SQL schema (`[orders]`, `[inventory]`, `[billing]`). No cross-schema
+                        foreign keys!</p>
+                    <p><b>3. Architectural Enforcement via Tests:</b> Use tools like <b>NetArchTest</b> in your unit
+                        test suite to automatically fail the build if `Order` references an internal class in
+                        `Inventory`.</p>
+                </div>
+
+                <h3>Module Breakdown: Enterprise Inventory &amp; Orders</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>MODULE</th>
+                                <th>RESPONSIBILITY</th>
+                                <th>PRIVATE DATA OWNED</th>
+                                <th>PUBLIC INTERFACE / CONTRACTS</th>
+                                <th>PROHIBITED ACCESS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Order Module</b></td>
+                                <td>Order lifecycle, checkout calculation, fulfillment state.</td>
+                                <td>`[orders].[Orders]`, `[orders].[Lines]`</td>
+                                <td>`IOrderModuleApi.GetOrderSummary()`<br>`OrderPlacedEvent`</td>
+                                <td>Cannot read `[inv].[Stock]` table directly. Must query Inventory API.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Inventory Module</b></td>
+                                <td>Warehouse bins, stock balance, reservations.</td>
+                                <td>`[inv].[StockItems]`, `[inv].[Reservations]`</td>
+                                <td>`IInventoryModuleApi.ReserveStock()`<br>`StockDepletedEvent`</td>
+                                <td>Cannot read `[orders].[Orders]` table directly.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Payment Module</b></td>
+                                <td>Payment gateway orchestration, refunds, tokens.</td>
+                                <td>`[pay].[Transactions]`, `[pay].[Cards]`</td>
+                                <td>`IPaymentModuleApi.ProcessCharge()`<br>`PaymentSucceededEvent`</td>
+                                <td>Cannot inspect shopping cart contents or user passwords.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Customer Module</b></td>
+                                <td>Company profiles, addresses, contact preferences.</td>
+                                <td>`[cust].[Companies]`, `[cust].[Users]`</td>
+                                <td>`ICustomerModuleApi.GetCompany()`</td>
+                                <td>Cannot modify order totals or stock levels.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Reporting Module</b></td>
+                                <td>Analytical queries, dashboard aggregation cubes.</td>
+                                <td>`[reports].[DailySummaries]`</td>
+                                <td>`IReportingModuleApi.GetSalesData()`</td>
+                                <td>Cannot run table scans against active transactional checkout tables.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 7 -->
+            <section class="sec" id="p7">
+                <div class="sec-kicker">PART 7 — DOMAIN BOUNDARIES</div>
+                <h2 class="sec-title rv">How an Architect Identifies Module Boundaries</h2>
+                <p class="sec-lead rv">Use these 8 diagnostic questions to decide where a module boundary belongs.</p>
+
+                <ol class="framework rv">
+                    <li><b>Does this area have a single cohesive business responsibility?</b><span>If you cannot
+                            describe the module's job in one sentence without using the word "AND", your boundary is too
+                            wide.</span></li>
+                    <li><b>Does it have its own specialized business rules?</b><span>Tax calculation has vastly
+                            different rules and churn rates than user authentication. They belong in separate
+                            modules.</span></li>
+                    <li><b>Does it own specific, private data?</b><span>If two features constantly read and write the
+                            exact same database records, they belong in the <b>same module</b>.</span></li>
+                    <li><b>Does it change independently?</b><span>If changing Feature X always forces Feature Y to
+                            change simultaneously, they are coupled and belong together.</span></li>
+                    <li><b>Does it have different scalability characteristics?</b><span>Reporting generates massive read
+                            scans; Orders generates high-concurrency atomic writes. Separate them logically.</span></li>
+                    <li><b>Could it be owned by a dedicated team in the future?</b><span>Design boundaries so that if
+                            the company grows, an entire module folder can be handed to a new team without
+                            friction.</span></li>
+                    <li><b>Can it be tested in isolation?</b><span>Can you write unit tests for the Inventory module
+                            with zero dependencies on the Payment database? If not, boundaries are leaking.</span></li>
+                    <li><b>Does it use different vocabulary (Ubiquitous Language)?</b><span>In Sales, a "Product" means
+                            a price and catalog description. In Warehouse, a "Product" means weight, dimensions, and bin
+                            location. These are separate bounded contexts!</span></li>
+                </ol>
+            </section>
+
+            <!-- PART 8 -->
+            <section class="sec" id="p8">
+                <div class="sec-kicker">PART 8 — DATA ARCHITECTURE</div>
+                <h2 class="sec-title rv">Database Approaches: The Realistic Spectrum</h2>
+                <p class="sec-lead rv">You do not have to choose between a tangled relational mess and 20 separate
+                    databases. There is a pragmatic middle ground.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>APPROACH</th>
+                                <th>DESCRIPTION</th>
+                                <th>BENEFITS</th>
+                                <th>RISKS &amp; PROBLEMS</th>
+                                <th>WHEN TO USE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Approach A: Single Shared DB (No Boundaries)</b></td>
+                                <td>All tables in default `dbo` schema. Any code can join any table.</td>
+                                <td>Easiest for quick prototypes. Instant cross-table SQL joins.</td>
+                                <td>Spaghetti code. Modifying one table breaks unrelated modules. High lock contention.
+                                </td>
+                                <td>Small MVPs, hackathons, simple CRUD tools (&lt; 3 months lifespan).</td>
+                            </tr>
+                            <tr>
+                                <td><b>Approach B: Single DB with Schema Isolation (Recommended)</b></td>
+                                <td>One physical database, but tables segregated into schemas (`orders`, `inv`, `cust`).
+                                    No foreign keys across schemas.</td>
+                                <td>Single database to backup, operate, and scale. Clean module encapsulation. ACID
+                                    transactions when needed.</td>
+                                <td>Requires team discipline to prevent accidental cross-schema joins in raw SQL.</td>
+                                <td><b>Modular Monoliths.</b> The optimal architectural choice for 90% of enterprises.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Approach C: Separate Database per Service</b></td>
+                                <td>Physical database instance per service (Order DB, Inv DB, Cust DB). Zero shared
+                                    access.</td>
+                                <td>Complete physical autonomy. Independent database scaling and optimization.</td>
+                                <td>No cross-service transactions. Eventual consistency required. 10× backup and cloud
+                                    cost overhead.</td>
+                                <td>Large-scale Microservices with hundreds of engineers and proven scaling bottlenecks.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 9 -->
+            <section class="sec" id="p9">
+                <div class="sec-kicker">PART 9 — IN-PROCESS INTEGRATION</div>
+                <h2 class="sec-title rv">Communication Between Modules Inside a Monolith</h2>
+                <p class="sec-lead rv">How should Module A communicate with Module B without creating tight coupling?
+                    Here are the 3 architectural styles.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. Direct Interface Calls (Synchronous Queries)</b><span><b>How:</b> Order
+                            Module injects `IInventoryModuleApi` via C# DI.<br><b>Use case:</b> High-speed queries where
+                            immediate validation is mandatory (e.g., checking if stock exists before displaying checkout
+                            button).<br><b>Speed:</b> ~10 nanoseconds. Zero network serialization.<br><b>Coupling:</b>
+                            Low, as long as it references an interface in a shared contracts assembly.</span></div>
+
+                    <div class="topic"><b>2. In-Process Events (Asynchronous Decoupling)</b><span><b>How:</b> When an
+                            Order is placed, it publishes an `OrderPlacedDomainEvent` using an in-memory bus (MediatR or
+                            System.Threading.Channels).<br><b>Use case:</b> Side effects that don't need to block
+                            checkout: Order placed → send confirmation email, notify warehouse.<br><b>Speed:</b>
+                            Microseconds.<br><b>Coupling:</b> Completely decoupled. Order Module has zero knowledge that
+                            Notification Module even exists!</span></div>
+
+                    <div class="topic"><b>3. Outbox Pattern + Queue (External Async)</b><span><b>How:</b> Order Module
+                            writes event to local SQL Outbox table. Background worker pushes to RabbitMQ.<br><b>Use
+                                case:</b> Integration with external systems or modules that might be extracted into
+                            independent microservices in the future.</span></div>
+
+                    <div class="topic"><b>4. The Anti-Pattern: Cross-Module Direct DB Queries</b><span><b>How:</b> Order
+                            Module executes `SELECT * FROM [inv].[StockItems]`.<br><b>Architect verdict:</b> <b>STRICTLY
+                                PROHIBITED.</b> Bypasses inventory validation rules and couples Order directly to
+                            Inventory's private database schema.</span></div>
+                </div>
+            </section>
+
+            <!-- PART 10 -->
+            <section class="sec" id="p10">
+                <div class="sec-kicker">PART 10 — THE EVOLUTIONARY PATH</div>
+                <h2 class="sec-title rv">The Pragmatic Evolution: How to Migrate Safely</h2>
+                <p class="sec-lead rv">Never jump from a legacy monolith to 20 microservices in a single rewrite. Follow
+                    the gradual, battle-tested architectural evolution path.</p>
+
+                <div class="figbox rv">
+                    <svg viewBox="0 0 760 140" fill="none">
+                        <rect class="s-box" x="20" y="25" width="130" height="50" rx="3" /><text x="85" y="48"
+                            font-size="9" class="t1" text-anchor="middle">1. TRADITIONAL</text><text x="85" y="62"
+                            font-size="8" class="t3" text-anchor="middle">Messy Monolith</text>
+                        <path class="s-line" d="M150 50 H180" />
+                        <path d="M176 46 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="180" y="25" width="150" height="50" rx="3" /><text x="255" y="48"
+                            font-size="9" class="tt" text-anchor="middle">2. MODULAR MONOLITH</text><text x="255" y="62"
+                            font-size="8" class="t3" text-anchor="middle">Strict Domain Boundaries</text>
+                        <path class="s-line" d="M330 50 H360" />
+                        <path d="M356 46 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="360" y="25" width="150" height="50" rx="3" /><text x="435" y="48"
+                            font-size="9" class="t1" text-anchor="middle">3. IDENTIFY PAIN</text><text x="435" y="62"
+                            font-size="8" class="t3" text-anchor="middle">Find Divergent Module</text>
+                        <path class="s-line" d="M510 50 H540" />
+                        <path d="M536 46 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="540" y="25" width="200" height="50" rx="3" /><text x="640" y="48"
+                            font-size="9" class="ta" text-anchor="middle">4. EXTRACT 1 SERVICE</text><text x="640"
+                            y="62" font-size="8" class="t3" text-anchor="middle">Selective Hybrid Architecture</text>
+                        <text x="380" y="105" font-size="9" class="ta" text-anchor="middle">THE GOLDEN RULE: EXTRACT A
+                            SERVICE ONLY TO RELIEVE PROVEN PAIN, NEVER FOR COSMETICS</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.2 — THE PRAGMATIC MIGRATION: EXTRACT SELECTIVELY FROM A CLEAN MODULAR
+                        MONOLITH</div>
+                </div>
+
+                <h3>Which Module Should You Extract First?</h3>
+                <ul class="nlist rv">
+                    <li><b>Reporting / Analytics:</b> The best first extraction. It is read-only, asynchronous, and
+                        removes massive CPU contention from the core database. Low risk, high reward.</li>
+                    <li><b>Notifications (Email / SMS):</b> Purely asynchronous, zero ACID requirements with checkout,
+                        uses third-party APIs with high failure rates.</li>
+                    <li><b>Search / Catalog:</b> High read traffic, benefits from specialized search engines
+                        (Elasticsearch), tolerates slight eventual consistency.</li>
+                    <li><b>What to NEVER extract first:</b> The core transactional Order / Payment checkout engine!
+                        Extracting your most complex, high-risk, ACID-dependent domain first is architectural suicide.
+                    </li>
+                </ul>
+            </section>
+
+            <!-- PART 11 -->
+            <section class="sec" id="p11">
+                <div class="sec-kicker">PART 11 — THE EXTRACTION SIGNALS</div>
+                <h2 class="sec-title rv">10 Signals That a Module Should Become a Microservice</h2>
+                <p class="sec-lead rv">When does a module earn the right to be extracted from a Modular Monolith into an
+                    independent microservice? Look for these 10 concrete signals.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:850px">
+                        <thead>
+                            <tr>
+                                <th>SIGNAL</th>
+                                <th>PRACTICAL REAL-WORLD EXAMPLE</th>
+                                <th>WHY IT JUSTIFIES EXTRACTION</th>
+                                <th>CHECK BEFORE EXTRACTING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Extreme Scaling Divergence</b></td>
+                                <td>Catalog Search experiences 50,000 RPS while Order placement has 200 RPS.</td>
+                                <td>Scaling the whole monolith to 100 instances wastefully runs 100 instances of
+                                    Order/Billing.</td>
+                                <td>Can read caching (Redis/CDN) solve the search load inside the monolith first?</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Dedicated Team Ownership</b></td>
+                                <td>A new dedicated team of 8 engineers in Dublin is hired to own Recommendations.</td>
+                                <td>They need their own Git repo, CI/CD pipeline, and standup autonomy without stepping
+                                    on headquarters.</td>
+                                <td>Is the domain boundary completely clean and decoupled from Orders?</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Radical Release Frequency</b></td>
+                                <td>Fraud Detection algorithms need to be retrained and deployed 5 times a day.</td>
+                                <td>Deploying the entire core monolith 5 times a day creates unnecessary regression risk
+                                    for checkout.</td>
+                                <td>Is the Fraud engine truly decoupled, or does it need synchronous order checks?</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Failure Isolation for Fragility</b></td>
+                                <td>Notification module calls 4 unstable external SMS gateways that frequently freeze.
+                                </td>
+                                <td>Gateway timeouts hang thread pools, threatening to exhaust the core checkout web
+                                    server.</td>
+                                <td>Did you implement proper timeouts and Polly circuit breakers in the monolith first?
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Unique Technology Requirements</b></td>
+                                <td>AI Recommendation engine requires Python, PyTorch, and specialized GPU instances.
+                                </td>
+                                <td>The core monolith is built in C# .NET running on CPU nodes. You cannot run Python
+                                    models cleanly in-process.</td>
+                                <td>Is an external hosted API (like Azure OpenAI / AWS Bedrock) simpler than hosting
+                                    Python?</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. High-Compute Resource Contention</b></td>
+                                <td>Video transcoding or PDF generation spikes CPU to 100% for 45 seconds.</td>
+                                <td>Resource starvation degrades response times for interactive user API requests on the
+                                    same box.</td>
+                                <td>Can background worker queues (Hangfire / Azure Service Bus) isolate the CPU in the
+                                    monolith?</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Strict Compliance / Audit Isolation</b></td>
+                                <td>Payment Card Processing requires rigorous PCI-DSS Level 1 physical infrastructure
+                                    audits.</td>
+                                <td>Keeping payments in the monolith subjects the entire 500,000-line codebase to costly
+                                    auditor scrutiny.</td>
+                                <td>Can a third-party hosted iframe (Stripe Elements) eliminate your PCI scope entirely?
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Specialized Data Storage Fit</b></td>
+                                <td>Real-time geo-location tracking requires a time-series or geospatial database
+                                    (Timescale/Redis).</td>
+                                <td>Forcing geospatial telemetry into the core relational SQL database creates
+                                    performance bloat.</td>
+                                <td>Can the monolith simply connect to a second specialized database internally?</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Distinct Business Lifecycle</b></td>
+                                <td>Identity / Authentication is standardized across 5 separate corporate applications.
+                                </td>
+                                <td>Auth is no longer just a module for this one app; it is now an enterprise-wide
+                                    shared capability.</td>
+                                <td>Use a standard Identity Provider (Keycloak / Auth0 / Entra ID) rather than writing a
+                                    custom service!</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Independent SLA Mandate</b></td>
+                                <td>Public Partner API requires a 99.99% uptime guarantee with severe contractual
+                                    financial penalties.</td>
+                                <td>Isolating the partner API ensures internal back-office deployments never affect the
+                                    partner SLA.</td>
+                                <td>Can an API Gateway with caching deliver the SLA in front of the monolith?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 12 -->
+            <section class="sec" id="p12">
+                <div class="sec-kicker">PART 12 — LESSONS FROM THE FIELD</div>
+                <h2 class="sec-title rv">10 Common Architecture Mistakes</h2>
+                <p class="sec-lead rv">Avoid these critical architectural missteps when evaluating monoliths vs
+                    microservices.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. Database Table Microservices</b><span><b>Mistake:</b> Creating a service
+                            for every database table (User Service, Address Service).<br><b>Why bad:</b> 10 network
+                            calls per user request; massive latency; distributed monolith.<br><b>Better approach:</b>
+                            Create services around coarse-grained business capabilities (Customer Management).</span>
+                    </div>
+                    <div class="topic"><b>2. Splitting Too Early</b><span><b>Mistake:</b> Adopting microservices on day
+                            one of a greenfield startup.<br><b>Why bad:</b> You don't understand domain boundaries yet.
+                            Refactoring network services is 100× harder.<br><b>Better approach:</b> Build a clean
+                            Modular Monolith first. Split later when boundaries stabilize.</span></div>
+                    <div class="topic"><b>3. Sharing Tables Between Services</b><span><b>Mistake:</b> Two microservices
+                            directly querying the same SQL tables.<br><b>Why bad:</b> Destroys independent
+                            deployability. Schema changes in Service A break Service B.<br><b>Better approach:</b> Each
+                            service strictly owns its private data store. Sync via events.</span></div>
+                    <div class="topic"><b>4. The Competitor Cargo Cult</b><span><b>Mistake:</b> "Netflix and Uber use
+                            microservices, so we must use microservices!"<br><b>Why bad:</b> Netflix has 3,000 engineers
+                            and 200 million users. You have 15 engineers and 50,000 users.<br><b>Better approach:</b>
+                            Choose architecture based on <b>your</b> team size, budget, and traffic.</span></div>
+                    <div class="topic"><b>5. Ignoring Operational Tax</b><span><b>Mistake:</b> Factoring in only
+                            developer code, ignoring Kubernetes, tracing, and SRE costs.<br><b>Why bad:</b> Engineering
+                            velocity plummets by 40% as developers spend half their time fixing DevOps
+                            issues.<br><b>Better approach:</b> Factor the cost of Platform Engineering into the
+                            architectural business case.</span></div>
+                    <div class="topic"><b>6. Synchronous HTTP Chains</b><span><b>Mistake:</b> Service A calls Service B
+                            calls Service C calls Service D synchronously.<br><b>Why bad:</b> Latency adds up;
+                            availability drops to the product of all 4 services (99% × 99% × 99% × 99% =
+                            96%).<br><b>Better approach:</b> Asynchronous event-driven messaging (publish-subscribe via
+                            queues).</span></div>
+                    <div class="topic"><b>7. Splitting Too Late</b><span><b>Mistake:</b> Keeping 150 developers working
+                            in a tangled, un-modularized traditional monolith.<br><b>Why bad:</b> Merge conflicts daily,
+                            4-hour deployment queues, total release paralysis.<br><b>Better approach:</b> Refactor into
+                            a Modular Monolith at 25 devs; extract services at 50+ devs.</span></div>
+                    <div class="topic"><b>8. The 'Fake' Modular Monolith</b><span><b>Mistake:</b> Creating module
+                            folders, but allowing direct cross-module SQL joins and global references.<br><b>Why
+                                bad:</b> Gives zero encapsulation benefits; code remains tightly coupled
+                            spaghetti.<br><b>Better approach:</b> Enforce boundaries with automated architecture unit
+                            tests (NetArchTest).</span></div>
+                    <div class="topic"><b>9. Forgetting Distributed Transactions</b><span><b>Mistake:</b> Assuming
+                            database transactions will just work across microservices.<br><b>Why bad:</b> Partial
+                            failures leave data corrupt (customer charged, but no order created).<br><b>Better
+                                approach:</b> Design for Sagas and compensating transactions from day one.</span></div>
+                    <div class="topic"><b>10. Resume-Driven Design</b><span><b>Mistake:</b> Choosing microservices
+                            because developers want Kubernetes on their CVs.<br><b>Why bad:</b> Puts engineer vanity
+                            ahead of company commercial survival.<br><b>Better approach:</b> True senior architects take
+                            pride in delivering business value with the simplest system.</span></div>
+                </div>
+            </section>
+
+            <!-- PART 13 -->
+            <section class="sec" id="p13">
+                <div class="sec-kicker">PART 13 — THE SCORECARD</div>
+                <h2 class="sec-title rv">Architectural Decision Scorecard</h2>
+                <p class="sec-lead rv">Use this weighted scoring framework to evaluate your project. Rate each criterion
+                    from 1 to 5.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>CRITERION</th>
+                                <th>SCORE: 1 POINT</th>
+                                <th>SCORE: 3 POINTS</th>
+                                <th>SCORE: 5 POINTS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Team Size</b></td>
+                                <td>1 – 10 developers</td>
+                                <td>11 – 35 developers</td>
+                                <td>40+ developers across multiple teams</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Deployment Frequency</b></td>
+                                <td>Weekly / Bi-weekly is fine</td>
+                                <td>Multiple times per week</td>
+                                <td>Multiple independent releases per day</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Traffic &amp; Peak Load</b></td>
+                                <td>&lt; 500 requests/sec</td>
+                                <td>500 – 3,000 requests/sec</td>
+                                <td>10,000+ requests/sec with massive spikes</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Scaling Differences</b></td>
+                                <td>Uniform load across features</td>
+                                <td>Modest read-heavy spikes</td>
+                                <td>1 module needs 50× compute vs others</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. DevOps / SRE Maturity</b></td>
+                                <td>Basic CI/CD, developers deploy</td>
+                                <td>Good CI/CD, basic container PaaS</td>
+                                <td>Dedicated 24/7 Platform &amp; SRE team</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Monthly Cloud Budget</b></td>
+                                <td>&lt; $1,000</td>
+                                <td>$1,000 – $5,000</td>
+                                <td>$15,000+</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Domain Boundaries</b></td>
+                                <td>Fluid, rapidly changing</td>
+                                <td>Understood, stable domains</td>
+                                <td>Decoupled enterprise bounded contexts</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Transaction Rigor</b></td>
+                                <td>Strict multi-table ACID needed</td>
+                                <td>ACID for core, async elsewhere</td>
+                                <td>Eventual consistency acceptable everywhere</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="panel rv">
+                    <h4>SCORECARD VERDICT &amp; ARCHITECTURAL JUDGEMENT</h4>
+                    <p><b>8 to 15 Points: Monolith.</b> Keep it clean, simple, and fast. Spend company capital on
+                        feature delivery.</p>
+                    <p><b>16 to 28 Points: Modular Monolith.</b> The optimal architectural choice for the vast majority
+                        of mid-market systems. High velocity, clean boundaries, minimal overhead.</p>
+                    <p><b>29 to 40 Points: Microservices.</b> You have the organizational scale, throughput divergence,
+                        and operational budget to conquer distributed systems overhead.</p>
+                    <p><i>Remember: The highest score should not automatically decide your architecture. A single
+                            non-negotiable constraint (such as zero DevOps headcount or strict ACID ledger requirements)
+                            can override the entire score!</i></p>
+                </div>
+            </section>
+
+            <!-- PART 14 -->
+            <section class="sec" id="p14">
+                <div class="sec-kicker">PART 14 — REAL DECISION SCENARIOS</div>
+                <h2 class="sec-title rv">12 Real-World Decision Scenarios</h2>
+                <p class="sec-lead rv">Evaluate these 12 realistic corporate scenarios through an architect's eyes.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:850px">
+                        <thead>
+                            <tr>
+                                <th>SCENARIO</th>
+                                <th>RECOMMENDED ARCHITECTURE</th>
+                                <th>ARCHITECTURAL REASONING</th>
+                                <th>MAIN RISK &amp; REVISIT TRIGGER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. 3-Person Startup</b><br>(Building new B2B SaaS MVP)</td>
+                                <td><b class="pros">Monolith</b></td>
+                                <td>Needs maximum speed to validate market. Zero DevOps capacity. Fluid domain model.
+                                </td>
+                                <td>Spaghetti code. Revisit when team reaches 12 engineers.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. 15-Person SaaS Company</b><br>(50,000 users, growing steadily)</td>
+                                <td><b class="pros">Modular Monolith</b></td>
+                                <td>Clean domain separation without distributed network overhead. Single database
+                                    simplicity.</td>
+                                <td>Accidental coupling. Enforce boundaries using automated architecture tests.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Global E-Commerce Platform</b><br>(200 developers, Black Friday spikes)</td>
+                                <td><b class="cons">Microservices</b></td>
+                                <td>Catalog search needs 100× scale vs checkout. 15 independent teams need release
+                                    autonomy.</td>
+                                <td>Network cascading failure. Implement strict circuit breakers.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Internal Corporate HR App</b><br>(8,000 employees, 9-to-5 usage)</td>
+                                <td><b class="pros">Monolith</b></td>
+                                <td>Predictable low throughput. Modest budget. Single deployment meets all business
+                                    needs.</td>
+                                <td>Over-engineering. Never let engineers build microservices here.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Core Banking Ledger</b><br>(Strict regulatory audit, multi-currency)</td>
+                                <td><b class="pros">Modular Monolith</b></td>
+                                <td>Cannot tolerate eventual consistency on balance deductions. Needs atomic SQL
+                                    transactions.</td>
+                                <td>Scale-up ceiling. Mitigate with high-end database hardware.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Multi-Company Inventory</b><br>(10,000 companies, 20 developers)</td>
+                                <td><b class="pros">Modular Monolith</b></td>
+                                <td>Clean tenant separation across modules. Replicate DB to read replica for dashboards.
+                                </td>
+                                <td>Reporting load. Extract reporting to a read database if it slows checkout.</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. High-Volume Notification Engine</b><br>(10M push notifications/day)</td>
+                                <td><b class="cons">Hybrid (Monolith + 1 Service)</b></td>
+                                <td>Keep core in Modular Monolith; extract Notification into standalone async queue
+                                    worker.</td>
+                                <td>Queue backlog. Auto-scale worker container instances based on queue depth.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Large Analytical Reporting Platform</b><br>(Heavy OLAP data cubes)</td>
+                                <td><b class="cons">Modular Monolith + Read DB</b></td>
+                                <td>Don't build 10 services. Keep app as Modular Monolith, but route reports to
+                                    dedicated read store.</td>
+                                <td>Replication lag. Revisit if analytics team demands separate deployment.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Legacy Monolith with 100 Developers</b><br>(Deployment queues take 6 hours)
+                                </td>
+                                <td><b class="cons">Microservices (Gradual)</b></td>
+                                <td>Team contention is the bottleneck. Conway's Law demands independent release units.
+                                </td>
+                                <td>Attempting big-bang rewrite. Strangle one bounded context at a time.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Rapidly Growing Fintech Startup</b><br>(Went from 5 to 30 devs in 6 months)
+                                </td>
+                                <td><b class="pros">Modular Monolith</b></td>
+                                <td>Refactor the growing codebase into strict domain modules before attempting any
+                                    microservices!</td>
+                                <td>Premature extraction. Clean up code boundaries in-process first.</td>
+                            </tr>
+                            <tr>
+                                <td><b>11. Company with Weak DevOps Team</b><br>(1 sysadmin, manual deployments)</td>
+                                <td><b class="pros">Modular Monolith</b></td>
+                                <td>Microservices would cause operational collapse. Single PaaS deployment is mandatory.
+                                </td>
+                                <td>Downtime during updates. Implement blue/green deployment slots.</td>
+                            </tr>
+                            <tr>
+                                <td><b>12. 6 Independent Product Teams</b><br>(Different offices, different domains)
+                                </td>
+                                <td><b class="cons">Microservices</b></td>
+                                <td>Conway's Law: Teams are already geographically and organizationally decoupled.</td>
+                                <td>API contract drift. Implement Consumer-Driven Contract Testing (Pact).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 15 -->
+            <section class="sec" id="p15">
+                <div class="sec-kicker">PART 15 — INTERVIEW MASTERY</div>
+                <h2 class="sec-title rv">20 Architect Interview Questions &amp; Model Answers</h2>
+                <p class="sec-lead rv">Click any question to view the examiner's intent, simple answer, strong architect
+                    answer, and rookie mistakes to avoid.</p>
+
+                <ol class="qlist rv">
+                    <li>Why would you choose a Modular Monolith over Microservices?<span
+                            class="qt warm">CORE</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Business pragmatism and cost awareness.<br><b>Simple answer:</b>
+                            To get clean boundaries without network complexity.<br><b>Strong Architect answer:</b> "I
+                            choose a Modular Monolith when I want the clean domain encapsulation and team boundaries of
+                            microservices without the operational tax of distributed systems. It gives nanosecond
+                            in-memory performance, simple single-database ACID transactions, and a single deployment
+                            pipeline. For teams under 30 developers, it maximizes feature delivery velocity while
+                            maintaining an easy extraction path to microservices if scaling demands it
+                            later."<br><b>Common mistake:</b> Saying modular monoliths are only for startups (they power
+                            massive enterprises like Shopify).</span></li>
+
+                    <li>How do you enforce module boundaries in a Modular Monolith?<span class="qt">DESIGN</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> Real
+                            implementation discipline.<br><b>Simple answer:</b> Using interfaces and project
+                            references.<br><b>Strong Architect answer:</b> "I enforce boundaries at three levels: 1.
+                            <b>Code:</b> Separate C# assemblies where internal classes are marked `internal` and only
+                            contract DTOs and interfaces are public; 2. <b>Database:</b> Distinct database schemas
+                            (`orders`, `inventory`) with no cross-schema foreign keys; 3. <b>Automated Testing:</b>
+                            ArchUnit or NetArchTest integrated into CI to automatically fail builds if Module A directly
+                            accesses internal classes of Module B."<br><b>Common mistake:</b> Relying only on developer
+                            honor code or folder naming conventions.</span></li>
+
+                    <li>How do modules communicate in a Modular Monolith?<span class="qt warm">INTEGRATION</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> Clean
+                            in-process messaging knowledge.<br><b>Simple answer:</b> Using dependency injection or
+                            in-memory events.<br><b>Strong Architect answer:</b> "I use two primary patterns: for
+                            synchronous queries requiring immediate return values, Module A calls a public interface
+                            exposed by Module B (`IInventoryModuleApi`) via Dependency Injection. For asynchronous side
+                            effects and state transitions, Module A publishes an in-memory domain event
+                            (`OrderPlacedEvent`) using MediatR or System.Threading.Channels, completely decoupling the
+                            caller from consumers."<br><b>Common mistake:</b> Directly querying another module's
+                            database tables using Entity Framework.</span></li>
+
+                    <li>Should every module in a Modular Monolith have a separate database?<span
+                            class="qt deep">DATA</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Practical data architecture.<br><b>Simple answer:</b> No, they
+                            share one database with schemas.<br><b>Strong Architect answer:</b> "No. Managing 10
+                            separate physical databases for a monolith adds operational cost and backup complexity for
+                            zero benefit. The sweet spot is a <b>single physical relational database with logical schema
+                                separation</b> (`[orders].[Orders]`, `[inv].[StockItems]`). This eliminates cross-schema
+                            coupling while allowing atomic multi-table transactions and simplified database
+                            operations."<br><b>Common mistake:</b> Creating 10 database connection strings in a single
+                            monolith.</span></li>
+
+                    <li>How do you prevent a Modular Monolith from turning into a Big Ball of Mud?<span
+                            class="qt">GOVERNANCE</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Architectural governance and
+                            maintainability.<br><b>Simple answer:</b> Code reviews and architectural tests.<br><b>Strong
+                                Architect answer:</b> "I combine three guardrails: First, package each module in its own
+                            C# project with minimal public surface area. Second, implement automated architectural
+                            fitness functions using NetArchTest in the CI pipeline that enforce strict dependency rules.
+                            Third, establish clear schema ownership in the database so developers cannot write
+                            cross-module SQL joins."<br><b>Common mistake:</b> Believing modularity happens naturally
+                            without automated enforcement.</span></li>
+
+                    <li>When is a Modular Monolith NOT enough?<span class="qt deep">LIMITS</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> Knowing the true tipping
+                            points.<br><b>Simple answer:</b> When teams grow too big or parts need massive
+                            scaling.<br><b>Strong Architect answer:</b> "A Modular Monolith reaches its limits under
+                            three conditions: 1. <b>Organizational scale:</b> When 50+ developers across autonomous
+                            teams experience deployment bottlenecks; 2. <b>Extreme scaling divergence:</b> When one
+                            specific capability needs 100× the compute of the rest of the application; 3.
+                            <b>Heterogeneous technology needs:</b> When a module requires specialized hardware or
+                            runtimes (e.g., Python GPU machine learning models)."<br><b>Common mistake:</b> Claiming a
+                            modular monolith cannot handle high traffic (Shopify handles 1M+ RPS on a modular
+                            monolith).</span></li>
+
+                    <li>How do you explain choosing a Modular Monolith to management who wants Microservices?<span
+                            class="qt curve">LEADERSHIP</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Commercial communication.<br><b>Simple answer:</b>
+                            Tell them it's cheaper and faster.<br><b>Strong Architect answer:</b> "I frame it around ROI
+                            and business velocity: 'A Modular Monolith gives us the exact same clean architecture and
+                            future flexibility as microservices, but delivers features 40% faster and saves us $50,000
+                            annually in cloud infrastructure and DevOps hiring. Because our modules have clean
+                            boundaries, we can carve out any service in the future in a matter of days when customer
+                            traffic actually demands it.'"<br><b>Common mistake:</b> Arguing about technology purity
+                            instead of time-to-market and budget.</span></li>
+
+                    <li>Which module should you extract first when moving to microservices?<span
+                            class="qt">MIGRATION</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Risk management in migrations.<br><b>Simple answer:</b>
+                            Notifications or reporting.<br><b>Strong Architect answer:</b> "I extract a low-risk,
+                            asynchronous, peripheral domain first—typically <b>Notifications</b> or <b>Analytical
+                                Reporting</b>. Notifications have zero inbound dependencies, communicate purely via
+                            asynchronous queues, and carry no shared transactional ACID requirements. Extracting it
+                            validates our container deployment, CI/CD, and monitoring pipelines before touching core
+                            revenue checkout logic."<br><b>Common mistake:</b> Extracting the core Orders or Payments
+                            domain first.</span></li>
+
+                    <li>What is a 'Bounded Context' in Domain-Driven Design?<span class="qt warm">DDD</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> DDD
+                            fundamentals.<br><b>Simple answer:</b> A boundary where a specific domain model
+                            applies.<br><b>Strong Architect answer:</b> "A Bounded Context defines the boundary within
+                            which a specific domain model and ubiquitous language apply with zero ambiguity. For
+                            example, in the Sales Context, an 'Account' represents a prospective lead with credit
+                            ratings; in the Billing Context, an 'Account' represents a ledger balance with tax IDs.
+                            Trying to combine them into one universal class creates enterprise coupling."<br><b>Common
+                                mistake:</b> Confusing a database table with a bounded context.</span></li>
+
+                    <li>How do you handle reporting in a Modular Monolith without slowing down checkout?<span
+                            class="qt">DATA</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Read-write isolation knowledge.<br><b>Simple answer:</b> Use a
+                            read replica database.<br><b>Strong Architect answer:</b> "I configure a read-only replica
+                            database using native transactional replication. Transactional checkout writes go to the
+                            primary database, while heavy analytical and dashboard queries are directed to the read
+                            replica. This completely isolates OLTP transactions from OLAP table scans while keeping the
+                            application codebase unified."<br><b>Common mistake:</b> Creating a whole new microservice
+                            just to run reports.</span></li>
+
+                    <li>What are Architectural Fitness Functions?<span class="qt">GOVERNANCE</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> Automated
+                            architecture enforcement.<br><b>Simple answer:</b> Automated tests that check architectural
+                            rules.<br><b>Strong Architect answer:</b> "Architectural Fitness Functions are automated
+                            tests that run as part of the CI build to ensure code adheres to structural rules over time.
+                            In .NET, using NetArchTest, I write tests such as:
+                            `Types.InAssembly(OrderAssembly).ShouldNot().HaveDependencyOn(PaymentInternalNamespace).GetResult().IsSuccessful`.
+                            It prevents architectural erosion automatically."<br><b>Common mistake:</b> Thinking
+                            architecture only exists in static design documents.</span></li>
+
+                    <li>Can a Modular Monolith scale horizontally?<span class="qt warm">SCALING</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b> Stateless
+                            application scaling.<br><b>Simple answer:</b> Yes, by running multiple copies behind a load
+                            balancer.<br><b>Strong Architect answer:</b> "Absolutely. As long as the Modular Monolith is
+                            designed statelessly—storing user sessions in Redis and documents in blob storage—you can
+                            scale it horizontally across 2, 10, or 50 container instances behind an Azure Application
+                            Gateway or AWS ALB. The entire monolith scales together effortlessly."<br><b>Common
+                                mistake:</b> Thinking only microservices can scale horizontally.</span></li>
+
+                    <li>What happens if one module in a Modular Monolith has a memory leak?<span
+                            class="qt">RELIABILITY</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Knowing the real trade-off of a shared
+                            process.<br><b>Simple answer:</b> It can crash the entire application.<br><b>Strong
+                                Architect answer:</b> "Because all modules share a common process memory space, an
+                            unhandled OutOfMemoryException or thread starvation in one poorly coded module (like PDF
+                            generation) can crash the entire host process, affecting all other modules. This is one of
+                            the genuine trade-offs of a monolith. I mitigate it with memory limits, strict code reviews,
+                            and offloading heavy compute to background queues."<br><b>Common mistake:</b> Denying that a
+                            shared process creates blast-radius risks.</span></li>
+
+                    <li>What is Conway's Law and how does it relate to Modular Monoliths?<span
+                            class="qt">ORGANIZATION</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Organizational alignment.<br><b>Simple answer:</b>
+                            System design mirrors team communication.<br><b>Strong Architect answer:</b> "Conway's Law
+                            states that architectures reflect organizational communication structures. If an
+                            organization has 15 developers working as one cohesive team, a Modular Monolith matches
+                            their communication perfectly. If you force microservices on them, you create artificial
+                            barriers. Conversely, if you have 8 separate departments, microservices naturally match
+                            their organizational boundaries."<br><b>Common mistake:</b> Ignoring team structure when
+                            choosing between monoliths and microservices.</span></li>
+
+                    <li>How do you handle background jobs in a Modular Monolith?<span class="qt">BACKGROUND</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b>
+                            Asynchronous processing knowledge.<br><b>Simple answer:</b> Using Hangfire or worker
+                            services.<br><b>Strong Architect answer:</b> "I implement an in-process or out-of-process
+                            job scheduler like <b>Hangfire</b> or <b>Quartz.NET</b> backed by Redis or SQL. Modules
+                            enqueue jobs (`IBackgroundJobClient.Enqueue(() => ProcessOrder())`), which execute
+                            asynchronously on dedicated worker threads or separate worker deployment instances without
+                            blocking user-facing HTTP request threads."<br><b>Common mistake:</b> Spawning raw
+                            `Task.Run` background threads inside web requests (leads to lost jobs on app
+                            recycle).</span></li>
+
+                    <li>What is the 'Strangler Fig' pattern in relation to a Modular Monolith?<span
+                            class="qt">MIGRATION</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Migration execution.<br><b>Simple answer:</b> Extracting modules
+                            one by one behind an API gateway.<br><b>Strong Architect answer:</b> "Because a Modular
+                            Monolith already has clean internal boundaries, applying the Strangler Fig is trivial: you
+                            deploy an API Gateway in front, deploy an extracted module as a new microservice, and
+                            re-route that specific URL path to the new service. Because the module was already cleanly
+                            encapsulated, extraction takes days rather than a massive multi-month rewrite."<br><b>Common
+                                mistake:</b> Attempting to strangle an un-modularized, tangled monolith without cleaning
+                            boundaries first.</span></li>
+
+                    <li>How do you manage database migrations across modules in a Modular Monolith?<span
+                            class="qt">DATABASE</span><span class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What
+                                interviewer tests:</b> Multi-module EF Core fluency.<br><b>Simple answer:</b> Using
+                            separate DbContexts per module.<br><b>Strong Architect answer:</b> "I configure a dedicated
+                            Entity Framework Core `DbContext` for each module (`OrderDbContext`, `InventoryDbContext`).
+                            Each DbContext manages only its specific database schema (`[orders]`, `[inv]`) and maintains
+                            its own EF Migrations history table. This ensures modules can evolve their database schemas
+                            completely independently without migration conflicts."<br><b>Common mistake:</b> Having one
+                            giant 80-entity shared DbContext for the entire application.</span></li>
+
+                    <li>What is the difference between a Library and a Module?<span class="qt warm">DESIGN</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>What interviewer tests:</b>
+                            Conceptual clarity.<br><b>Simple answer:</b> A library is shared code; a module is a
+                            business domain.<br><b>Strong Architect answer:</b> "A library is a technical utility with
+                            no domain state (e.g., a JSON serializer, date formatting helper). A Module is a vertical
+                            slice of business capability containing domain logic, data models, business rules, and
+                            persistence (e.g., Billing Module). Modules represent bounded contexts; libraries represent
+                            reusable technical plumbing."<br><b>Common mistake:</b> Treating generic helper classes as
+                            domain modules.</span></li>
+
+                    <li>Can you use different programming languages in a Modular Monolith?<span
+                            class="qt curve">TRADEOFF</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Recognizing inherent monolithic
+                            constraints.<br><b>Simple answer:</b> Generally no.<br><b>Strong Architect answer:</b>
+                            "Generally no. In a single host process, all modules share the same runtime (e.g., CLR for
+                            C#, JVM for Java). If you genuinely require polyglot languages—such as Python for
+                            specialized machine learning and C# for enterprise billing—that specific polyglot
+                            requirement is a valid architectural justification for extracting that specific component
+                            into a microservice."<br><b>Common mistake:</b> Claiming you can easily mix Node.js and C#
+                            in one binary.</span></li>
+
+                    <li>What is your advice to a team considering microservices for their next project?<span
+                            class="qt warm">WISDOM</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>What interviewer tests:</b> Senior architectural maturity.<br><b>Simple
+                                answer:</b> Start with a modular monolith.<br><b>Strong Architect answer:</b> "Start
+                            with a Modular Monolith. Design strict domain boundaries, enforce schema separation, and
+                            master your business domain first. You will ship your product in half the time with zero
+                            distributed systems headaches. If and when your traffic or team scale justifies
+                            microservices, your clean modular boundaries will allow you to extract services easily.
+                            Never pay the microservices tax before you have the traffic to justify it."<br><b>Common
+                                mistake:</b> Defaulting to microservices to appear innovative.</span></li>
+                </ol>
+            </section>
+
+            <!-- PART 16 -->
+            <section class="sec" id="p16">
+                <div class="sec-kicker">PART 16 — REAL ARCHITECTURAL EXERCISE</div>
+                <h2 class="sec-title rv">Architecture Exercise: The 5x Growth Challenge</h2>
+                <p class="sec-lead rv">Analyze the corporate problem below and formulate your architectural
+                    recommendations before revealing the model solution.</p>
+
+                <div class="panel rv">
+                    <h4>THE CORPORATE CHALLENGE</h4>
+                    <p>A successful logistics software company runs an ASP.NET monolith with <b>Customer, Product,
+                            Order, Inventory, Payment, Notification, and Reporting</b>.</p>
+                    <ul class="nlist">
+                        <li><b>Metrics:</b> 20 software developers, 1 DevOps engineer, 500,000 users, 50,000 orders/day.
+                        </li>
+                        <li><b>Business Projection:</b> Business expects 5× growth over the next 18 months.</li>
+                        <li><b>Current Pain Points:</b>
+                            <br>1. Heavy month-end reporting causes checkout orders to time out.
+                            <br>2. Development teams complain that deploying bug fixes takes too long because regression
+                            testing the whole monolith is slow.
+                            <br>3. Management says: <i>"We must rewrite everything into microservices immediately to
+                                prepare for the 5× growth!"</i>
+                        </li>
+                    </ul>
+                    <p style="margin-top:14px"><b>Your Task as Technical Architect:</b> Formulate your decision,
+                        boundary breakdown, migration approach, and executive justification.</p>
+                    <button class="btn" style="margin-top:12px"
+                        onclick="this.parentNode.querySelector('.ans').style.display=(this.parentNode.querySelector('.ans').style.display=='block'?'none':'block')">REVEAL
+                        ARCHITECT'S SOLUTION</button>
+                    <div class="ans"
+                        style="display:none;margin-top:16px;padding:16px 18px;background:var(--card2);border-radius:4px;border-left:3px solid var(--teal);font-size:15px;color:var(--ink2)">
+                        <h4 style="color:var(--ink);margin-bottom:8px">THE ARCHITECT'S STRATEGIC ROADMAP:</h4>
+                        <p><b>1. Challenge Management's Microservices Mandate:</b> 50,000 orders/day is ~0.6 orders/sec.
+                            Even with 5× growth (250,000 orders/day), peak order throughput will be under 15 orders/sec!
+                            A single well-tuned SQL Server database can comfortably process 1,000 orders/sec. Rewriting
+                            into microservices is solving a non-existent scaling problem while crushing velocity.</p>
+
+                        <p><b>2. Fix the Real Bottleneck Immediately (Reporting):</b></p>
+                        <ul class="nlist">
+                            <li>Implement a <b>Read Replica</b> for the database. Point all reporting queries and
+                                analytical dashboards to the replica.</li>
+                            <li>Cost: $300/month. Timeline: 2 days. Checkout timeouts are immediately eliminated.</li>
+                        </ul>
+
+                        <p><b>3. Refactor into a Modular Monolith:</b></p>
+                        <ul class="nlist">
+                            <li>Reorganize the monolith into strict C# projects: `OrderModule`, `InventoryModule`,
+                                `PaymentModule`, `CustomerModule`.</li>
+                            <li>Isolate database tables into dedicated schemas (`[orders]`, `[inv]`, `[cust]`).</li>
+                            <li>Introduce automated architecture tests (NetArchTest) to prevent circular dependencies.
+                            </li>
+                            <li>Developers can now work in separate module folders with minimal merge conflicts.</li>
+                        </ul>
+
+                        <p><b>4. Selectively Extract Only What Hurts (Notifications):</b></p>
+                        <ul class="nlist">
+                            <li>Extract the `NotificationModule` into a lightweight background worker consuming Azure
+                                Service Bus / RabbitMQ messages.</li>
+                            <li>This satisfies the team's need for independent releases for notifications without
+                                touching core checkout logic.</li>
+                        </ul>
+
+                        <p><b>Executive Business Case:</b> Solves 100% of scaling and release velocity issues in 6 weeks
+                            for $500/mo, versus a $500,000 12-month microservices rewrite that would stall product
+                            roadmap delivery.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 17 -->
+            <section class="sec" id="p17">
+                <div class="sec-kicker">PART 17 — 20-MINUTE CHALLENGE</div>
+                <h2 class="sec-title rv">20-Minute Architect Challenge: The Scaling Crossroads</h2>
+                <p class="sec-lead rv">Test your ability to lead an executive architecture strategy review under
+                    interview pressure.</p>
+
+                <div class="panel rv">
+                    <h4>THE 20-MINUTE INTERVIEW CHALLENGE</h4>
+                    <p style="font-size:16.5px;color:var(--ink)"><b>"A legacy monolithic e-commerce application is
+                            experiencing slow deployment cycles and occasional database deadlocks. The VP of Engineering
+                            asks you: 'Should we migrate to a Modular Monolith or go straight to Microservices? How do
+                            we decide, and what is our plan for the next 90 days?'"</b></p>
+                    <button class="btn" style="margin-top:12px"
+                        onclick="this.parentNode.querySelector('.ans').style.display=(this.parentNode.querySelector('.ans').style.display=='block'?'none':'block')">REVEAL
+                        MODEL ARCHITECT RESPONSE</button>
+                    <div class="ans"
+                        style="display:none;margin-top:16px;padding:16px 18px;background:var(--card2);border-radius:4px;border-left:3px solid var(--teal);font-size:15px;color:var(--ink2)">
+                        <h4 style="color:var(--ink);margin-bottom:8px">THE MODEL 90-DAY ARCHITECTURAL PLAN:</h4>
+
+                        <p><b>Phase 1: Days 1 – 30 (Stabilize &amp; Measure):</b></p>
+                        <ul class="nlist">
+                            <li>Diagnose database deadlocks. Eliminate long-running transactions and separate read
+                                queries to a read replica.</li>
+                            <li>Establish telemetry: baseline p95/p99 latency and deployment lead time.</li>
+                            <li>Perform Domain Mapping: identify bounded contexts (Order, Catalog, Inventory, Billing).
+                            </li>
+                        </ul>
+
+                        <p><b>Phase 2: Days 31 – 60 (Modularize the Monolith In-Place):</b></p>
+                        <ul class="nlist">
+                            <li>Refactor the monolith into a Modular Monolith: partition projects by domain, mark
+                                internal classes `internal`, expose public contracts via C# interfaces.</li>
+                            <li>Segregate database tables into schemas (`orders`, `inv`, `cust`). Eliminate cross-schema
+                                foreign keys.</li>
+                            <li>Add NetArchTest to CI to enforce boundary compliance on every PR.</li>
+                        </ul>
+
+                        <p><b>Phase 3: Days 61 – 90 (Evaluate &amp; Selectively Extract):</b></p>
+                        <ul class="nlist">
+                            <li>Review engineering metrics: did modularizing the monolith resolve deployment
+                                bottlenecks? (In 85% of companies, it does!)</li>
+                            <li>If a specific domain genuinely demands independent deployment (e.g., Notifications or
+                                Partner APIs), extract that single module using the Strangler Fig pattern.</li>
+                            <li>Keep the core transactional modules inside the Modular Monolith to preserve ACID
+                                transaction integrity.</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SUMMARY & RULES -->
+            <section class="mindset" id="summary">
+                <div class="mindset-in">
+                    <div class="sec-kicker">DAY 19 — CLOSE</div>
+                    <h2 class="sec-title rv" style="margin-bottom:14px">10 Rules for Choosing Between Monolith, Modular
+                        Monolith &amp; Microservices</h2>
+                    <p class="sec-lead rv">Ten timeless principles every Solution Architect should remember.</p>
+
+                    <div class="rule rv">
+                        <div class="rule-num">01</div>
+                        <div>
+                            <h3>A Modular Monolith is an architectural destination, not just a stepping stone.</h3>
+                            <p>It is the ideal production architecture for 90% of mid-market software enterprises.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">02</div>
+                        <div>
+                            <h3>Never confuse code modularity with deployment distribution.</h3>
+                            <p>You can have pristine domain boundaries, loose coupling, and clean encapsulation without
+                                putting a network cable between your classes.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">03</div>
+                        <div>
+                            <h3>In-memory calls are 100,000× faster than network hops.</h3>
+                            <p>Every microservice boundary introduces latency, serialization overhead, DNS queries, and
+                                socket pool exhaustion risks.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">04</div>
+                        <div>
+                            <h3>Earn microservices through organizational scaling.</h3>
+                            <p>Adopt microservices when you have too many developers to coordinate a single release, not
+                                to fix messy code.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">05</div>
+                        <div>
+                            <h3>Enforce schema separation in the database.</h3>
+                            <p>A Modular Monolith with separate database schemas (`[orders]`, `[inv]`) prevents coupling
+                                while preserving operational simplicity.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">06</div>
+                        <div>
+                            <h3>Automate architectural boundary tests.</h3>
+                            <p>Use tools like NetArchTest to automatically fail builds when one module touches internal
+                                classes of another.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">07</div>
+                        <div>
+                            <h3>Extract only when pain is proven.</h3>
+                            <p>Extract a module into a microservice only when it exhibits extreme scaling divergence or
+                                requires independent team ownership.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">08</div>
+                        <div>
+                            <h3>Respect single-database transactions.</h3>
+                            <p>ACID transactions are mathematically proven and effortless. Distributed Sagas are
+                                complex, eventual, and require compensating recovery logic.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">09</div>
+                        <div>
+                            <h3>The best first extraction is asynchronous.</h3>
+                            <p>When migrating to microservices, extract Notifications or Reporting first. Never touch
+                                core transactional checkout first.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">10</div>
+                        <div>
+                            <h3>Simplicity is the ultimate mark of seniority.</h3>
+                            <p>Any junior engineer can design a 30-service distributed nightmare. A master architect
+                                designs the simplest system that effortlessly solves the business problem.</p>
+                        </div>
+                    </div>
+
+                    <div class="callout co-key rv" style="margin-top:44px"><span class="co-label">THE 60-SECOND
+                            INTERVIEW ANSWER: "WHY CHOOSE A MODULAR MONOLITH INSTEAD OF MICROSERVICES?"</span>
+                        <p><b>"I choose a Modular Monolith because it provides the clean domain encapsulation, loose
+                                coupling, and team ownership of microservices, but without the massive operational tax
+                                of distributed systems. It gives nanosecond in-memory communication, zero network
+                                serialization, single-database ACID transaction reliability, and simple single-pipeline
+                                deployments. For our team size and throughput, a Modular Monolith maximizes feature
+                                delivery velocity and keeps cloud hosting costs minimal. Most importantly, because our
+                                domain boundaries are strictly encapsulated, we retain the option to extract any
+                                individual module into a microservice in days if scaling demands it in the future."</b>
+                        </p>
+                    </div>
+
+                    <div class="callout co-ok rv" style="margin-top:20px"><span class="co-label">THE ARCHITECT'S POWER
+                            STATEMENT</span>
+                        <p><b>"Architecture should solve customer and business bottlenecks, not create technology and
+                                infrastructure debt. We build clean modular boundaries first, and distribute only when
+                                reality forces our hand."</b></p>
+                    </div>
+                    <p class="mind-close rv">True architectural wisdom is knowing what complexity you can safely avoid.
+                        Build with discipline, defend simplicity, and lead with clarity.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 19 / 30 — MODULAR MONOLITH VS MICROSERVICES</div>
+            <div class="f-r">WEEK 3 · <b>DAY 20 AVAILABLE IN TRACK</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $(s) { return document.querySelector(s); } function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'summary']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day19-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day19-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function (e) { li.classList.toggle('qopen'); }); }); });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,3295 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 13 of the 30-Day Technical Architect Track: database layer scalability, read replicas, replication, partitioning, sharding, indexing, transactions, multi-tenancy, backup and recovery." />
+    <title>Day 13 - Database Layer Scaling - 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 585px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 585px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr,
+        .s-fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin,
+        .s-line {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash,
+        .s-dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .box,
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot,
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok,
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.bad,
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red)
+        }
+
+        .sketch .box.ext,
+        .s-box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .t1,
+        .s-lab {
+            fill: var(--ink)
+        }
+
+        .t3,
+        .s-sub {
+            fill: var(--ink3)
+        }
+
+        .ta,
+        .s-note {
+            fill: var(--accent)
+        }
+
+        .tt {
+            fill: var(--teal)
+        }
+
+        .tr {
+            fill: var(--red)
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 840px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 840px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 860px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 640px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .06em
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 880px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .traffic-demo {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 22px;
+            margin: 26px 0;
+            max-width: 900px
+        }
+
+        .demo-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap
+        }
+
+        .demo-title {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3)
+        }
+
+        .demo-buttons {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap
+        }
+
+        .demo-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink2);
+            padding: 5px 10px;
+            border-radius: 3px;
+            transition: all .2s
+        }
+
+        .demo-btn:hover,
+        .demo-btn.on {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .traffic-text {
+            margin-top: 16px;
+            display: grid;
+            grid-template-columns: 150px 1fr;
+            gap: 16px;
+            align-items: start
+        }
+
+        .rps-big {
+            font-family: var(--disp);
+            font-size: 42px;
+            font-weight: 900;
+            line-height: 1;
+            color: var(--accent)
+        }
+
+        .traffic-text p {
+            margin: 0;
+            color: var(--ink2)
+        }
+
+        .bars {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 20px
+        }
+
+        .barbox b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            margin-bottom: 7px
+        }
+
+        .barline {
+            height: 10px;
+            border: 1px solid var(--line2);
+            background: var(--paper);
+            overflow: hidden;
+            border-radius: 99px
+        }
+
+        .barline i {
+            display: block;
+            height: 100%;
+            width: 8%;
+            background: var(--teal);
+            transition: width .35s ease, background .35s ease
+        }
+
+        .barline i.hot {
+            background: var(--red)
+        }
+
+        .stage-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin: 26px 0
+        }
+
+        .stage {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px
+        }
+
+        .stage h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--accent);
+            margin-bottom: 10px
+        }
+
+        .stage p {
+            font-size: 14.5px;
+            color: var(--ink2);
+            margin: 8px 0
+        }
+
+        .stage p b {
+            color: var(--ink)
+        }
+
+        .asg-progress {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 24px 0 16px;
+            max-width: 860px
+        }
+
+        .asg-bar {
+            flex: 1;
+            height: 9px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            background: var(--card);
+            overflow: hidden
+        }
+
+        .asg-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .5s ease
+        }
+
+        .asg-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .asg-item,
+        .check-item {
+            position: relative;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s;
+            max-width: 860px
+        }
+
+        .asg-item:hover,
+        .check-item:hover {
+            border-color: var(--accent)
+        }
+
+        .asg-item input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none
+        }
+
+        .asg-cb,
+        .cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 2px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .asg-item.checked .asg-cb,
+        .check-item.checked .cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .asg-item.checked .asg-cb::after,
+        .check-item.checked .cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .asg-tx b,
+        .check-item b {
+            color: var(--ink)
+        }
+
+        .asg-tx strong {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            margin-right: 10px
+        }
+
+        .asg-item.checked .asg-tx,
+        .check-item.checked {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .cluebox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 22px;
+            margin: 26px 0;
+            max-width: 880px
+        }
+
+        .clues {
+            margin: 16px 0 0;
+            list-style: none
+        }
+
+        .clues li {
+            display: none;
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 12px 16px;
+            margin: 9px 0;
+            color: var(--ink2)
+        }
+
+        .clues li.show {
+            display: block
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+
+            .stage-grid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+
+            .traffic-text,
+            .bars {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 13 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK - DAY 13 / 30 - DATABASE LAYER SCALING</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">The app scales.</span></span>
+                    <span class="mask"><span class="line d2">The database</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">must
+                            <em>survive.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 13 teaches the architect's database question chain: <b>How much data - how much
+                        traffic - how data is accessed - how the database scales - how failures are handled.</b> You are
+                    not trying to become a DBA today. You are learning how to defend database-layer decisions for a
+                    high-traffic production system.</p>
+                <div class="hero-meta"><span class="chip hot">READ REPLICAS</span><span
+                        class="chip">REPLICATION</span><span class="chip">PARTITIONING</span><span
+                        class="chip">SHARDING</span><span class="chip">INDEXING</span><span class="chip">RPO/RTO</span>
+                </div>
+                <div class="howto">
+                    <h4>HOW TO STUDY TODAY</h4>
+                    <ol>
+                        <li><b>01</b> Read Sections 1-12 for the core database scaling toolbox.</li>
+                        <li><b>02</b> Slow down at Sections 13-16: multi-tenancy, failure, backup and the case study.
+                        </li>
+                        <li><b>03</b> Complete the assignment without using the case study as a script.</li>
+                        <li><b>04</b> Answer the self-test out loud like an interview, not like notes.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">23 SECTIONS - 12 CASE-STUDY DECISIONS - 10 ARCHITECTURE QUESTIONS - 15 INTERVIEW
+                    QUESTIONS</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 13 - THE DATABASE IS THE SCALING WALL</text>
+                    <rect class="box" x="40" y="66" width="96" height="30" /><text x="88" y="85" font-size="8.5"
+                        class="t1" text-anchor="middle">USERS</text>
+                    <path class="thin" d="M136 81 H166" />
+                    <path d="M166 77 l8 4 -8 4 z" fill="var(--ink3)" />
+                    <rect class="box" x="174" y="66" width="122" height="30" /><text x="235" y="85" font-size="8.5"
+                        class="t1" text-anchor="middle">LOAD BALANCER</text>
+                    <path class="thin" d="M296 81 H326" />
+                    <path d="M326 77 l8 4 -8 4 z" fill="var(--ink3)" />
+                    <rect class="box ok" x="336" y="52" width="124" height="26" /><text x="398" y="69" font-size="8"
+                        class="tt" text-anchor="middle">API INSTANCE 1</text>
+                    <rect class="box ok" x="336" y="84" width="124" height="26" /><text x="398" y="101" font-size="8"
+                        class="tt" text-anchor="middle">API INSTANCE 2</text>
+                    <rect class="box ok" x="336" y="116" width="124" height="26" /><text x="398" y="133" font-size="8"
+                        class="tt" text-anchor="middle">API INSTANCE N</text>
+                    <path class="thin" d="M398 142 V176" />
+                    <path d="M394 176 h8 l-4 7 z" fill="var(--ink3)" />
+                    <rect class="box bad" x="306" y="184" width="184" height="54" /><text x="398" y="207" font-size="10"
+                        class="tr" text-anchor="middle">ONE PRIMARY DATABASE</text><text x="398" y="224" font-size="8"
+                        class="t3" text-anchor="middle">the shared bottleneck</text>
+                    <path class="dash" d="M398 238 V266" /><text x="410" y="258" font-size="7.5" class="t3">then add
+                        carefully</text>
+                    <rect class="box" x="40" y="272" width="95" height="30" /><text x="87" y="291" font-size="7.5"
+                        class="t1" text-anchor="middle">INDEXES</text>
+                    <rect class="box" x="148" y="272" width="95" height="30" /><text x="195" y="291" font-size="7.5"
+                        class="t1" text-anchor="middle">REPLICAS</text>
+                    <rect class="box" x="256" y="272" width="95" height="30" /><text x="303" y="291" font-size="7.5"
+                        class="t1" text-anchor="middle">PARTITIONS</text>
+                    <rect class="box hot" x="364" y="272" width="95" height="30" /><text x="411" y="291" font-size="7.5"
+                        class="ta" text-anchor="middle">SHARDS LAST</text>
+                    <rect class="fr" x="40" y="336" width="420" height="32" />
+                    <text x="52" y="356" font-size="8" class="t1">DATA VOLUME - ACCESS PATTERN - SCALE PATH - FAILURE
+                        RESPONSE</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 17h16M6 17V7h4v10M14 17V4h4v13" stroke="currentColor" stroke-width="1.7"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">The Bottleneck</span><span class="p-tg">WHY DATABASES
+                        HURT</span></span></a>
+            <a class="pstrip" href="#s3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M5 7h7v10H5zM12 12h7v5h-7" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Read Scaling</span><span class="p-tg">REPLICAS</span></span></a>
+            <a class="pstrip" href="#s6" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 6h16M4 12h16M4 18h16M9 4v16M15 4v16" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg><span><span class="p-nm">Sharding</span><span class="p-tg">WHEN SIMPLE IS DONE</span></span></a>
+            <a class="pstrip" href="#s13" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h16v10H4zM7 10h3M14 10h3M7 14h10" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Multi-Tenant</span><span class="p-tg">10,000 COMPANIES</span></span></a>
+            <a class="pstrip" href="#s16" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    <path d="M9 12h7M9 16h7M9 8h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Case Study</span><span class="p-tg">EVOLVE THE DESIGN</span></span></a>
+        </div>
+    </section>
+
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> Real problem</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> Scaling basics</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> Read scaling</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> Replication</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Partitioning</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> Sharding</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> Compare</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Indexing</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Query performance</a>
+            <a class="tn" href="#s10" data-spy="s10"><span>10</span> Connections</a>
+            <a class="tn" href="#s11" data-spy="s11"><span>11</span> Transactions</a>
+            <a class="tn" href="#s12" data-spy="s12"><span>12</span> SQL vs NoSQL</a>
+            <a class="tn" href="#s13" data-spy="s13"><span>13</span> Multi-tenant</a>
+            <a class="tn" href="#s14" data-spy="s14"><span>14</span> Failure</a>
+            <a class="tn" href="#s15" data-spy="s15"><span>15</span> Backup</a>
+            <a class="tn" href="#s16" data-spy="s16"><span>16</span> Case study</a>
+            <a class="tn" href="#s17" data-spy="s17"><span>17</span> Evolution</a>
+            <a class="tn" href="#s18" data-spy="s18"><span>18</span> Decisions</a>
+            <a class="tn" href="#s19" data-spy="s19"><span>19</span> Mistakes</a>
+            <a class="tn" href="#s20" data-spy="s20"><span>20</span> Assignment</a>
+            <a class="tn" href="#s21" data-spy="s21"><span>21</span> Troubleshoot</a>
+            <a class="tn" href="#s22" data-spy="s22"><span>22</span> Self-test</a>
+            <a class="tn" href="#s23" data-spy="s23"><span>23</span> Success criteria</a>
+            <a class="tn" href="#mindset" data-spy="mindset"><span>*</span> Day 13 close</a>
+        </aside>
+
+        <main class="doc">
+            <section class="sec" id="s1">
+                <div class="sec-kicker">SECTION 01 - THE REAL PROBLEM</div>
+                <h2 class="sec-title rv">Application Servers Scale Out. The Database Often Does Not.</h2>
+                <p class="sec-lead rv">The classic shape is simple: <b>Users -&gt; Load Balancer -&gt; Multiple APIs
+                        -&gt; One
+                        Database.</b> You can add API servers in minutes. The database is harder because it holds
+                    state, consistency, indexes, locks, connections and backups.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 760 245" fill="none">
+                        <rect class="s-box" x="30" y="94" width="120" height="42" rx="3" /><text x="90" y="112"
+                            class="s-lab" text-anchor="middle">USERS</text><text x="90" y="126" class="s-sub"
+                            text-anchor="middle">web + mobile</text>
+                        <path class="s-line" d="M150 115 H190" />
+                        <path d="M190 111 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="198" y="94" width="135" height="42" rx="3" /><text x="266" y="112"
+                            class="s-lab" text-anchor="middle">LOAD BALANCER</text><text x="266" y="126" class="s-sub"
+                            text-anchor="middle">routes requests</text>
+                        <path class="s-line" d="M333 115 H371" />
+                        <path d="M371 111 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="380" y="50" width="120" height="32" rx="3" /><text x="440" y="70"
+                            class="s-lab" text-anchor="middle">API 1</text>
+                        <rect class="s-box ok" x="380" y="100" width="120" height="32" rx="3" /><text x="440" y="120"
+                            class="s-lab" text-anchor="middle">API 2</text>
+                        <rect class="s-box ok" x="380" y="150" width="120" height="32" rx="3" /><text x="440" y="170"
+                            class="s-lab" text-anchor="middle">API N</text>
+                        <path class="s-line" d="M500 66 H560 V115" />
+                        <path class="s-line" d="M500 116 H560" />
+                        <path class="s-line" d="M500 166 H560 V115" />
+                        <path d="M560 111 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box bad" x="568" y="86" width="150" height="58" rx="3" /><text x="643" y="108"
+                            class="s-lab" text-anchor="middle">ONE DATABASE</text><text x="643" y="124" class="s-sub"
+                            text-anchor="middle">shared state, locks, IO</text>
+                        <text x="30" y="220" class="s-note">THE DATABASE IS THE SHARED RESOURCE ALL API SERVERS
+                            HIT.</text>
+                    </svg>
+                    <div class="figcap">Fig. 13.1 - Scale-out APIs can increase pressure on the same database.</div>
+                </div>
+                <div class="traffic-demo rv" id="trafficDemo">
+                    <div class="demo-head">
+                        <span class="demo-title">TRAFFIC GROWTH SIMULATION</span>
+                        <div class="demo-buttons">
+                            <button class="demo-btn on" data-rps="100">100 RPS</button>
+                            <button class="demo-btn" data-rps="1000">1,000 RPS</button>
+                            <button class="demo-btn" data-rps="10000">10,000 RPS</button>
+                            <button class="demo-btn" data-rps="100000">100,000 RPS</button>
+                        </div>
+                    </div>
+                    <div class="traffic-text">
+                        <div class="rps-big" id="rpsBig">100</div>
+                        <p id="rpsText">One API instance and one modest database may be enough. Most time is spent
+                            building product value, not complex scaling.</p>
+                    </div>
+                    <div class="bars">
+                        <div class="barbox"><b>API PRESSURE</b>
+                            <div class="barline"><i id="apiBar"></i></div>
+                        </div>
+                        <div class="barbox"><b>DATABASE PRESSURE</b>
+                            <div class="barline"><i id="dbBar"></i></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>TRAFFIC</th>
+                                <th>WHAT USUALLY HAPPENS</th>
+                                <th>WHY MORE API SERVERS MAY NOT FIX IT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>100 requests/sec</b></td>
+                                <td>One database handles reads and writes comfortably.</td>
+                                <td>The database is not yet the bottleneck. Keep it simple.</td>
+                            </tr>
+                            <tr>
+                                <td><b>1,000 requests/sec</b></td>
+                                <td>Indexes, connection pooling and query discipline start to matter.</td>
+                                <td>Adding APIs can create more simultaneous database connections and queries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10,000 requests/sec</b></td>
+                                <td>Read traffic, hot tables, locks and slow queries become visible.</td>
+                                <td>APIs scale, but all of them still hit the same primary database.</td>
+                            </tr>
+                            <tr>
+                                <td><b>100,000 requests/sec</b></td>
+                                <td>You need deliberate read/write separation, partitioning, maybe sharding, maybe NoSQL
+                                    for some workloads.</td>
+                                <td>More APIs may make the database fail faster. The bottleneck moved down.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">ARCHITECT INSTINCT</span>
+                    <p>Before changing the database architecture, ask: <b>Is the problem reads, writes, bad queries,
+                            locks, connections, data volume, tenant skew or reporting load?</b> Each has a different
+                        fix. "Add servers" is not a database strategy.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">SECTION 02 - BASICS</div>
+                <h2 class="sec-title rv">Vertical and Horizontal Scaling</h2>
+                <p class="sec-lead rv">Database scaling has two broad moves: make one server stronger, or spread work
+                    across multiple servers. The simple move is often the right first move.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:18%">APPROACH</th>
+                                <th>HOW IT WORKS</th>
+                                <th>BENEFIT</th>
+                                <th>LIMITATION</th>
+                                <th>WHEN TO USE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Vertical scaling</b></td>
+                                <td>Make one database server stronger: more CPU, memory, faster storage, larger managed
+                                    tier.</td>
+                                <td>Simple. Minimal code change. Low operational complexity.</td>
+                                <td>Has a ceiling. Expensive at the top. Still one primary bottleneck.</td>
+                                <td>First step for growing systems, especially when you are not yet sure which scaling
+                                    pattern is needed.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Horizontal scaling</b></td>
+                                <td>Use multiple database servers: replicas, partitions, shards, separate workloads.
+                                </td>
+                                <td>Can scale beyond one machine and isolate workloads.</td>
+                                <td>More complexity: routing, consistency, failover, cross-data queries and operations.
+                                </td>
+                                <td>When clear evidence shows one database cannot meet the read, write, data or
+                                    availability requirement.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout rv"><span class="co-label">THE PRACTICAL ORDER</span>
+                    <p>In real systems, the order is usually: <b>good schema - good indexes - good queries - connection
+                            pooling - vertical scale - read replicas - partitioning - workload separation -
+                            sharding.</b>
+                        Sharding is not the first chapter. It is the chapter after the simpler chapters have failed with
+                        evidence.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">SECTION 03 - READ SCALING</div>
+                <h2 class="sec-title rv">Read Replicas: Scale Reads Without Touching Writes</h2>
+                <p class="sec-lead rv">Many high-traffic systems are read-heavy. Product pages, catalog browsing,
+                    search suggestions and order history reads may greatly outnumber writes. Read replicas let you send
+                    safe read traffic away from the primary database.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 780 270" fill="none">
+                        <text x="22" y="28" class="s-note">BEFORE - EVERY READ AND WRITE HITS THE PRIMARY</text>
+                        <rect class="s-box" x="40" y="58" width="150" height="44" rx="3" /><text x="115" y="77"
+                            class="s-lab" text-anchor="middle">APPLICATION</text><text x="115" y="92" class="s-sub"
+                            text-anchor="middle">reads + writes</text>
+                        <path class="s-line" d="M190 80 H250" />
+                        <path d="M250 76 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box bad" x="258" y="58" width="150" height="44" rx="3" /><text x="333" y="77"
+                            class="s-lab" text-anchor="middle">PRIMARY DB</text><text x="333" y="92" class="s-sub"
+                            text-anchor="middle">all traffic</text>
+                        <text x="22" y="150" class="s-note">AFTER - WRITES TO PRIMARY, SAFE READS TO REPLICA</text>
+                        <rect class="s-box" x="40" y="178" width="150" height="44" rx="3" /><text x="115" y="197"
+                            class="s-lab" text-anchor="middle">APPLICATION</text><text x="115" y="212" class="s-sub"
+                            text-anchor="middle">route by operation</text>
+                        <path class="s-line" d="M190 191 H250" />
+                        <path d="M250 187 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <text x="216" y="185" class="s-sub">writes</text>
+                        <rect class="s-box hot" x="258" y="178" width="150" height="44" rx="3" /><text x="333" y="197"
+                            class="s-lab" text-anchor="middle">PRIMARY DB</text><text x="333" y="212" class="s-sub"
+                            text-anchor="middle">source of truth</text>
+                        <path class="s-dash" d="M408 200 H500" />
+                        <path d="M500 196 l8 4 -8 4 z" fill="var(--teal)" />
+                        <text x="454" y="192" class="s-sub">replication delay</text>
+                        <rect class="s-box ok" x="508" y="178" width="150" height="44" rx="3" /><text x="583" y="197"
+                            class="s-lab" text-anchor="middle">READ REPLICA</text><text x="583" y="212" class="s-sub"
+                            text-anchor="middle">catalog, search, history</text>
+                        <path class="s-line" d="M115 178 V154 H583 V178" />
+                        <path d="M579 174 l4 8 4 -8 z" fill="var(--ink3)" />
+                        <text x="375" y="148" class="s-sub">safe reads</text>
+                    </svg>
+                    <div class="figcap">Fig. 13.2 - Read replicas reduce primary load but introduce possible stale
+                        reads.</div>
+                </div>
+                <ul class="nlist rv">
+                    <li><b>Writes go to the primary</b> because the primary owns the truth: create order, update
+                        inventory, change price.</li>
+                    <li><b>Reads can go to replicas</b> when the result can be a few seconds old: product catalog,
+                        category pages, reports, browsing.</li>
+                    <li><b>Replication delay</b> means a write may not appear instantly on the replica. This is called
+                        stale data.</li>
+                    <li><b>Stale data is acceptable</b> when the business can tolerate it. A product description being 3
+                        seconds old is fine. A payment result being 3 seconds old may not be.</li>
+                </ul>
+                <div class="callout co-tip rv"><span class="co-label">PRODUCT CATALOG EXAMPLE</span>
+                    <p>Product catalog reads are perfect for replicas: many users browse the same products, product data
+                        changes less often than it is read, and seeing a price update a few seconds late may be
+                        acceptable
+                        if the checkout re-validates the final price against the primary before payment.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">SECTION 04 - REPLICATION</div>
+                <h2 class="sec-title rv">Replication: Copies for Reads, Availability and Recovery Support</h2>
+                <p class="sec-lead rv">Replication means changes from the primary database are copied to one or more
+                    replicas: <b>Primary -&gt; Replica 1 -&gt; Replica 2.</b> It is one of the first horizontal moves.
+                </p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Why replication is used</b><span>To spread read traffic, keep another copy
+                            close to promotion, support backups, and improve availability when the primary fails.</span>
+                    </div>
+                    <div class="topic"><b>Read scaling</b><span>Read-only queries can hit replicas, reducing CPU and IO
+                            pressure on the primary.</span></div>
+                    <div class="topic"><b>Availability</b><span>If the primary fails, a replica can be promoted to
+                            primary. Managed cloud databases often automate this within a region or zone.</span></div>
+                    <div class="topic"><b>Backup use case</b><span>Backups can be taken from a replica to reduce load on
+                            the primary, but the backup still must be stored independently.</span></div>
+                    <div class="topic"><b>Replication delay</b><span>The replica may lag seconds or minutes behind
+                            during load or failure. You must decide which reads can tolerate that.</span></div>
+                    <div class="topic"><b>Failover</b><span>Failover changes which database is the primary. The
+                            application must reconnect, retry safely, and avoid duplicate writes.</span></div>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">REPLICATION IS NOT BACKUP</span>
+                    <p>If someone deletes all orders by mistake, replication faithfully copies the delete to every
+                        replica. A backup lets you restore to a previous point. Replication protects against server
+                        loss. Backup protects against data loss, human error and corruption. You need both.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">SECTION 05 - PARTITIONING</div>
+                <h2 class="sec-title rv">Partitioning: Split a Large Table Into Manageable Pieces</h2>
+                <p class="sec-lead rv">Imagine an <b>Orders</b> table with <b>1 billion orders</b>. Partitioning keeps
+                    it
+                    as one logical table but stores it in smaller pieces, usually inside the same database system.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>PARTITION BY</th>
+                                <th>HOW IT WORKS</th>
+                                <th>BENEFIT</th>
+                                <th>RISK</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Date</b></td>
+                                <td>Orders are separated by month, quarter or year.</td>
+                                <td>Great for historical data, archiving, reports by time range and deleting old data
+                                    safely.</td>
+                                <td>Current month can become hot while old partitions are cold.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Tenant</b></td>
+                                <td>Orders are separated by TenantId ranges or tenant groups.</td>
+                                <td>Useful when tenants need different maintenance, retention or scale behavior.</td>
+                                <td>Not always right: one large tenant can create a hot partition; many small tenants
+                                    waste structure.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Region</b></td>
+                                <td>Orders are separated by geography, for example US, EU, APAC.</td>
+                                <td>Supports data residency and region-local reporting.</td>
+                                <td>Cross-region customers and global reports become harder.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="rv"><b>Why partition?</b> To make large data easier to query, maintain, archive and scan. A
+                    query for last month's orders can touch one partition instead of scanning a billion rows.</p>
+                <div class="callout co-key rv"><span class="co-label">INTERVIEW RULE</span>
+                    <p>Do not say "partition by tenant" automatically because the system is multi-tenant. First ask:
+                        <b>Are queries usually tenant-scoped? Are tenants evenly sized? Do we need tenant-level
+                            retention? Are hot tenants isolated elsewhere?</b> Partitioning key choice is access-pattern
+                        choice.
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s6">
+                <div class="sec-kicker">SECTION 06 - SHARDING</div>
+                <h2 class="sec-title rv">Sharding: Put Different Data on Different Databases</h2>
+                <p class="sec-lead rv">Sharding means one logical dataset is split across multiple independent database
+                    servers. Each shard owns a subset of the data. It helps when one database cannot handle the total
+                    data or write load anymore.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 780 255" fill="none">
+                        <text x="24" y="28" class="s-note">MANUAL TENANT MAPPING</text>
+                        <rect class="s-box" x="40" y="58" width="110" height="34" rx="3" /><text x="95" y="79"
+                            class="s-lab" text-anchor="middle">TENANT A</text>
+                        <path class="s-line" d="M150 75 H210" />
+                        <path d="M210 71 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="218" y="58" width="120" height="34" rx="3" /><text x="278" y="79"
+                            class="s-lab" text-anchor="middle">DATABASE 1</text>
+                        <rect class="s-box" x="40" y="108" width="110" height="34" rx="3" /><text x="95" y="129"
+                            class="s-lab" text-anchor="middle">TENANT B</text>
+                        <path class="s-line" d="M150 125 H210" />
+                        <path d="M210 121 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="218" y="108" width="120" height="34" rx="3" /><text x="278" y="129"
+                            class="s-lab" text-anchor="middle">DATABASE 2</text>
+                        <rect class="s-box" x="40" y="158" width="110" height="34" rx="3" /><text x="95" y="179"
+                            class="s-lab" text-anchor="middle">TENANT C</text>
+                        <path class="s-line" d="M150 175 H210" />
+                        <path d="M210 171 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="218" y="158" width="120" height="34" rx="3" /><text x="278" y="179"
+                            class="s-lab" text-anchor="middle">DATABASE 3</text>
+                        <text x="430" y="28" class="s-note">HASH-BASED ROUTING</text>
+                        <rect class="s-box" x="430" y="58" width="130" height="42" rx="3" /><text x="495" y="77"
+                            class="s-lab" text-anchor="middle">TENANT ID</text><text x="495" y="91" class="s-sub"
+                            text-anchor="middle">ACME-42</text>
+                        <path class="s-line" d="M560 79 H602" />
+                        <path d="M602 75 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="610" y="58" width="120" height="42" rx="3" /><text x="670" y="77"
+                            class="s-lab" text-anchor="middle">HASH(TENANT)</text><text x="670" y="91" class="s-sub"
+                            text-anchor="middle">returns shard 7</text>
+                        <path class="s-line" d="M670 100 V128" />
+                        <path d="M666 124 l4 8 4 -8 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="610" y="132" width="120" height="42" rx="3" /><text x="670" y="151"
+                            class="s-lab" text-anchor="middle">SHARD 7</text><text x="670" y="165" class="s-sub"
+                            text-anchor="middle">correct database</text>
+                    </svg>
+                    <div class="figcap">Fig. 13.3 - Sharding distributes tenants or rows across separate databases.
+                    </div>
+                </div>
+                <ul class="nlist rv">
+                    <li><b>Why it helps</b> - each database handles only part of the data and part of the write load.
+                    </li>
+                    <li><b>How data is distributed</b> - by a lookup table (Tenant A -> DB1) or by a deterministic rule
+                        such as <code>Hash(TenantId) -> shard number</code>.</li>
+                    <li><b>How requests find the shard</b> - the application, gateway or data access layer uses tenant
+                        ID or shard key to route the request.</li>
+                    <li><b>When one shard overloads</b> - a large tenant, bad key distribution or a hot partition can
+                        overload one shard while others are idle.</li>
+                    <li><b>Rebalancing is difficult</b> - moving tenants between shards means moving data safely,
+                        updating routing, keeping writes consistent and avoiding downtime.</li>
+                    <li><b>Cross-shard queries are hard</b> - "all orders across all tenants" must fan out to many
+                        databases and merge results.</li>
+                    <li><b>Cross-shard transactions are harder</b> - a transaction touching two shards needs careful
+                        design, usually async workflow, not one big distributed transaction.</li>
+                </ul>
+                <div class="callout co-warn rv"><span class="co-label">WHY SHARDING COMES LATE</span>
+                    <p>Sharding solves a real scale problem but creates routing, operations, reporting, rebalancing and
+                        failure complexity. Usually consider it after indexing, query fixes, vertical scaling, read
+                        replicas,
+                        caching and partitioning have been evaluated with evidence.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">SECTION 07 - COMPARE</div>
+                <h2 class="sec-title rv">Partitioning vs Sharding</h2>
+                <p class="sec-lead rv">They both split data, but not in the same way. Partitioning usually splits data
+                    inside one database system. Sharding splits data across multiple independent database servers.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>PARTITIONING</th>
+                                <th>SHARDING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Data location</b></td>
+                                <td>Same database system, split into logical/physical partitions.</td>
+                                <td>Multiple separate database servers or databases.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Main purpose</b></td>
+                                <td>Manage large tables, speed bounded queries, simplify archiving.</td>
+                                <td>Scale beyond one database's capacity for data or write load.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Complexity</b></td>
+                                <td>Medium. The database engine often helps.</td>
+                                <td>High. The application/platform must route and operate shards.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling benefit</b></td>
+                                <td>Better query and maintenance behavior; not always more total write capacity.</td>
+                                <td>More total capacity by adding shards.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cross-data queries</b></td>
+                                <td>Usually easier because the database still sees all partitions.</td>
+                                <td>Harder; requires fan-out, aggregation and careful timeouts.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Typical use</b></td>
+                                <td>Large orders table, time-based reporting, archive/delete old data.</td>
+                                <td>Huge tenants, very high write throughput, data too large for one server.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 class="rv">Five scenarios</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>SCENARIO</th>
+                                <th>BETTER FIT</th>
+                                <th>WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Orders table has 1 billion rows and most queries ask for last 30 days.</td>
+                                <td><b>Partitioning by date</b></td>
+                                <td>The query naturally touches a time window, and old data can be archived by
+                                    partition.</td>
+                            </tr>
+                            <tr>
+                                <td>One database cannot handle total write throughput even after tuning.</td>
+                                <td><b>Sharding</b></td>
+                                <td>Writes need to be distributed across independent database servers.</td>
+                            </tr>
+                            <tr>
+                                <td>EU and US data must stay in separate geographies.</td>
+                                <td><b>Region partitioning or regional sharding</b></td>
+                                <td>The driver is legal/data residency, not only performance.</td>
+                            </tr>
+                            <tr>
+                                <td>10,000 tenants, but 20 tenants create 60% of traffic.</td>
+                                <td><b>Hybrid</b></td>
+                                <td>Keep most tenants shared; isolate hot tenants onto dedicated databases/shards.</td>
+                            </tr>
+                            <tr>
+                                <td>Reporting needs all tenants every night, but OLTP queries are tenant-scoped.</td>
+                                <td><b>Partition or shard OLTP, separate reporting store</b></td>
+                                <td>Do not make production writes slow for cross-tenant reports.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">SECTION 08 - INDEXING</div>
+                <h2 class="sec-title rv">Indexes: Make the Database Find Rows Without Scanning Everything</h2>
+                <p class="sec-lead rv">An index is like a sorted lookup structure. It lets the database find rows
+                    quickly without reading the whole table. Example query:
+                    <code>SELECT orders WHERE CustomerId = ?</code>.
+                </p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>CASE</th>
+                                <th>WHAT HAPPENS</th>
+                                <th>USER IMPACT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>No useful index</b></td>
+                                <td>The database may scan many rows looking for matching CustomerId values.</td>
+                                <td>Slow API, high CPU, more IO, worse under load.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Index on CustomerId</b></td>
+                                <td>The database jumps to the relevant customers' orders faster.</td>
+                                <td>Lower response time and lower database pressure.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Primary index</b><span>The index behind the primary key, for example OrderId.
+                            Great for fetching one order by ID.</span></div>
+                    <div class="topic"><b>Composite index</b><span>An index over multiple columns, for example
+                            <code>(TenantId, CreatedDate)</code>. Useful when queries filter by both.</span></div>
+                    <div class="topic"><b>Covering index</b><span>Conceptually, an index that contains everything the
+                            query needs, so the database can answer from the index without going back to the
+                            table.</span></div>
+                    <div class="topic"><b>Index trade-off</b><span>Indexes speed up reads but increase storage and write
+                            cost. Every insert/update may also update indexes.</span></div>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">TOO MANY INDEXES</span>
+                    <p>An index is not free. Too many indexes slow writes, consume memory/storage and make query
+                        planning harder.
+                        An architect does not say "index everything". The architect says: <b>index the queries that
+                            serve
+                            important access patterns, then monitor write cost.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">SECTION 09 - QUERY PERFORMANCE</div>
+                <h2 class="sec-title rv">When an API Is Slow Because of the Database</h2>
+                <p class="sec-lead rv">You do not start by guessing. You follow the path: <b>API -&gt; Query -&gt;
+                        Execution
+                        Plan -&gt; Index -&gt; Data Volume -&gt; Locks -&gt; Connections.</b></p>
+                <ol class="framework rv">
+                    <li><b>API</b><span>Which endpoint is slow? Is it all APIs or only order history, checkout,
+                            reporting? Use p95/p99 from observability, not one user complaint.</span><span
+                            class="fr-hint">SCOPE THE PROBLEM FIRST</span></li>
+                    <li><b>Query</b><span>Which SQL statement or database call runs during that endpoint? One endpoint
+                            may run 20 queries. Find the expensive one.</span><span class="fr-hint">ONE SLOW ENDPOINT
+                            OFTEN HIDES ONE BAD QUERY</span></li>
+                    <li><b>Execution plan</b><span>The database's explanation of how it will execute the query: scan,
+                            seek, join order, estimated rows. You do not need to be a DBA, but you must know that the
+                            plan tells you where the work is.</span><span class="fr-hint">PLAN TELLS YOU WHAT THE
+                            DATABASE THINKS</span></li>
+                    <li><b>Index</b><span>Is the needed index missing or unused? Does the query filter by columns that
+                            have no useful index?</span><span class="fr-hint">MISSING INDEXES ARE COMMON AND
+                            FIXABLE</span></li>
+                    <li><b>Data volume</b><span>Did a table grow from 10 million to 1 billion rows? A query that was
+                            fine at launch may die at scale.</span><span class="fr-hint">YESTERDAY'S GOOD QUERY CAN BE
+                            TODAY'S INCIDENT</span></li>
+                    <li><b>Locks</b><span>Is another transaction holding rows or tables so this query waits? Slow can
+                            mean waiting, not computing.</span><span class="fr-hint">CHECK IF IT IS WORKING OR
+                            WAITING</span></li>
+                    <li><b>Connections</b><span>Is the API waiting for a database connection? If the pool or database
+                            max connections is exhausted, every query becomes slow before it starts.</span><span
+                            class="fr-hint">NO CONNECTION, NO QUERY</span></li>
+                </ol>
+                <div class="callout rv"><span class="co-label">ARCHITECT ANSWER</span>
+                    <p>"I would identify the slow endpoint, correlate it to the slow query, check the execution plan and
+                        index usage, then verify whether this is data growth, locking or connection exhaustion. Only
+                        after
+                        that would I choose tuning, indexing, read replicas, partitioning or architecture change."</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s10">
+                <div class="sec-kicker">SECTION 10 - CONNECTIONS</div>
+                <h2 class="sec-title rv">Connection Pooling: Reuse Expensive Connections</h2>
+                <p class="sec-lead rv">Opening a new database connection for every request is expensive: network setup,
+                    authentication, session state and server resources. A connection pool keeps ready connections and
+                    reuses them.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 760 180" fill="none">
+                        <rect class="s-box" x="34" y="52" width="125" height="44" rx="3" /><text x="96" y="71"
+                            class="s-lab" text-anchor="middle">API REQUESTS</text><text x="96" y="86" class="s-sub"
+                            text-anchor="middle">many users</text>
+                        <path class="s-line" d="M159 74 H214" />
+                        <path d="M214 70 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="222" y="40" width="180" height="68" rx="3" /><text x="312" y="62"
+                            class="s-lab" text-anchor="middle">CONNECTION POOL</text><text x="312" y="78" class="s-sub"
+                            text-anchor="middle">reuse open connections</text><text x="312" y="93" class="s-sub"
+                            text-anchor="middle">queue when none free</text>
+                        <path class="s-line" d="M402 74 H456" />
+                        <path d="M456 70 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="464" y="52" width="145" height="44" rx="3" /><text x="536" y="71"
+                            class="s-lab" text-anchor="middle">DATABASE</text><text x="536" y="86" class="s-sub"
+                            text-anchor="middle">limited connections</text>
+                    </svg>
+                    <div class="figcap">Fig. 13.4 - Pooling reduces connection overhead, but it must match database
+                        capacity.</div>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>SITUATION</th>
+                                <th>WHAT HAPPENS</th>
+                                <th>ARCHITECT THINKING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Pool too small</b></td>
+                                <td>Requests wait for a free connection even if the database could handle more.</td>
+                                <td>API latency rises before query starts. Increase carefully and monitor DB load.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Pool too large</b></td>
+                                <td>Too many concurrent queries hit the database, causing CPU, memory and lock pressure.
+                                </td>
+                                <td>More connections can make the database slower, not faster.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database overloaded</b></td>
+                                <td>Connections are available, but queries are slow because the database is saturated.
+                                </td>
+                                <td>Do not just raise the pool. Find the workload causing saturation.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s11">
+                <div class="sec-kicker">SECTION 11 - TRANSACTIONS</div>
+                <h2 class="sec-title rv">Transactions at Scale: Keep Them Small</h2>
+                <p class="sec-lead rv">A transaction keeps a set of database changes consistent. That is powerful, but
+                    a long transaction can hold locks, block other users and increase deadlock risk.</p>
+                <p class="rv">Example: <b>Order -&gt; Payment -&gt; Inventory.</b> It is tempting to wrap everything in
+                    one
+                    big transaction. But payment is an external call, inventory may be another service, and the database
+                    may hold locks while waiting for work outside itself.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Transaction duration</b><span>The longer a transaction stays open, the longer
+                            locks may be held and the more rows are protected from change.</span></div>
+                    <div class="topic"><b>Locking</b><span>Locks protect correctness, but they can make other requests
+                            wait. Waiting requests become slow APIs.</span></div>
+                    <div class="topic"><b>Contention</b><span>Many users trying to update the same stock row, coupon or
+                            tenant balance compete for the same data.</span></div>
+                    <div class="topic"><b>Deadlocks</b><span>Two transactions wait for each other in a cycle. The
+                            database kills one so the other can continue.</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">DESIGN RULE</span>
+                    <p>Keep the database transaction as small as practical: write the order record, reserve what must be
+                        reserved, commit, then use messaging/idempotency for follow-up steps. Do not hold a database
+                        transaction open while calling a payment provider.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s12">
+                <div class="sec-kicker">SECTION 12 - DATABASE CHOICE</div>
+                <h2 class="sec-title rv">SQL vs NoSQL for Scale</h2>
+                <p class="sec-lead rv">Choose the database based on <b>access patterns and business requirements</b>,
+                    not popularity. SQL and NoSQL both scale, but they optimize for different shapes of data and
+                    queries.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th>DIMENSION</th>
+                                <th>SQL SERVER / POSTGRESQL</th>
+                                <th>MONGODB / COSMOS DB / DYNAMODB</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Relationships</b></td>
+                                <td>Strong fit for relational data: orders, payments, customers, invoices.</td>
+                                <td>Good when data is document-shaped or access is mostly by key/document.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Transactions</b></td>
+                                <td>Strong multi-row and relational transactions.</td>
+                                <td>Often optimized for single-document or partition-key transactions; multi-item can
+                                    exist but may be limited/costly.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scale</b></td>
+                                <td>Scales well with tuning, replicas, partitioning and managed tiers; write sharding
+                                    requires design.</td>
+                                <td>Often built for horizontal scale and high throughput if access pattern is known.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Query patterns</b></td>
+                                <td>Flexible queries and joins are strong.</td>
+                                <td>Works best when query patterns are known in advance and modeled into the
+                                    document/partition key.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Flexible schema</b></td>
+                                <td>Schema changes are explicit and controlled.</td>
+                                <td>Flexible schema helps evolving product/catalog/profile data.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Global distribution</b></td>
+                                <td>Possible, often more complex for writes and consistency.</td>
+                                <td>Cloud-native NoSQL platforms often provide global distribution options more
+                                    naturally.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout rv"><span class="co-label">PRACTICAL SAAS ANSWER</span>
+                    <p>Use SQL for transactional truth: orders, payments, invoices, inventory movements. Use NoSQL where
+                        the access pattern fits: product search documents, event/audit feeds, globally distributed read
+                        models
+                        or flexible catalog attributes. Polyglot persistence is acceptable only when the operational
+                        cost is justified.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s13">
+                <div class="sec-kicker">SECTION 13 - MULTI-TENANCY</div>
+                <h2 class="sec-title rv">Multi-Tenant Database Strategies</h2>
+                <p class="sec-lead rv">Multi-tenancy is not just a security topic. It affects cost, isolation, noisy
+                    neighbors, backup, restore, migration and scaling. Here are the four common options.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:980px">
+                        <thead>
+                            <tr>
+                                <th>OPTION</th>
+                                <th>COST</th>
+                                <th>ISOLATION</th>
+                                <th>COMPLEXITY</th>
+                                <th>SCALING</th>
+                                <th>BEST USE CASE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Shared database, shared tables</b></td>
+                                <td>Lowest</td>
+                                <td>Lowest. TenantId must be enforced everywhere.</td>
+                                <td>Low to medium</td>
+                                <td>Scales until shared database/table pressure becomes high.</td>
+                                <td>Many small tenants, early SaaS, cost-sensitive platforms.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Shared database, separate schema</b></td>
+                                <td>Medium</td>
+                                <td>Better logical separation.</td>
+                                <td>Medium to high due to migrations and schema management.</td>
+                                <td>Limited by same database server.</td>
+                                <td>Moderate tenants needing some separation, not full database isolation.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Separate database per tenant</b></td>
+                                <td>Highest</td>
+                                <td>Highest. Easier tenant restore and isolation.</td>
+                                <td>High operational burden at 10,000 tenants.</td>
+                                <td>Good isolation, but provisioning and migrations become a product.</td>
+                                <td>Enterprise tenants, compliance, custom retention, very large tenants.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Hybrid approach</b></td>
+                                <td>Balanced</td>
+                                <td>Balanced. Most shared, important tenants isolated.</td>
+                                <td>High enough to need a routing catalog.</td>
+                                <td>Best practical path: move hot/regulated tenants out when needed.</td>
+                                <td>Large SaaS with many small tenants and some large enterprise tenants.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-ok rv"><span class="co-label">RECOMMENDATION FOR 10,000 COMPANIES</span>
+                    <p>Start with a <b>hybrid strategy</b>: shared database/shared tables for most tenants, strict
+                        TenantId
+                        enforcement, indexes beginning with TenantId for tenant-scoped queries, and a tenant catalog
+                        that allows
+                        moving large or regulated tenants to dedicated databases later. This keeps cost sane while
+                        preserving an escape path.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s14">
+                <div class="sec-kicker">SECTION 14 - FAILURE</div>
+                <h2 class="sec-title rv">Database Failure: Design the Response Before the Incident</h2>
+                <p class="sec-lead rv">A database incident is not one thing. Primary failure, replica failure, network
+                    failure, connection exhaustion and hot tenants all hurt differently. The architecture response must
+                    match the failure mode.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:940px">
+                        <thead>
+                            <tr>
+                                <th>FAILURE</th>
+                                <th>BUSINESS IMPACT</th>
+                                <th>ARCHITECTURE RESPONSE</th>
+                                <th>RECOVERY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Primary database fails</b></td>
+                                <td>Writes stop; checkout/order creation may fail.</td>
+                                <td>Automatic failover to replica, retry-safe writes, circuit breaker to avoid storm.
+                                </td>
+                                <td>Promote replica, reconnect apps, validate data consistency and replay safe messages.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Read replica fails</b></td>
+                                <td>Read capacity reduced; some reads may slow.</td>
+                                <td>Route reads to other replicas or primary only for critical reads.</td>
+                                <td>Replace replica and watch primary load while degraded.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Network connection fails</b></td>
+                                <td>Temporary errors, timeouts, user retries.</td>
+                                <td>Short timeouts, retry with backoff, idempotent writes.</td>
+                                <td>Reconnect, verify connection pools recover and no duplicate writes occurred.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Maximum connections reached</b></td>
+                                <td>Requests wait or fail before queries run.</td>
+                                <td>Pool limits, backpressure, fix connection leaks, reduce unnecessary parallel
+                                    queries.</td>
+                                <td>Kill idle sessions if needed, restart leaking app instance, tune pool/database
+                                    limits.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Disk becomes full</b></td>
+                                <td>Writes fail hard; backups/logs may stop.</td>
+                                <td>Capacity alerts, automated expansion, log/archive cleanup policy.</td>
+                                <td>Add storage, clean safely, verify backups and transaction logs.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Query becomes extremely slow</b></td>
+                                <td>One endpoint slows or locks shared tables.</td>
+                                <td>Slow query monitoring, query timeout, kill runaway report, read/write separation.
+                                </td>
+                                <td>Add/adjust index, rewrite query, move report workload, review deployment.</td>
+                            </tr>
+                            <tr>
+                                <td><b>One tenant generates huge traffic</b></td>
+                                <td>Noisy neighbor hurts other tenants.</td>
+                                <td>Per-tenant rate limits, tenant-level metrics, isolate hot tenant if persistent.</td>
+                                <td>Throttle, communicate, move tenant to dedicated database/shard if justified.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s15">
+                <div class="sec-kicker">SECTION 15 - BACKUP AND RECOVERY</div>
+                <h2 class="sec-title rv">Backup, Restore, PITR, RPO and RTO</h2>
+                <p class="sec-lead rv">Backup is not a checkbox. The only backup that matters is one you can restore
+                    inside the business's recovery requirement.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Backup</b><span>A copy of database data stored separately so you can recover
+                            after deletion, corruption or disaster.</span></div>
+                    <div class="topic"><b>Restore</b><span>The act of bringing data back from backup into a usable
+                            database. Restore must be tested.</span></div>
+                    <div class="topic"><b>Point-in-time recovery</b><span>Restore to a specific moment, for example
+                            10:14 AM, right before a bad script deleted rows.</span></div>
+                    <div class="topic"><b>RPO</b><span>Recovery Point Objective: how much data can we afford to lose?
+                            Example: if RPO is 5 minutes, losing 4 minutes is acceptable; 30 minutes is not.</span>
+                    </div>
+                    <div class="topic"><b>RTO</b><span>Recovery Time Objective: how long can we afford to be down?
+                            Example: if RTO is 30 minutes, restore and failover must be rehearsed for that.</span></div>
+                    <div class="topic"><b>The blunt truth</b><span>A backup without a restore test is a belief, not a
+                            recovery plan.</span></div>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>BUSINESS SCENARIO</th>
+                                <th>RPO THINKING</th>
+                                <th>RTO THINKING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Internal admin/reporting tool</b></td>
+                                <td>Can lose 1 hour of recent changes if data can be regenerated.</td>
+                                <td>Can be down half a day without customer impact.</td>
+                            </tr>
+                            <tr>
+                                <td><b>E-commerce order platform</b></td>
+                                <td>Orders and payments cannot be lost; target minutes or near-zero for writes.</td>
+                                <td>Minutes to under an hour, depending on SLA and revenue impact.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Financial ledger / payment settlement</b></td>
+                                <td>Near-zero data loss. Every transaction matters.</td>
+                                <td>Very low, with strong failover and reconciliation procedures.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s16">
+                <div class="sec-kicker">SECTION 16 - CASE STUDY</div>
+                <h2 class="sec-title rv">Multi-Tenant E-Commerce SaaS: Database Architecture</h2>
+                <p class="sec-lead rv">Requirements: 10,000 companies, 1 million users, 100,000 active users, 10,000
+                    concurrent users, 5,000 peak requests/sec, billions of historical orders, catalog, orders, payments,
+                    inventory, reports, audit, Redis, messaging, Azure/AWS deployment.</p>
+                <div class="panel rv">
+                    <h4>THE DESIGN RULE</h4>
+                    <p>Do not jump directly to sharding. First design the database around business truth, access
+                        patterns,
+                        indexing, read/write separation, replication, partitioning and failure handling. Sharding is a
+                        later move if evidence says one database group cannot handle writes/data.</p>
+                </div>
+                <ol class="framework rv">
+                    <li><b>Database selection</b><span>Use SQL Server or PostgreSQL as the primary transactional store
+                            for orders, payments, inventory movements and invoices. These are relational, need
+                            constraints, and need strong transaction semantics.</span><span class="fr-hint">WHY: CORE
+                            COMMERCE DATA IS RELATIONAL AND TRANSACTIONAL</span></li>
+                    <li><b>Schema approach</b><span>Shared tables with TenantId for most tenants, normalized core tables
+                            for orders/payments/inventory, plus carefully designed audit/event tables. Keep the data
+                            model explicit because correctness matters.</span><span class="fr-hint">WHY: COST-EFFICIENT
+                            FOR 10,000 TENANTS WITH A PATH TO ISOLATE</span></li>
+                    <li><b>Indexing</b><span>Index real access patterns: <code>(TenantId, OrderId)</code>,
+                            <code>(TenantId, CreatedDate)</code>, <code>(TenantId, CustomerId, CreatedDate)</code>,
+                            product catalog keys, payment status lookups. Review indexes by slow-query data.</span><span
+                            class="fr-hint">WHY: TENANT-SCOPED QUERIES MUST NOT SCAN SHARED TABLES</span></li>
+                    <li><b>Read/write separation</b><span>All writes to primary. Safe reads such as catalog browsing,
+                            order history and reporting extracts go to read replicas or read models. Checkout
+                            re-validates critical data on primary.</span><span class="fr-hint">WHY: READS ARE HIGH
+                            VOLUME AND CAN BE STALE IN SOME PLACES</span></li>
+                    <li><b>Replication</b><span>Use managed primary with zone-redundant replica/failover group where
+                            available. Add read replicas for scale and for backup/reporting offload.</span><span
+                            class="fr-hint">WHY: IMPROVES AVAILABILITY AND READ CAPACITY, BUT WATCH LAG</span></li>
+                    <li><b>Partitioning</b><span>Partition historical orders and audit records by date first, because
+                            old data grows forever and reports usually use time windows. Consider tenant or region
+                            partitioning only when access and compliance require it.</span><span class="fr-hint">WHY:
+                            BILLIONS OF HISTORICAL ROWS NEED MAINTENANCE BOUNDARIES</span></li>
+                    <li><b>Sharding</b><span>Do not start sharded. Add a tenant catalog early so the platform can later
+                            route selected tenants to dedicated databases/shards. Shard when write load, data size or
+                            tenant isolation evidence proves one database group is not enough.</span><span
+                            class="fr-hint">WHY: KEEP V1 OPERABLE, PRESERVE A FUTURE ESCAPE PATH</span></li>
+                    <li><b>Tenant strategy</b><span>Hybrid: shared for the long tail of small tenants, dedicated
+                            database for very large or regulated tenants. Track tenant load, storage, query cost and
+                            noisy-neighbor behavior.</span><span class="fr-hint">WHY: 10,000 DATABASES ON DAY ONE IS
+                            EXPENSIVE OPERATIONS</span></li>
+                    <li><b>Reporting strategy</b><span>Do not run heavy reports on the OLTP primary. Use
+                            messaging/CDC/export jobs into a reporting database, warehouse or read model. Reports can be
+                            minutes behind if the business accepts it.</span><span class="fr-hint">WHY: REPORTS SCAN;
+                            CHECKOUT MUST NOT WAIT BEHIND SCANS</span></li>
+                    <li><b>Backup</b><span>Automated backups, point-in-time recovery, separate storage, periodic restore
+                            tests. Keep hot backups for fast recovery and longer archives for
+                            audit/compliance.</span><span class="fr-hint">WHY: REPLICATION DOES NOT UNDELETE DATA</span>
+                    </li>
+                    <li><b>Disaster recovery</b><span>Define RPO/RTO with the business. For core orders/payments, choose
+                            low RPO and rehearsed regional failover. For reporting, allow longer recovery because it can
+                            rebuild.</span><span class="fr-hint">WHY: NOT EVERY WORKLOAD DESERVES THE SAME DR
+                            COST</span></li>
+                    <li><b>Failure handling</b><span>Retry transient database errors with backoff, keep writes
+                            idempotent, use short timeouts, fail over managed databases, shed load under connection
+                            pressure, isolate noisy tenants and protect the primary from reports.</span><span
+                            class="fr-hint">WHY: DATABASE FAILURE MUST NOT BECOME DUPLICATE PAYMENTS OR LOST
+                            ORDERS</span></li>
+                </ol>
+                <div class="callout rv"><span class="co-label">HOW THE DESIGN EVOLVES</span>
+                    <p>Start with one well-designed SQL primary. Then add indexes and vertical scale. Then read
+                        replicas.
+                        Then partition historical tables. Then separate reporting. Then isolate hot tenants. Only then
+                        shard the write path if evidence still says the database layer cannot meet the requirement.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s17">
+                <div class="sec-kicker">SECTION 17 - EVOLUTION</div>
+                <h2 class="sec-title rv">Three Stages of Database Architecture</h2>
+                <p class="sec-lead rv">The lesson: <b>Do not build a billion-user architecture for a 10,000-user
+                        problem.</b> Build the smallest database architecture that safely meets today's needs and has a
+                    clear next step.</p>
+                <div class="stage-grid rv">
+                    <div class="stage">
+                        <h4>STAGE 1 - SMALL SYSTEM</h4>
+                        <p><b>Architecture:</b> One SQL database, good schema, basic indexes, backups, Redis for hot
+                            reads.</p>
+                        <p><b>Why enough:</b> Low traffic and low data volume. Simplicity beats imaginary scale.</p>
+                        <p><b>Next limitation:</b> Slow queries, missing indexes, database CPU during peaks.</p>
+                    </div>
+                    <div class="stage">
+                        <h4>STAGE 2 - GROWING SYSTEM</h4>
+                        <p><b>Architecture:</b> Stronger DB tier, tuned indexes, connection pooling, read replicas,
+                            partitioned orders/audit, reporting copy.</p>
+                        <p><b>Why enough:</b> Reads are offloaded, old data is manageable, reporting no longer fights
+                            checkout.</p>
+                        <p><b>Next limitation:</b> Primary write pressure and hot tenants.</p>
+                    </div>
+                    <div class="stage">
+                        <h4>STAGE 3 - LARGE SCALE</h4>
+                        <p><b>Architecture:</b> Hybrid tenant isolation, dedicated databases for large tenants, sharded
+                            write path if needed, regional replicas, strict DR.</p>
+                        <p><b>Why enough:</b> Workload is distributed and noisy tenants can be isolated.</p>
+                        <p><b>Next limitation:</b> Cross-shard reporting, rebalancing, operations complexity and cost.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" id="s18">
+                <div class="sec-kicker">SECTION 18 - DECISIONS</div>
+                <h2 class="sec-title rv">Ten Questions Before Changing Database Architecture</h2>
+                <p class="sec-lead rv">Before you add replicas, partitions, shards or new database technology, ask
+                    these. They prevent expensive solutions to the wrong problem.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:980px">
+                        <thead>
+                            <tr>
+                                <th>QUESTION</th>
+                                <th>WHY IT MATTERS</th>
+                                <th>POSSIBLE DECISION</th>
+                                <th>TRADE-OFF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Is the database actually the bottleneck?</b></td>
+                                <td>App CPU, network, Redis or payment provider may be the real issue.</td>
+                                <td>Use traces/metrics before architecture change.</td>
+                                <td>Investigation takes time but avoids wrong fixes.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Is the problem reads or writes?</b></td>
+                                <td>Read pressure and write pressure scale differently.</td>
+                                <td>Read replicas for reads; sharding/workflow changes for writes.</td>
+                                <td>Wrong choice adds complexity without relief.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Can indexing solve it?</b></td>
+                                <td>Missing indexes are common and cheaper than topology changes.</td>
+                                <td>Add or adjust targeted indexes.</td>
+                                <td>Improves reads, may slow writes and increase storage.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Can caching solve it?</b></td>
+                                <td>Hot read data may not need a DB call every time.</td>
+                                <td>Cache product/catalog/session/reference data.</td>
+                                <td>Staleness and invalidation complexity.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Can read replicas solve it?</b></td>
+                                <td>Read-heavy workloads can often be offloaded cleanly.</td>
+                                <td>Route safe reads to replicas.</td>
+                                <td>Replication lag and read routing complexity.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Do we need partitioning?</b></td>
+                                <td>Large tables may need maintenance/query boundaries.</td>
+                                <td>Partition orders by date, region or tenant if access supports it.</td>
+                                <td>Wrong key creates hot partitions or hard queries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Do we really need sharding?</b></td>
+                                <td>Sharding is costly and hard to undo.</td>
+                                <td>Shard only after evidence proves one database group cannot cope.</td>
+                                <td>Routing, rebalancing, cross-shard queries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>How will tenants be distributed?</b></td>
+                                <td>Uneven tenants create hot shards.</td>
+                                <td>Hybrid placement with tenant catalog and top-N monitoring.</td>
+                                <td>More operational tooling.</td>
+                            </tr>
+                            <tr>
+                                <td><b>What happens during failover?</b></td>
+                                <td>Apps must reconnect and avoid duplicate writes.</td>
+                                <td>Managed failover, idempotent writes, retry with backoff.</td>
+                                <td>More code discipline and testing.</td>
+                            </tr>
+                            <tr>
+                                <td><b>What is the recovery requirement?</b></td>
+                                <td>RPO/RTO decides cost and architecture.</td>
+                                <td>Choose backup frequency, PITR, regional replicas, restore drills.</td>
+                                <td>Lower RPO/RTO costs more.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s19">
+                <div class="sec-kicker">SECTION 19 - MISTAKES</div>
+                <h2 class="sec-title rv">Ten Common Database Architecture Mistakes</h2>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. Sharding too early</b><span>You inherit routing, rebalancing and
+                            cross-shard pain before you have proved a single database cannot work.</span></div>
+                    <div class="topic"><b>2. No indexing strategy</b><span>Shared multi-tenant tables become scans, and
+                            scans become incidents.</span></div>
+                    <div class="topic"><b>3. Too many indexes</b><span>Every write pays the price. Indexes are read
+                            accelerators and write tax.</span></div>
+                    <div class="topic"><b>4. Scaling APIs while DB remains bottleneck</b><span>More API servers create
+                            more database pressure and can make failure arrive sooner.</span></div>
+                    <div class="topic"><b>5. No read/write separation</b><span>Catalog browsing and reports fight
+                            checkout on the same primary.</span></div>
+                    <div class="topic"><b>6. Ignoring replication delay</b><span>Users write data, then read from a
+                            lagging replica and think the write failed.</span></div>
+                    <div class="topic"><b>7. Poor tenant distribution</b><span>One tenant becomes 40% of traffic and
+                            harms everyone else.</span></div>
+                    <div class="topic"><b>8. Large transactions</b><span>Long transactions hold locks, create contention
+                            and increase deadlocks.</span></div>
+                    <div class="topic"><b>9. No backup testing</b><span>Backup files exist, but nobody knows whether
+                            restore works inside RTO.</span></div>
+                    <div class="topic"><b>10. No disaster recovery plan</b><span>Primary region fails and the team
+                            discovers the recovery steps during the incident.</span></div>
+                </div>
+            </section>
+
+            <section class="sec" id="s20">
+                <div class="sec-kicker">SECTION 20 - YOUR TURN</div>
+                <h2 class="sec-title rv">Day 13 Assignment</h2>
+                <p class="sec-lead rv">Do not provide yourself the solution. Design the database architecture for the
+                    <b>Multi-Tenant E-Commerce SaaS</b>: 10,000 tenants, 1 million users, 5,000 peak requests/sec, 10
+                    billion historical orders, heavy product reads, heavy order writes, reporting workload, audit
+                    requirements, high availability and possible multi-region deployment.
+                </p>
+                <div class="callout co-warn rv"><span class="co-label">NON-NEGOTIABLE QUESTION</span>
+                    <p>For every major decision, answer: <b>Why this? Why not the simpler option?</b> If you cannot
+                        explain why the simpler option fails, you are probably overengineering.</p>
+                </div>
+                <div class="asg-progress rv">
+                    <div class="asg-bar"><i id="asgFill"></i></div><span class="asg-count" id="asgCount">0 / 16
+                        DONE</span>
+                </div>
+                <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>1</strong>Database choice.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>2</strong>Data model approach.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>3</strong>Index strategy.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>4</strong>Read/write strategy.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>5</strong>Replication.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>6</strong>Partitioning.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>7</strong>Sharding decision.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>8</strong>Tenant isolation strategy.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>9</strong>Reporting strategy.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>10</strong>Backup strategy.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>11</strong>Disaster recovery.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>12</strong>RPO/RTO.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>13</strong>Failure handling.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>14</strong>Scaling plan.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="15"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>15</strong>10 architecture decisions with reasons.</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="16"><span class="asg-cb"></span><span
+                        class="asg-tx"><strong>16</strong>5 rejected alternatives.</span></label>
+            </section>
+
+            <section class="sec" id="s21">
+                <div class="sec-kicker">SECTION 21 - TROUBLESHOOTING EXERCISE</div>
+                <h2 class="sec-title rv">Incident: Order API Jumped From 300 ms to 8 Seconds</h2>
+                <p class="sec-lead rv"><b>Initial facts:</b> Order API response time increased from 300 ms to 8 seconds.
+                    Database CPU is 95%. Investigate step by step. Start with observability from Day 12, then use the
+                    database flow from Section 9.</p>
+                <ol class="framework rv">
+                    <li><b>Confirm scope</b><span>Is it only Order API? Only writes? Only one tenant? Did it start after
+                            a deploy, campaign or report?</span><span class="fr-hint">DO NOT FIX BEFORE YOU SCOPE</span>
+                    </li>
+                    <li><b>Find the slow query</b><span>Trace slow requests, identify the database span and the exact
+                            query or procedure consuming time.</span><span class="fr-hint">API SLOWNESS IS A
+                            SYMPTOM</span></li>
+                    <li><b>Check plan, indexes and row counts</b><span>Is the database scanning a huge table? Is a
+                            useful index missing? Did data volume cross a threshold?</span><span class="fr-hint">INDEX
+                            BEFORE SHARD</span></li>
+                    <li><b>Check workload mix</b><span>How much is read traffic, write traffic and reporting? Are
+                            reports running on the primary?</span><span class="fr-hint">SEPARATE WORKLOADS IF THEY
+                            FIGHT</span></li>
+                    <li><b>Check tenant distribution and connections</b><span>Is one tenant flooding the system? Is the
+                            database at max connections? Are connection pools leaking or too large?</span><span
+                            class="fr-hint">LOAD SHAPE MATTERS</span></li>
+                </ol>
+                <div class="cluebox rv">
+                    <div class="demo-head">
+                        <span class="demo-title">REVEAL ADDITIONAL INFORMATION GRADUALLY</span>
+                        <button class="btn" id="clueBtn" type="button">REVEAL NEXT CLUE</button>
+                    </div>
+                    <ol class="clues" id="clues">
+                        <li><b>Clue 1:</b> The slow query filters Orders by TenantId and CreatedDate, but the useful
+                            composite index is missing. Decide whether index creation is the first tactical fix and why.
+                        </li>
+                        <li><b>Clue 2:</b> Read traffic is 80% of total traffic. Decide whether read replicas or routing
+                            safe reads away from the primary is the next scaling move.</li>
+                        <li><b>Clue 3:</b> One tenant generates 40% of traffic. Decide whether to throttle, isolate or
+                            move that tenant, and what metric proves the need.</li>
+                        <li><b>Clue 4:</b> Reporting queries run on the production database. Decide whether reporting
+                            should move to a replica, read model or warehouse before touching sharding.</li>
+                        <li><b>Clue 5:</b> The database has reached its connection limit. Decide what to fix first:
+                            query/index, connection pool, reporting isolation, read routing or tenant throttling.
+                            Explain your order and why.</li>
+                    </ol>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">YOUR TASK</span>
+                    <p>Write your answer as a prioritized incident plan: <b>immediate mitigation, root cause proof,
+                            short-term fix, long-term architecture change.</b> The interviewer is looking for order, not
+                        heroics.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s22">
+                <div class="sec-kicker">SECTION 22 - SELF-TEST</div>
+                <h2 class="sec-title rv">15 Scenario-Based Interview Questions</h2>
+                <p class="sec-lead rv">Click each question after answering it out loud. The reveal shows what a strong
+                    architect answer should cover.</p>
+                <ol class="qlist rv">
+                    <li>Your SQL database CPU is 90%, but API CPU is 20%. Product asks to add more API instances. What
+                        do you say?<span class="qt warm">BOTTLENECK</span><span class="qh-btn">SHOW STRONG-ANSWER
+                            CHECK</span><span class="qh"><b>LISTEN FOR</b>More APIs can increase DB pressure. Identify
+                            read/write/query/connection cause before scaling apps. Fix bottleneck, not symptom.</span>
+                    </li>
+                    <li>When is vertical scaling the right first database scaling move?<span
+                            class="qt warm">SCALING</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>When one server is not yet at architectural limits and simple
+                            capacity increase buys time with low complexity. Mention ceiling and cost.</span></li>
+                    <li>A product catalog is read 100 times more than it is written. How do read replicas help, and what
+                        is the risk?<span class="qt">REPLICAS</span><span class="qh-btn">SHOW STRONG-ANSWER
+                            CHECK</span><span class="qh"><b>LISTEN FOR</b>Writes to primary, safe reads to replicas,
+                            lower primary load, replication lag and stale reads, primary validation at checkout.</span>
+                    </li>
+                    <li>Explain why replication is not backup using a deletion incident.<span
+                            class="qt warm">RECOVERY</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>Replica copies deletes/corruption. Backup/PITR restores to
+                            before the mistake. Need both.</span></li>
+                    <li>You have 10 billion orders and most queries are by month. What partitioning strategy might
+                        fit?<span class="qt">PARTITION</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>Date partitioning, easier recent queries, archiving old data,
+                            warning about hot current partition.</span></li>
+                    <li>One shard has 70% of traffic while others are idle. What happened, and what can you do?<span
+                            class="qt deep">SHARDING</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>Poor key distribution or hot tenant. Need tenant metrics,
+                            throttling, move tenant, reshard/rebalance, future placement strategy.</span></li>
+                    <li>When should you reject sharding in an interview answer?<span
+                            class="qt curve">TRADE-OFF</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>When reads can be solved by replicas, queries by indexes,
+                            reports by offload, data by partitioning. Shard only after evidence.</span></li>
+                    <li>A query filters by TenantId and CreatedDate. What index would you consider and what is the
+                        trade-off?<span class="qt">INDEXING</span><span class="qh-btn">SHOW STRONG-ANSWER
+                            CHECK</span><span class="qh"><b>LISTEN FOR</b>Composite index like (TenantId, CreatedDate),
+                            maybe includes selected columns if covering is useful. Read speed vs write/storage
+                            cost.</span></li>
+                    <li>The database reached max connections. Do you increase the connection pool?<span
+                            class="qt deep">CONNECTIONS</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>Not automatically. Check connection leaks, slow queries holding
+                            connections, pool size, database saturation and request concurrency. Sometimes the right
+                            move is to reduce concurrency and fix the slow workload before raising limits.</span></li>
+                    <li class="qhas">A manager wants one transaction around order creation, payment call and inventory
+                        update. What risk do you explain?<span class="qt deep">TRANSACTION</span><span
+                            class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span class="qh"><b>LISTEN FOR</b>Long
+                            transaction, locks, blocking, deadlocks, external call inside transaction. Keep DB
+                            transaction small, use idempotency and messaging.</span></li>
+                    <li>Your reporting team runs heavy cross-tenant reports on the production primary. What architecture
+                        change do you recommend first?<span class="qt warm">REPORTING</span><span class="qh-btn">SHOW
+                            STRONG-ANSWER CHECK</span><span class="qh"><b>LISTEN FOR</b>Move reporting to replica/read
+                            model/warehouse. Protect OLTP. Accept reporting freshness trade-off.</span></li>
+                    <li>For 10,000 tenants, why not create 10,000 databases on day one?<span
+                            class="qt curve">MULTI-TENANT</span><span class="qh-btn">SHOW STRONG-ANSWER
+                            CHECK</span><span class="qh"><b>LISTEN FOR</b>Operational cost, migrations, monitoring,
+                            backup, connection overhead. Hybrid is practical: shared long tail, isolate big/regulatory
+                            tenants.</span></li>
+                    <li>How would you choose between SQL Server/PostgreSQL and Cosmos DB/MongoDB for part of the
+                        platform?<span class="qt">CHOICE</span><span class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span
+                            class="qh"><b>LISTEN FOR</b>Access patterns, relationships, transactions, schema
+                            flexibility, scale/global distribution. Not popularity.</span></li>
+                    <li>Define RPO and RTO for order creation in plain English.<span class="qt warm">RPO/RTO</span><span
+                            class="qh-btn">SHOW STRONG-ANSWER CHECK</span><span class="qh"><b>LISTEN FOR</b>RPO = how
+                            much order data can be lost; RTO = how long order creation can be down. Orders/payments
+                            usually need low RPO and low RTO.</span></li>
+                    <li>A primary database fails during checkout. What must your architecture do to avoid lost orders or
+                        duplicate payments?<span class="qt deep">FAILURE</span><span class="qh-btn">SHOW STRONG-ANSWER
+                            CHECK</span><span class="qh"><b>LISTEN FOR</b>Failover, retry with backoff, idempotency
+                            keys, durable messages/outbox if used, reconciliation, avoid blind retries that duplicate
+                            payments.</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">THE INTERVIEW PATTERN</span>
+                    <p>Most database interview questions are traps against premature solutions. Before choosing
+                        replicas,
+                        partitioning or sharding, explain what evidence you need and which simpler option you would test
+                        first.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s23">
+                <div class="sec-kicker">SECTION 23 - SUCCESS CRITERIA</div>
+                <h2 class="sec-title rv">Day 13 Success Criteria</h2>
+                <p class="sec-lead rv">Tick each item when you can explain it from memory with a production example.</p>
+                <div id="successList" class="rv">
+                    <div class="check-item" data-c="1"><span class="cb"></span><b>Identify database bottlenecks</b> -
+                        query, locks, connections, CPU, IO, tenants, reports.</div>
+                    <div class="check-item" data-c="2"><span class="cb"></span><b>Explain vertical and horizontal
+                            scaling</b> - including why vertical often comes first.</div>
+                    <div class="check-item" data-c="3"><span class="cb"></span><b>Design read scaling</b> - writes to
+                        primary, safe reads to replicas, stale-data rules.</div>
+                    <div class="check-item" data-c="4"><span class="cb"></span><b>Explain replication</b> - read scale,
+                        availability, lag, failover, not backup.</div>
+                    <div class="check-item" data-c="5"><span class="cb"></span><b>Distinguish partitioning from
+                            sharding</b> - data location, purpose, complexity.</div>
+                    <div class="check-item" data-c="6"><span class="cb"></span><b>Decide when sharding is justified</b>
+                        - after simpler scaling options are exhausted with evidence.</div>
+                    <div class="check-item" data-c="7"><span class="cb"></span><b>Explain indexing trade-offs</b> -
+                        faster reads, more storage/write cost.</div>
+                    <div class="check-item" data-c="8"><span class="cb"></span><b>Design multi-tenant database
+                            strategies</b> - shared, schema, separate DB, hybrid.</div>
+                    <div class="check-item" data-c="9"><span class="cb"></span><b>Handle database failures</b> -
+                        primary, replica, network, connections, disk, query, tenant.</div>
+                    <div class="check-item" data-c="10"><span class="cb"></span><b>Explain backup and disaster
+                            recovery</b> - backup, restore, PITR, restore testing.</div>
+                    <div class="check-item" data-c="11"><span class="cb"></span><b>Define RPO and RTO</b> - data loss
+                        and downtime in business language.</div>
+                    <div class="check-item" data-c="12"><span class="cb"></span><b>Choose SQL vs NoSQL based on
+                            requirements</b> - relationships, transactions, scale, query pattern.</div>
+                    <div class="check-item" data-c="13"><span class="cb"></span><b>Evolve a database architecture as the
+                            system grows</b> - stage 1, stage 2, stage 3.</div>
+                    <div class="check-item" data-c="14"><span class="cb"></span><b>Defend database architecture
+                            decisions in an interview</b> - why this, why not simpler, what trade-off.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">DAY 13 - CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">The Database Architect Mindset</h2>
+            <p class="sec-lead rv">Five rules to carry into interviews and production reviews.</p>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Find the real database problem.</h3>
+                    <p>Read pressure, write pressure, missing index, locks, connection exhaustion, reports and tenant
+                        skew are different problems. They deserve different fixes.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Use the simplest move that buys enough safety.</h3>
+                    <p>A better index can beat a shard. A read replica can beat a rewrite. Vertical scaling is not
+                        embarrassing when it is the cheapest safe step.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Shard late, but prepare early.</h3>
+                    <p>Do not shard before evidence. But design tenant IDs, routing boundaries and reporting separation
+                        so future sharding is possible.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Recovery is part of the database design.</h3>
+                    <p>Replication, backup, point-in-time restore, failover, RPO and RTO are not operations
+                        afterthoughts. They are architecture choices.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Design for growth, not fantasy.</h3>
+                    <p>Do not build a billion-user database architecture for a 10,000-user problem. Build a clean stage
+                        one and know exactly what triggers stage two.</p>
+                </div>
+            </div>
+            <p class="mind-close rv">The architect's database answer is not "SQL" or "NoSQL". It is the chain: data
+                size, traffic shape, access pattern, scaling path, failure response and recovery promise.</p>
+        </div>
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK - DAY 13 / 30 - DATABASE LAYER SCALING</div>
+            <div class="f-r">DATABASE SCALABILITY - <b>DAY 14 NOT ON THIS PAGE</b> - CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () {
+            if (window.jQuery) return;
+            function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; }
+            Q.prototype = {
+                each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; },
+                on: function (ev, sel, f) {
+                    if (typeof sel === 'function') { f = sel; sel = null; }
+                    return this.each(function (i, e) {
+                        ev.split(' ').forEach(function (name) {
+                            e.addEventListener(name, function (a) {
+                                if (!sel) return f.call(e, a);
+                                var t = a.target.closest(sel);
+                                if (t && e.contains(t)) f.call(t, a);
+                            });
+                        });
+                    });
+                },
+                addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); },
+                removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); },
+                toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); },
+                hasClass: function (c) { return !!(this.el[0] && this.el[0].classList.contains(c)); },
+                closest: function (s) { var x = this.el[0] ? this.el[0].closest(s) : null; return new Q(x ? [x] : []); },
+                css: function (k, v) { if (v === undefined) return this.el[0] ? getComputedStyle(this.el[0])[k] : undefined; return this.each(function (i, e) { e.style[k] = v; }); },
+                text: function (v) { if (v === undefined) return this.el[0] ? this.el[0].textContent : ''; return this.each(function (i, e) { e.textContent = v; }); },
+                attr: function (k, v) { if (v === undefined) return this.el[0] ? this.el[0].getAttribute(k) : undefined; return this.each(function (i, e) { e.setAttribute(k, v); }); },
+                data: function (k) { return this.el[0] ? this.el[0].getAttribute('data-' + k) : undefined; }
+            };
+            function $(s) {
+                if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; }
+                if (s instanceof Element || s === window || s === document) return new Q([s]); return new Q(document.querySelectorAll(s));
+            }
+            window.jQuery = window.$ = $;
+        })();
+    </script>
+    <script>
+        $(function () {
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 'mindset'];
+            var ticking = false;
+
+            function updateScroll() {
+                if (ticking) return;
+                ticking = true;
+                requestAnimationFrame(function () {
+                    var doc = document.documentElement;
+                    var max = doc.scrollHeight - window.innerHeight;
+                    var y = window.scrollY || doc.scrollTop;
+                    $('#progressBar').css('transform', 'scaleX(' + (max > 0 ? y / max : 0) + ')');
+                    $('#toTop').toggleClass('show', y > 900);
+                    var cur = '';
+                    spyIds.forEach(function (id) {
+                        var el = document.getElementById(id);
+                        if (el && el.getBoundingClientRect().top <= 150) cur = id;
+                    });
+                    $('.tn[data-spy]').each(function () {
+                        $(this).toggleClass('on', $(this).attr('data-spy') === cur);
+                    });
+                    ticking = false;
+                });
+            }
+
+            $(window).on('scroll resize', updateScroll);
+            updateScroll();
+            $('#toTop').on('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+
+            if (reduced || !('IntersectionObserver' in window)) {
+                $('.rv').addClass('in');
+            } else {
+                var io = new IntersectionObserver(function (entries) {
+                    entries.forEach(function (entry) {
+                        if (entry.isIntersecting) {
+                            entry.target.classList.add('in');
+                            io.unobserve(entry.target);
+                        }
+                    });
+                }, { threshold: .08, rootMargin: '0px 0px -40px 0px' });
+                $('.rv').each(function () { io.observe(this); });
+            }
+
+            function applyTheme(dark) {
+                $('body').toggleClass('dark', dark);
+                $('.ic-moon').css('display', dark ? 'none' : '');
+                $('.ic-sun').css('display', dark ? '' : 'none');
+            }
+
+            var storedTheme = null;
+            try { storedTheme = localStorage.getItem('arch-day13-theme'); } catch (e) { }
+            applyTheme(storedTheme === 'dark');
+            $('#themeBtn').on('click', function () {
+                var dark = !$('body').hasClass('dark');
+                applyTheme(dark);
+                try { localStorage.setItem('arch-day13-theme', dark ? 'dark' : 'light'); } catch (e) { }
+            });
+
+            function closeToc() { $('#toc').removeClass('open'); $('#scrim').removeClass('on'); }
+            $('#tocToggle').on('click', function () {
+                var open = !$('#toc').hasClass('open');
+                $('#toc').toggleClass('open', open);
+                $('#scrim').toggleClass('on', open);
+            });
+            $('#scrim').on('click', closeToc);
+            $('#toc').on('click', 'a', closeToc);
+            $('#printBtn').on('click', function () { window.print(); });
+
+            var trafficCopy = {
+                100: { api: 12, db: 10, text: 'One API instance and one modest database may be enough. Most time is spent building product value, not complex scaling.' },
+                1000: { api: 28, db: 35, text: 'Application servers can scale out easily, but indexes, connection pools and slow queries begin to matter.' },
+                10000: { api: 55, db: 82, text: 'More APIs now create more simultaneous database work. Read replicas, query tuning and reporting separation become serious.' },
+                100000: { api: 88, db: 100, text: 'The database layer must be deliberately distributed or specialized. This is where partitioning, tenant isolation and maybe sharding enter.' }
+            };
+
+            $('#trafficDemo').on('click', '.demo-btn', function () {
+                var rps = $(this).data('rps');
+                var item = trafficCopy[rps];
+                $('.demo-btn').removeClass('on');
+                $(this).addClass('on');
+                $('#rpsBig').text(Number(rps).toLocaleString());
+                $('#rpsText').text(item.text);
+                $('#apiBar').css('width', item.api + '%').toggleClass('hot', item.api > 80);
+                $('#dbBar').css('width', item.db + '%').toggleClass('hot', item.db > 80);
+            });
+            $('#apiBar').css('width', '12%');
+            $('#dbBar').css('width', '10%');
+
+            var saved = [];
+            try { saved = JSON.parse(localStorage.getItem('arch-day13-asg') || '[]'); } catch (e) { }
+            function updateAssignment() {
+                var total = $('.asg-item input').length;
+                var done = $('.asg-item input:checked').length;
+                $('#asgFill').css('width', Math.round((done / total) * 100) + '%');
+                $('#asgCount').text(done + ' / ' + total + ' DONE');
+            }
+            $('.asg-item input').each(function () {
+                var id = $(this).data('asg').toString();
+                if (saved.indexOf(id) !== -1) {
+                    this.checked = true;
+                    $(this).closest('.asg-item').addClass('checked');
+                }
+            }).on('change', function () {
+                $(this).closest('.asg-item').toggleClass('checked', this.checked);
+                var state = [];
+                $('.asg-item input:checked').each(function () { state.push($(this).data('asg').toString()); });
+                try { localStorage.setItem('arch-day13-asg', JSON.stringify(state)); } catch (e) { }
+                updateAssignment();
+            });
+            updateAssignment();
+
+            var savedSuccess = [];
+            try { savedSuccess = JSON.parse(localStorage.getItem('arch-day13-success') || '[]'); } catch (e) { }
+            $('.check-item').each(function () {
+                var id = $(this).data('c').toString();
+                if (savedSuccess.indexOf(id) !== -1) $(this).addClass('checked');
+            }).on('click', function () {
+                $(this).toggleClass('checked');
+                var state = [];
+                $('.check-item.checked').each(function () { state.push($(this).data('c').toString()); });
+                try { localStorage.setItem('arch-day13-success', JSON.stringify(state)); } catch (e) { }
+            });
+
+            $('.qlist li').on('click', function () { $(this).toggleClass('qopen'); });
+
+            var clueIndex = 0;
+            $('#clueBtn').on('click', function () {
+                var clues = $('#clues li');
+                if (clueIndex < clues.length) {
+                    $(clues[clueIndex]).addClass('show');
+                    clueIndex += 1;
+                }
+                if (clueIndex >= clues.length) $(this).text('ALL CLUES REVEALED');
+            });
+        });
+    </script>
+</body>
+
+</html>

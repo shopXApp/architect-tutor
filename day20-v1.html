@@ -1,0 +1,3237 @@
+<!DOCTYPE html>
+<html lang="en" option="A">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 20 of the 30-Day Technical Architect Track: Architecture Trade-offs and Decision Making — how to evaluate options, compare alternatives, defend decisions, and answer 'why not the alternative?' in interviews." />
+    <title>Day 20 — Architecture Trade-offs &amp; Decision Making · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 4 4
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            color: var(--ink)
+        }
+
+        .calc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 18px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--teal)
+        }
+
+        .calc-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px
+        }
+
+        .calc-card .step {
+            font-size: 14.5px;
+            color: var(--ink2);
+            line-height: 1.8;
+            padding: 4px 0
+        }
+
+        .calc-card .step b {
+            color: var(--ink);
+            font-weight: 700
+        }
+
+        .ans {
+            display: none;
+            margin-top: 16px;
+            padding: 16px 18px;
+            background: var(--card2);
+            border-radius: 4px;
+            border-left: 3px solid var(--teal);
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .ans h4 {
+            color: var(--ink);
+            margin-bottom: 8px;
+            font-family: var(--disp);
+            font-size: 17px
+        }
+
+        .ans p {
+            margin: 8px 0
+        }
+
+        .weak {
+            border-left: 3px solid var(--red);
+            background: var(--warnbg);
+            padding: 12px 16px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .strong {
+            border-left: 3px solid var(--ok);
+            background: rgba(47, 109, 92, .06);
+            padding: 12px 16px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .weak b,
+        .strong b {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .16em;
+            display: block;
+            margin-bottom: 4px
+        }
+
+        .weak b {
+            color: var(--red)
+        }
+
+        .strong b {
+            color: var(--ok)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+
+            .ans,
+            .qh {
+                display: block !important
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 20 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 20 / 30 · TRADE-OFFS &amp; DECISIONS
+                </div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">There is no</span></span>
+                    <span class="mask"><span class="line d2">perfect architecture.</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">Only the <em>right
+                                trade-offs.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 20 teaches the single most important architect skill: <b>evaluating options,
+                        choosing one, and explaining why the alternatives lost</b>. Every interview question about
+                    technology is really a question about trade-offs. Today you learn to answer <b>"Why did you choose X
+                        — and why did you reject Y?"</b> with confidence.</p>
+                <div class="hero-meta"><span class="chip hot">TRADE-OFFS</span><span class="chip">10-FACTOR
+                        FRAMEWORK</span><span class="chip">10 REAL DECISIONS</span><span class="chip">ADR
+                        TEMPLATE</span><span class="chip">20 INTERVIEW Q&amp;A</span><span class="chip">DEFENSE
+                        ROUND</span></div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS DAY</h4>
+                    <ol>
+                        <li><b>01</b> Parts 1–3: What a trade-off is, the 9-step decision process, and the 10-factor
+                            framework.</li>
+                        <li><b>02</b> Parts 4–7: The 10 classic trade-offs, 10 real decisions, "why not the
+                            alternative", and the ADR.</li>
+                        <li><b>03</b> Parts 8–11: Business vs technical, cost thinking, conflicting constraints,
+                            interview traps.</li>
+                        <li><b>04</b> Parts 12–15: 20 interview Qs, the decision exercise, the defense round, and the
+                            20-minute challenge.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">15 PARTS · 10 TRADE-OFFS · 10 DECISIONS · 20 QUESTIONS · 15 DEFENSE QUESTIONS ·
+                    1 ADR</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 20 → THE DECISION ENGINE</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 20.0 — HOW AN ARCHITECT
+                        DECIDES</text>
+                    <rect class="box" x="36" y="60" width="448" height="30" rx="3" /><text x="260" y="79" font-size="9"
+                        class="t1" text-anchor="middle">1. BUSINESS PROBLEM → REQUIREMENTS → CONSTRAINTS</text>
+                    <path class="thin" d="M260 90 V106" />
+                    <path class="arr" d="M256 104 h8 l-4 6 z" />
+                    <rect class="box" x="36" y="112" width="140" height="34" rx="3" /><text x="106" y="133"
+                        font-size="9" class="t1" text-anchor="middle">OPTION A</text>
+                    <rect class="box" x="190" y="112" width="140" height="34" rx="3" /><text x="260" y="133"
+                        font-size="9" class="t1" text-anchor="middle">OPTION B</text>
+                    <rect class="box" x="344" y="112" width="140" height="34" rx="3" /><text x="414" y="133"
+                        font-size="9" class="t1" text-anchor="middle">OPTION C</text>
+                    <path class="thin" d="M106 146 V160 M260 146 V160 M414 146 V160" />
+                    <rect class="box hot" x="36" y="164" width="448" height="76" rx="3" />
+                    <text x="52" y="186" font-size="9.5" class="ta">2. WEIGH EACH OPTION AGAINST 10 FACTORS</text>
+                    <text x="52" y="204" font-size="8.5" class="t1">BUSINESS · COST · PERFORMANCE · SCALE ·
+                        AVAILABILITY</text>
+                    <text x="52" y="220" font-size="8.5" class="t1">SECURITY · COMPLEXITY · TEAM · MAINTENANCE ·
+                        RISK</text>
+                    <path class="thin" d="M260 240 V256" />
+                    <path class="arr" d="M256 254 h8 l-4 6 z" />
+                    <rect class="box ok" x="36" y="262" width="448" height="34" rx="3" /><text x="260" y="283"
+                        font-size="9" class="tt" text-anchor="middle">3. CHOOSE · DOCUMENT WHY · NAME WHAT YOU
+                        REJECTED</text>
+                    <path class="thin" d="M260 296 V312" />
+                    <path class="arr" d="M256 310 h8 l-4 6 z" />
+                    <rect class="box" x="36" y="318" width="448" height="34" rx="3" /><text x="260" y="339"
+                        font-size="9" class="t1" text-anchor="middle">4. RISKS · COST · WHEN TO REVISIT</text>
+                    <text x="260" y="374" font-size="8" class="t3" text-anchor="middle">"BEST TECHNOLOGY" IS THE WRONG
+                        QUESTION. "RIGHT TRADE-OFF FOR THIS BUSINESS" IS THE RIGHT ONE.</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#p1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3v18M3 8l9-5 9 5M5 8v6a7 7 0 0014 0V8" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">What Is a Trade-off</span><span class="p-tg">FIRST
+                        PRINCIPLES</span></span></a>
+            <a class="pstrip" href="#p3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M3 10h18M3 14h18M10 3v18" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Framework</span><span class="p-tg">10 FACTORS</span></span></a>
+            <a class="pstrip" href="#p5" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="13" y="4" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="4" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="13" y="13" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6" />
+                </svg><span><span class="p-nm">10 Real Decisions</span><span class="p-tg">A vs B,
+                        DEFENDED</span></span></a>
+            <a class="pstrip" href="#p6" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M8 9h8M8 13h5M21 12a9 9 0 11-4-7.5L21 3v9z" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Why Not Y?</span><span class="p-tg">THE INTERVIEW SKILL</span></span></a>
+            <a class="pstrip" href="#p14" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M13 3L5 14h5l-1 7 9-12h-5l1-6Z" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Defense Round</span><span class="p-tg">15 HARD
+                        QUESTIONS</span></span></a>
+        </div>
+    </section>
+
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#p1" data-spy="p1"><span>01</span> What is a trade-off</a>
+            <a class="tn" href="#p2" data-spy="p2"><span>02</span> Decision process</a>
+            <a class="tn" href="#p3" data-spy="p3"><span>03</span> The framework</a>
+            <a class="tn" href="#p4" data-spy="p4"><span>04</span> 10 classic trade-offs</a>
+            <a class="tn" href="#p5" data-spy="p5"><span>05</span> 10 real decisions</a>
+            <a class="tn" href="#p6" data-spy="p6"><span>06</span> Why not the alternative</a>
+            <a class="tn" href="#p7" data-spy="p7"><span>07</span> Decision record (ADR)</a>
+            <a class="tn" href="#p8" data-spy="p8"><span>08</span> Business vs technical</a>
+            <a class="tn" href="#p9" data-spy="p9"><span>09</span> Cost thinking</a>
+            <a class="tn" href="#p10" data-spy="p10"><span>10</span> Conflicting constraints</a>
+            <a class="tn" href="#p11" data-spy="p11"><span>11</span> Interview traps</a>
+            <a class="tn" href="#p12" data-spy="p12"><span>12</span> 20 interview Q&amp;A</a>
+            <a class="tn" href="#p13" data-spy="p13"><span>13</span> Decision exercise</a>
+            <a class="tn" href="#p14" data-spy="p14"><span>14</span> Architecture defense</a>
+            <a class="tn" href="#p15" data-spy="p15"><span>15</span> 20-min challenge</a>
+            <a class="tn" href="#summary" data-spy="summary"><span>★</span> 10 rules &amp; close</a>
+        </aside>
+        <main class="doc">
+
+            <!-- PART 1 -->
+            <section class="sec" id="p1">
+                <div class="sec-kicker">PART 1 — FIRST PRINCIPLES</div>
+                <h2 class="sec-title rv">What Is an Architecture Trade-off?</h2>
+                <p class="sec-lead rv">A trade-off is simple: <b>to get more of one thing, you accept less of
+                        another.</b> Every architecture decision is a trade-off, whether you notice it or not.</p>
+
+                <h3>Everyday examples first</h3>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Buying a car</b><span>A sports car is fast but expensive and uncomfortable for
+                            a family. A minivan is roomy but slow. There is no car that is fastest, cheapest, roomiest
+                            and safest at once. You choose based on <i>your</i> life, not on "the best car."</span>
+                    </div>
+                    <div class="topic"><b>Choosing a restaurant</b><span>Fast food is quick and cheap but not healthy. A
+                            fine restaurant is delicious but slow and costly. On a lunch break you pick speed. On an
+                            anniversary you pick quality. Same person, different decision — because the
+                            <i>requirement</i> changed.</span></div>
+                    <div class="topic"><b>Renting vs buying a home</b><span>Buying gives control and long-term value but
+                            needs a large upfront cost and locks you in. Renting is flexible and cheap to start but you
+                            own nothing. Neither is "right" — it depends on how long you will stay.</span></div>
+                    <div class="topic"><b>Packing for a trip</b><span>Pack everything and you carry a heavy bag. Pack
+                            light and you may miss something. You decide based on where you are going and for how long —
+                            not on a rule.</span></div>
+                </div>
+
+                <h3>Now connect it to software</h3>
+                <ol class="nlist rv">
+                    <li><b>What is a trade-off?</b> Choosing one benefit while accepting a cost somewhere else. Faster
+                        reads → more memory for cache. Higher availability → more servers and more cost.</li>
+                    <li><b>Why can we rarely have everything?</b> Because the good qualities pull in different
+                        directions. Strong consistency needs coordination, which slows things down. Maximum flexibility
+                        needs more options, which adds complexity.</li>
+                    <li><b>Why does improving one area hurt another?</b> Resources are shared. Adding a cache improves
+                        speed but now you must keep it in sync. Splitting into services improves team independence but
+                        adds network failures.</li>
+                    <li><b>Why is there no "perfect architecture"?</b> Because "perfect" depends on the business. A
+                        design that is perfect for a bank (consistency first) is wrong for a social feed (availability
+                        first).</li>
+                    <li><b>Why compare multiple options?</b> Because if you only consider one, you cannot know its cost.
+                        You only see the price of something when you put it next to the alternative.</li>
+                    <li><b>Why is "best technology" the wrong question?</b> Technologies do not exist in a vacuum. The
+                        right question is: <b>"Which option gives this business the most of what it needs, at a cost it
+                            can afford, with the risks it can accept?"</b></li>
+                </ol>
+
+                <div class="callout co-key rv"><span class="co-label">THE ONE SENTENCE</span>
+                    <p><b>An architect does not pick the best tool. An architect picks the right compromise — and can
+                            explain what was given up.</b></p>
+                </div>
+            </section>
+
+            <!-- PART 2 -->
+            <section class="sec" id="p2">
+                <div class="sec-kicker">PART 2 — THE REPEATABLE METHOD</div>
+                <h2 class="sec-title rv">The Architect's Decision Process</h2>
+                <p class="sec-lead rv">Nine steps. Use them in every interview and every real project. Each step is
+                    illustrated with a running example: <b>"Reports are slowing down our order system."</b></p>
+
+                <ol class="framework rv">
+                    <li><b>Understand the business problem</b><span>Not "we need a data warehouse" — but "month-end
+                            reports make checkout time out, and we lose orders." Restate it in money or customer
+                            pain.</span><span class="fr-hint">EXAMPLE: LOST ORDERS DURING REPORT RUNS = LOST
+                            REVENUE</span></li>
+                    <li><b>Identify functional requirements</b><span>What must the system do? Create orders, show
+                            dashboards, produce monthly reports, keep audit history.</span><span
+                            class="fr-hint">EXAMPLE: REPORTS MUST STILL EXIST — WE CANNOT REMOVE THEM</span></li>
+                    <li><b>Identify non-functional requirements</b><span><b>Performance</b> = how fast.
+                            <b>Scalability</b> = how well it grows. <b>Availability</b> = how often it is up.
+                            <b>Security</b> = how protected the data is. <b>Reliability</b> = does it do the right thing
+                            every time. <b>Maintainability</b> = how easy to change. <b>Cost</b> = what it takes to
+                            build and run.</span><span class="fr-hint">EXAMPLE: CHECKOUT &lt; 500 MS · REPORTS MAY BE 1
+                            HOUR OLD · 99.9% UPTIME</span></li>
+                    <li><b>Identify constraints</b><span>Budget, team skills, existing technology, deadline, compliance,
+                            infrastructure. Constraints cut options before you even compare them.</span><span
+                            class="fr-hint">EXAMPLE: 1 DEVOPS ENGINEER · SQL SERVER ALREADY LICENSED · 6-WEEK
+                            DEADLINE</span></li>
+                    <li><b>Create possible solutions</b><span>At least three. If you only have one, you have not thought
+                            enough. Include a "do the minimum" option.</span><span class="fr-hint">EXAMPLE: A) ADD
+                            INDEXES · B) READ REPLICA FOR REPORTS · C) SEPARATE REPORTING SERVICE + WAREHOUSE</span>
+                    </li>
+                    <li><b>Compare the solutions</b><span>Use the 10-factor framework (Part 3). Score honestly. Write
+                            down what each option costs, not just what it gives.</span><span class="fr-hint">EXAMPLE: A
+                            IS CHEAP BUT MAY NOT BE ENOUGH · B IS 2 DAYS · C IS 3 MONTHS</span></li>
+                    <li><b>Choose one</b><span>Pick the option that best fits the requirements <i>and</i> the
+                            constraints. Not the most impressive one.</span><span class="fr-hint">EXAMPLE: B — READ
+                            REPLICA. SOLVES THE PAIN IN DAYS WITHIN THE TEAM'S SKILLS</span></li>
+                    <li><b>Document why</b><span>Write an Architecture Decision Record (Part 7). Future engineers must
+                            know why, not just what.</span><span class="fr-hint">EXAMPLE: "WE CHOSE B BECAUSE… WE
+                            REJECTED C BECAUSE…"</span></li>
+                    <li><b>Define risks and future impact</b><span>What can go wrong? Replication lag. When do we
+                            revisit? If report volume grows 10× or the business needs real-time analytics.</span><span
+                            class="fr-hint">EXAMPLE: REVISIT IF LAG &gt; 5 MIN OR IF REAL-TIME DASHBOARDS ARE
+                            REQUIRED</span></li>
+                </ol>
+
+                <div class="callout co-tip rv"><span class="co-label">INTERVIEW TIP</span>
+                    <p>You do not have to say "step one, step two". Just walk through it naturally: <i>"First I'd
+                            confirm the real problem… then the must-haves… then constraints… then I'd compare three
+                            options…"</i> Interviewers hear the structure and score it.</p>
+                </div>
+            </section>
+
+            <!-- PART 3 -->
+            <section class="sec" id="p3">
+                <div class="sec-kicker">PART 3 — THE TOOL</div>
+                <h2 class="sec-title rv">The 10-Factor Trade-off Framework</h2>
+                <p class="sec-lead rv">Ten questions. Ask every one of them about every option. This is the whole
+                    framework — simple enough to remember under interview pressure.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th style="width:18%">FACTOR</th>
+                                <th style="width:34%">THE QUESTION</th>
+                                <th>WHAT YOU ARE REALLY CHECKING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Business</b></td>
+                                <td>Does it solve the actual business problem?</td>
+                                <td>Is this fixing the real pain, or a pain we imagine? Does it move revenue, cost, or
+                                    customer experience?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td>What will it cost to build and run?</td>
+                                <td>Developer time now, cloud bill every month, licences, and the hidden cost of extra
+                                    tools.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Performance</b></td>
+                                <td>Will it be fast enough?</td>
+                                <td>Not "fastest" — <i>fast enough</i> for the stated target (e.g. p95 under 500 ms).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Scale</b></td>
+                                <td>Can it handle future growth?</td>
+                                <td>What happens at 3×, 10×? Where is the first bottleneck? Is there a path forward
+                                    without a rewrite?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Availability</b></td>
+                                <td>What happens when something fails?</td>
+                                <td>Single points of failure. Failover. Does one broken piece take down everything?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Security</b></td>
+                                <td>Is the data protected?</td>
+                                <td>Attack surface, data isolation, compliance, secrets, who can reach what.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Complexity</b></td>
+                                <td>How difficult is it to operate?</td>
+                                <td>Moving parts, monitoring, on-call burden, how many things can break at 3 a.m.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Team</b></td>
+                                <td>Can the current team support it?</td>
+                                <td>Do they know it? Can they debug it? Can we hire for it? A great design nobody can
+                                    run is a bad design.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Maintenance</b></td>
+                                <td>How easy is it to change later?</td>
+                                <td>Are we locked in? How hard is a schema change, a version upgrade, a vendor swap?
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Risk</b></td>
+                                <td>What could go wrong?</td>
+                                <td>Technical risk, delivery risk, vendor risk, knowledge risk. And what is the plan if
+                                    it does?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>How to use it</h3>
+                <ul class="nlist rv">
+                    <li><b>Step 1:</b> List your options in columns (A, B, C).</li>
+                    <li><b>Step 2:</b> For each factor, write one honest line per option. Not scores yet — words.</li>
+                    <li><b>Step 3:</b> Mark which 2–3 factors matter <i>most</i> for this business. This is the key step
+                        — weight the factors, do not treat them equally.</li>
+                    <li><b>Step 4:</b> The option that wins the important factors and does not fail badly on the rest is
+                        your choice.</li>
+                    <li><b>Step 5:</b> Say the losing options out loud: <i>"B was rejected because it failed on Team and
+                            Complexity, which matter most here."</i></li>
+                </ul>
+
+                <div class="callout co-warn rv"><span class="co-label">THE MISTAKE TO AVOID</span>
+                    <p>Do not add up scores mechanically. A design that scores 8/10 on nine factors but fails
+                        <b>Security</b> for a bank is not an 8 — it is disqualified. <b>Some factors are gates, not
+                            weights.</b> Identify the gates first.
+                    </p>
+                </div>
+            </section>
+
+            <!-- PART 4 -->
+            <section class="sec" id="p4">
+                <div class="sec-kicker">PART 4 — THE CLASSICS</div>
+                <h2 class="sec-title rv">The 10 Most Important Architecture Trade-offs</h2>
+                <p class="sec-lead rv">These ten appear in almost every system and almost every interview. Learn the
+                    shape of each one.</p>
+
+                <div class="calc-card rv">
+                    <h4>1. Simplicity vs Scalability</h4>
+                    <div class="step"><b>The tension:</b> Simple systems are easy to build, understand, debug and
+                        operate. Highly scalable systems have more moving parts — load balancers, queues, shards, caches
+                        — each of which can break.</div>
+                    <div class="step"><b>When scalability matters:</b> When you have real evidence — measured traffic, a
+                        real growth curve, a real bottleneck. Not a slide from a competitor.</div>
+                    <div class="step"><b>When designing for huge scale early is wasteful:</b> A 5,000-user product built
+                        for 50 million users spends its first two years paying for complexity it never uses, while the
+                        competitor ships features.</div>
+                    <div class="step"><b>Example:</b> A startup builds a sharded, multi-region, event-sourced platform
+                        for a product with 300 users. The team spends 60% of its time on infrastructure. A single
+                        well-indexed database would have served them for three years.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>2. Performance vs Cost</h4>
+                    <div class="step"><b>The tension:</b> Faster usually costs more. Bigger servers, more replicas,
+                        premium storage, caches, CDNs — each adds a line to the bill.</div>
+                    <div class="step"><b>Caching:</b> Improves speed dramatically but adds a new component to run, a new
+                        failure mode, and the classic invalidation problem.</div>
+                    <div class="step"><b>Extra servers:</b> Improve throughput linearly — but so does the cost. And they
+                        do nothing for a slow query.</div>
+                    <div class="step"><b>Example:</b> An API responds in 800 ms. Option A: double the server size for
+                        $400/month more → 600 ms. Option B: add one missing index for $0 → 120 ms. The architect
+                        measures first, then spends.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>3. Consistency vs Availability</h4>
+                    <div class="step"><b>The tension:</b> <b>Consistency</b> means every reader sees the latest write
+                        immediately. <b>Availability</b> means the system always answers. When parts of a system cannot
+                        talk to each other, you must choose: refuse to answer (stay consistent) or answer with possibly
+                        old data (stay available).</div>
+                    <div class="step"><b>Must be immediately correct:</b> <b>Payment</b> — you cannot charge twice.
+                        <b>Inventory</b> at the moment of purchase — you cannot sell the last item twice.
+                    </div>
+                    <div class="step"><b>Temporary difference acceptable:</b> <b>Reporting</b> — a dashboard five
+                        minutes old is fine. <b>Order history</b> — appearing three seconds after checkout is fine.
+                    </div>
+                    <div class="step"><b>Why business matters:</b> The same "order" data needs strong consistency at
+                        checkout and eventual consistency in the sales report. The architecture must treat them
+                        differently — not pick one rule for everything.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>4. Flexibility vs Simplicity</h4>
+                    <div class="step"><b>The tension:</b> Every option you add — configurable rules, pluggable
+                        providers, generic engines — is more flexibility for tomorrow and more complexity for today.
+                    </div>
+                    <div class="step"><b>Too many options:</b> Systems with 200 configuration flags where nobody knows
+                        which combinations are tested. "Flexible" becomes "fragile".</div>
+                    <div class="step"><b>Example:</b> A team builds a generic "workflow engine" so any future process
+                        can be configured. Two years later, only one workflow exists, and every change requires
+                        understanding the engine. A plain 200-line service would have been clearer.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>5. Microservices vs Simplicity</h4>
+                    <div class="step"><b>From Day 18–19:</b> Microservices are useful when many teams need independent
+                        releases, when one part needs radically different scale, or when failure isolation is worth the
+                        network cost.</div>
+                    <div class="step"><b>Unnecessary complexity when:</b> The team is small, the domain is still moving,
+                        traffic is moderate, or transactions must span the areas you would split.</div>
+                    <div class="step"><b>Modular monolith is better when:</b> You want clean boundaries and team
+                        ownership without paying the distributed-systems tax. It also keeps the door open to extract a
+                        service later.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>6. SQL vs NoSQL</h4>
+                    <div class="step"><b>Data relationships:</b> Orders link to customers, products, payments. SQL
+                        handles this natively with joins. NoSQL makes you duplicate or join in code.</div>
+                    <div class="step"><b>Transactions:</b> SQL gives multi-row, multi-table atomic updates. Most NoSQL
+                        stores give atomicity per document.</div>
+                    <div class="step"><b>Scale:</b> NoSQL scales writes horizontally more easily. SQL scales reads
+                        easily (replicas) and writes with more effort.</div>
+                    <div class="step"><b>Query needs:</b> Ad-hoc reporting and unknown future queries favour SQL. Known,
+                        fixed access patterns favour NoSQL.</div>
+                    <div class="step"><b>Flexibility:</b> NoSQL tolerates changing shapes. SQL needs migrations — which
+                        is also a safety net.</div>
+                    <div class="step"><b>Team skills &amp; cost:</b> Most .NET teams know SQL deeply. Licensing (SQL
+                        Server) vs open-source (PostgreSQL) vs managed NoSQL pricing all matter.</div>
+                    <div class="step"><b>Scenario:</b> Core orders and payments → SQL. Product catalog with varying
+                        attributes per category → document store is reasonable. Session and cart → key-value store.
+                    </div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>7. Synchronous vs Asynchronous</h4>
+                    <div class="step"><b>Order → Payment → Notification.</b></div>
+                    <div class="step"><b>Synchronous (wait for each step):</b> User gets an immediate, definite answer.
+                        Simple to reason about. But if Notification is slow, checkout is slow. If Payment is down,
+                        checkout fails.</div>
+                    <div class="step"><b>Asynchronous (queue the later steps):</b> Checkout answers fast; email and
+                        stock updates happen in the background. Failures are retried. But now you need a queue, retries,
+                        idempotency, and the user may not see instant confirmation.</div>
+                    <div class="step"><b>Architect's split:</b> Payment stays synchronous — the user must know if they
+                        were charged. Notification becomes asynchronous — nobody needs the email in the same 300 ms.
+                    </div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>8. Cache vs Database</h4>
+                    <div class="step"><b>Why cache helps:</b> Memory is thousands of times faster than disk, and it
+                        removes repeated load from the database.</div>
+                    <div class="step"><b>Why cache is not the source of truth:</b> It is volatile, it can be evicted, it
+                        can be stale, and it usually has no durability guarantees. The database is where truth lives;
+                        the cache is a fast copy.</div>
+                    <div class="step"><b>Cache failure:</b> If Redis goes down, every request falls back to the database
+                        at once — the "thundering herd". You must plan for it (Day 5 and Day 12).</div>
+                    <div class="step"><b>Invalidation:</b> When data changes, the cached copy is wrong until refreshed.
+                        TTLs, explicit invalidation, or accepting staleness — you choose, per data type.</div>
+                    <div class="step"><b>Cost:</b> Memory is more expensive per GB than disk. Cache the hot 5%, not
+                        everything.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>9. Build vs Buy</h4>
+                    <div class="step"><b>Build internally:</b> Full control, exact fit, no vendor dependency. But
+                        slowest, most expensive, and you own every bug forever.</div>
+                    <div class="step"><b>Use an existing product / library:</b> Fast start, proven, community support.
+                        But you adapt to its way of thinking and its upgrade schedule.</div>
+                    <div class="step"><b>Use a cloud service:</b> Zero operations, scales on demand, pay for use. But
+                        lock-in, per-request cost at scale, and less control.</div>
+                    <div class="step"><b>External SaaS:</b> Fastest of all, no code. But your data lives elsewhere,
+                        pricing can change, and customisation is limited.</div>
+                    <div class="step"><b>The rule:</b> <b>Build what differentiates your business. Buy everything
+                            else.</b> Nobody wins customers by writing a better email-sending library.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>10. Cloud vs On-Premises</h4>
+                    <div class="step"><b>Cost:</b> Cloud is cheap to start and expensive at steady high load. On-prem is
+                        expensive to start and cheap at steady load. Spiky traffic favours cloud; flat, predictable,
+                        heavy traffic can favour on-prem.</div>
+                    <div class="step"><b>Control &amp; security:</b> On-prem gives full control — and full
+                        responsibility. Cloud gives shared responsibility and strong defaults, but some regulations
+                        demand data stays in a specific building.</div>
+                    <div class="step"><b>Scalability &amp; operations:</b> Cloud scales in minutes with no hardware
+                        purchase. On-prem needs a small operations team and lead time for capacity.</div>
+                    <div class="step"><b>Migration effort:</b> Moving a 15-year-old system to the cloud is a project in
+                        itself, with its own risk.</div>
+                    <div class="step"><b>Do not assume cloud is always better:</b> A factory with an unreliable internet
+                        link, a bank with data residency laws, or a company with a paid-off data centre and steady load
+                        can all rationally choose on-prem or hybrid.</div>
+                </div>
+            </section>
+
+            <!-- PART 5 -->
+            <section class="sec" id="p5">
+                <div class="sec-kicker">PART 5 — DECISIONS IN PRACTICE</div>
+                <h2 class="sec-title rv">10 Real Architecture Decisions</h2>
+                <p class="sec-lead rv">Ten decisions, each shown the way an architect would present it. Notice that the
+                    "recommended" answer always depends on the situation — never on the technology alone.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:1000px">
+                        <thead>
+                            <tr>
+                                <th style="width:13%">DECISION</th>
+                                <th>SITUATION</th>
+                                <th>OPTION A — PROS / CONS</th>
+                                <th>OPTION B — PROS / CONS</th>
+                                <th style="width:20%">RECOMMENDATION &amp; WHY</th>
+                                <th style="width:14%">RISK · REVISIT WHEN</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. SQL Server vs PostgreSQL</b></td>
+                                <td>.NET team, existing SQL Server licences, moving some workloads to Linux containers.
+                                </td>
+                                <td><b>SQL Server</b><br><span class="pros">Team knows it deeply; tooling; existing
+                                        licences.</span><br><span class="cons">Licence cost grows with cores; Linux
+                                        story newer.</span></td>
+                                <td><b>PostgreSQL</b><br><span class="pros">Free; excellent on Linux; strong JSON
+                                        support.</span><br><span class="cons">Team re-learning; migration effort;
+                                        different tooling.</span></td>
+                                <td><b>Keep SQL Server for existing systems; PostgreSQL for new greenfield services.</b>
+                                    Avoid a risky migration; avoid new licence spend.</td>
+                                <td>Risk: two engines to support. Revisit if licence renewal cost jumps or team gains
+                                    PostgreSQL depth.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. SQL vs NoSQL</b></td>
+                                <td>Order system with strong relationships and reporting, plus a product catalog with
+                                    wildly varying attributes.</td>
+                                <td><b>SQL only</b><br><span class="pros">One engine; transactions; ad-hoc
+                                        reports.</span><br><span class="cons">Catalog attributes need EAV tables or JSON
+                                        columns.</span></td>
+                                <td><b>NoSQL only</b><br><span class="pros">Flexible catalog; horizontal
+                                        writes.</span><br><span class="cons">Joins in code; weak reporting; per-doc
+                                        transactions only.</span></td>
+                                <td><b>SQL for orders/payments; JSON column or document store for catalog.</b> Match the
+                                    store to the data shape.</td>
+                                <td>Risk: two stores if document store chosen. Revisit if catalog reads dominate and
+                                    need geo-distribution.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Redis vs database queries</b></td>
+                                <td>Product page reads hit the database 4,000 times/sec; data changes a few times per
+                                    hour.</td>
+                                <td><b>Redis cache</b><br><span class="pros">Sub-ms reads; 90% DB load
+                                        removed.</span><br><span class="cons">New component; invalidation; cache-down
+                                        plan needed.</span></td>
+                                <td><b>Direct DB + indexes + replica</b><br><span class="pros">No new component; always
+                                        fresh.</span><br><span class="cons">Still 4,000 QPS on DB; replica cost.</span>
+                                </td>
+                                <td><b>Redis with short TTL and explicit invalidation on product update.</b> Read/write
+                                    ratio and change rate justify it.</td>
+                                <td>Risk: stale price shown briefly. Revisit if data changes every second (cache no
+                                    longer helps).</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. RabbitMQ vs direct API calls</b></td>
+                                <td>After checkout: send email, update stock, notify warehouse. Email provider is slow
+                                    and flaky.</td>
+                                <td><b>Direct calls</b><br><span class="pros">Simple; immediate; easy to
+                                        debug.</span><br><span class="cons">Checkout waits for email; failures fail
+                                        checkout.</span></td>
+                                <td><b>Queue (RabbitMQ)</b><br><span class="pros">Fast checkout; retries; absorbs
+                                        spikes.</span><br><span class="cons">Broker to run; idempotency; eventual
+                                        delivery.</span></td>
+                                <td><b>Queue for email and warehouse; direct call for payment.</b> Decouple what can
+                                    wait; keep sync what must be known now.</td>
+                                <td>Risk: message loss if broker misconfigured. Revisit if volume is tiny and team
+                                    cannot operate a broker.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Modular Monolith vs Microservices</b></td>
+                                <td>20 devs, 1 DevOps, 150 RPS, reporting slows checkout, teams want faster releases.
+                                </td>
+                                <td><b>Modular Monolith</b><br><span class="pros">One deploy; in-memory calls; ACID;
+                                        fits team.</span><br><span class="cons">One release train; shared blast
+                                        radius.</span></td>
+                                <td><b>Microservices</b><br><span class="pros">Independent releases;
+                                        isolation.</span><br><span class="cons">Needs DevOps maturity; network failures;
+                                        Sagas; cost.</span></td>
+                                <td><b>Modular monolith + read replica + extract Notifications only.</b> Solves real
+                                    pain without the distributed tax.</td>
+                                <td>Risk: coupling creeps back. Revisit at 50+ devs or when one module needs 10× scale.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Sync vs async processing</b></td>
+                                <td>Order confirmation must be instant; stock sync to warehouse system can lag 1 minute.
+                                </td>
+                                <td><b>All synchronous</b><br><span class="pros">Simple; one result.</span><br><span
+                                        class="cons">Slowest dependency sets the pace; cascading failure.</span></td>
+                                <td><b>Async for non-critical steps</b><br><span class="pros">Fast user response;
+                                        resilience.</span><br><span class="cons">Eventual state; more moving
+                                        parts.</span></td>
+                                <td><b>Payment sync; stock and notifications async.</b> Split by "does the user need
+                                    this answer now?"</td>
+                                <td>Risk: user sees "processing" state. Revisit if warehouse requires real-time stock.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>7. REST vs GraphQL</b></td>
+                                <td>Public API used by mobile apps with many screen shapes; internal APIs between
+                                    services.</td>
+                                <td><b>REST</b><br><span class="pros">Simple; cacheable; team knows it;
+                                        tooling.</span><br><span class="cons">Over/under-fetching for mobile
+                                        screens.</span></td>
+                                <td><b>GraphQL</b><br><span class="pros">Client picks fields; one round
+                                        trip.</span><br><span class="cons">Caching harder; N+1 risk; complexity;
+                                        learning curve.</span></td>
+                                <td><b>REST for internal and partner APIs; consider GraphQL only for the mobile front
+                                        door if fetching becomes a measured problem.</b></td>
+                                <td>Risk: two API styles. Revisit if mobile makes 8+ calls per screen.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Single vs separate databases</b></td>
+                                <td>Multi-tenant SaaS, 10,000 companies, most small, a few very large.</td>
+                                <td><b>Single DB, TenantId column</b><br><span class="pros">Cheap; simple ops; easy
+                                        cross-tenant reports.</span><br><span class="cons">Noisy neighbour; weaker
+                                        isolation.</span></td>
+                                <td><b>DB per tenant</b><br><span class="pros">Strong isolation; per-tenant
+                                        restore.</span><br><span class="cons">10,000 databases to migrate and monitor;
+                                        cost.</span></td>
+                                <td><b>Shared DB with strict tenant filtering; dedicated DB only for a handful of
+                                        premium/regulated tenants.</b> Hybrid.</td>
+                                <td>Risk: a missing tenant filter leaks data. Revisit if compliance demands physical
+                                    isolation for all.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Azure App Service vs Kubernetes</b></td>
+                                <td>Small DevOps team; 3 web apps + 2 workers; steady traffic; no special networking.
+                                </td>
+                                <td><b>App Service (PaaS)</b><br><span class="pros">No cluster to run; slots;
+                                        auto-scale; fits team.</span><br><span class="cons">Less control; some workloads
+                                        do not fit.</span></td>
+                                <td><b>Kubernetes</b><br><span class="pros">Full control; portable; any
+                                        workload.</span><br><span class="cons">Cluster upgrades, networking, security —
+                                        a full-time job.</span></td>
+                                <td><b>App Service now.</b> Kubernetes solves problems this team does not have and adds
+                                    ones it cannot staff.</td>
+                                <td>Risk: platform limits later. Revisit at 20+ services or when a workload truly needs
+                                    custom orchestration.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Build vs Buy (notifications)</b></td>
+                                <td>Need email, SMS, push with templates and delivery tracking.</td>
+                                <td><b>Build</b><br><span class="pros">Full control; no per-message fee.</span><br><span
+                                        class="cons">Months of work; deliverability expertise; ongoing
+                                        maintenance.</span></td>
+                                <td><b>Buy (SaaS provider)</b><br><span class="pros">Live in days; deliverability
+                                        handled; analytics.</span><br><span class="cons">Per-message cost; vendor
+                                        dependency; data leaves you.</span></td>
+                                <td><b>Buy, behind a thin internal interface.</b> Notifications do not differentiate the
+                                    business; the interface limits lock-in.</td>
+                                <td>Risk: price increase at volume. Revisit if monthly spend exceeds the cost of a small
+                                    team.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout co-key rv"><span class="co-label">THE PATTERN IN ALL TEN</span>
+                    <p>Every recommendation has the same shape: <b>a situation, two honest options, a choice that fits
+                            the constraints, a named risk, and a trigger to revisit.</b> That shape is what interviewers
+                        are listening for — not the technology name.</p>
+                </div>
+            </section>
+
+            <!-- PART 6 -->
+            <section class="sec" id="p6">
+                <div class="sec-kicker">PART 6 — THE CORE INTERVIEW SKILL</div>
+                <h2 class="sec-title rv">"Why X?" and "Why Not Y?"</h2>
+                <p class="sec-lead rv">Interviewers ask "why did you choose X?" to hear your reasoning. Then they ask
+                    "why not Y?" to see whether you actually considered alternatives. <b>Most candidates can answer the
+                        first. Architects answer both.</b></p>
+
+                <h3>The structure of a strong answer</h3>
+                <ol class="nlist rv">
+                    <li><b>Name the requirement that drove it.</b> "The key constraint was…"</li>
+                    <li><b>Name the alternative you considered.</b> "I looked at Y as well."</li>
+                    <li><b>Say what Y does better — honestly.</b> "Y would have given us…"</li>
+                    <li><b>Say why that did not win here.</b> "…but for this system, that mattered less than…"</li>
+                    <li><b>Name when Y would win.</b> "If we had 50 teams / 10× traffic / strict residency, I would
+                        revisit."</li>
+                </ol>
+
+                <h3>Five examples — weak vs strong</h3>
+
+                <div class="calc-card rv">
+                    <h4>Example 1 — "Why Redis?" / "Why not just the database?"</h4>
+                    <div class="weak"><b>WEAK ANSWER</b>"Redis is faster than the database."</div>
+                    <div class="strong"><b>STRONG ARCHITECT ANSWER</b>"Product reads were 4,000 per second against data
+                        that changes a few times an hour. I considered indexes plus a read replica — that would have
+                        worked and kept things simpler. But it still leaves 4,000 queries per second on the database
+                        tier, and it does not remove the load. A cache with a 60-second TTL and invalidation on update
+                        removed 90% of that load for a fraction of the cost. I accepted the risk of a briefly stale
+                        price and a cache-down fallback plan. If the data changed every second, the cache would stop
+                        helping and I would go with the replica instead."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Example 2 — "Why a modular monolith?" / "Why not microservices?"</h4>
+                    <div class="weak"><b>WEAK ANSWER</b>"Microservices are too complex."</div>
+                    <div class="strong"><b>STRONG ARCHITECT ANSWER</b>"Microservices would give us independent releases
+                        and isolation, and I did consider them seriously. But we have 20 developers, one DevOps
+                        engineer, and 150 requests per second. The real pain was reporting slowing checkout and slow
+                        regression testing — neither of which requires distribution to fix. A modular monolith with a
+                        read replica solves both within weeks and inside the team's skills. I kept the module boundaries
+                        strict so Notifications can be extracted as the first service if release independence becomes a
+                        measured problem. At 50+ developers or a component needing 10× scale, I would revisit."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Example 3 — "Why SQL?" / "Why not NoSQL?"</h4>
+                    <div class="weak"><b>WEAK ANSWER</b>"SQL is what the team knows."</div>
+                    <div class="strong"><b>STRONG ARCHITECT ANSWER</b>"Team familiarity is a real factor, but not the
+                        main one. Orders, payments and inventory are highly related and must update atomically — that is
+                        what relational transactions are built for. NoSQL would scale writes more easily, and I would
+                        use a document store for the product catalog where attributes vary by category. But for the
+                        transactional core, giving up multi-row transactions and ad-hoc reporting to gain write scale we
+                        do not need yet would be the wrong trade. If order writes exceeded what a well-tuned SQL primary
+                        handles, I would partition first and consider sharding second."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Example 4 — "Why a queue?" / "Why not direct API calls?"</h4>
+                    <div class="weak"><b>WEAK ANSWER</b>"Queues are more scalable."</div>
+                    <div class="strong"><b>STRONG ARCHITECT ANSWER</b>"Direct calls are simpler and I kept them for
+                        payment, because the user must know immediately whether they were charged. For email and
+                        warehouse updates, a direct call means checkout waits on the slowest, least reliable dependency,
+                        and a provider outage fails the sale. A queue lets checkout answer in 200 ms, retries failures,
+                        and absorbs Black Friday spikes. The cost is a broker to operate and idempotent consumers. If
+                        our volume were 50 orders a day, the broker would not be worth it and I would use a simple
+                        background job table instead."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Example 5 — "Why App Service?" / "Why not Kubernetes?"</h4>
+                    <div class="weak"><b>WEAK ANSWER</b>"Kubernetes is overkill."</div>
+                    <div class="strong"><b>STRONG ARCHITECT ANSWER</b>"Kubernetes gives full control and portability,
+                        and for 30 services with a platform team it is the right call. We have five deployables, steady
+                        traffic, and one DevOps engineer. Kubernetes would mean that engineer spends most of their time
+                        on cluster upgrades, networking and security instead of on our delivery pipeline. App Service
+                        gives us deployment slots, auto-scale and managed patching with almost no operational cost. The
+                        trade-off is less control and some platform limits. I would revisit if we passed 15–20 services
+                        or needed workloads the platform cannot run."</div>
+                </div>
+
+                <div class="callout co-tip rv"><span class="co-label">THE TELL</span>
+                    <p>A strong answer always says something <b>good</b> about the rejected option. If you cannot name
+                        what Y does better, the interviewer assumes you never really considered it.</p>
+                </div>
+            </section>
+
+            <!-- PART 7 -->
+            <section class="sec" id="p7">
+                <div class="sec-kicker">PART 7 — WRITING IT DOWN</div>
+                <h2 class="sec-title rv">The Architecture Decision Record (ADR)</h2>
+                <p class="sec-lead rv">An ADR is a one-page document that captures <b>what you decided, why, what you
+                        rejected, and when to look again</b>. Six months later, nobody remembers the conversation — the
+                    ADR does.</p>
+
+                <div class="panel rv">
+                    <h4>ADR-007 — APPLICATION ARCHITECTURE: MODULAR MONOLITH VS MICROSERVICES</h4>
+
+                    <p><b>Decision</b><br>We will structure the Inventory &amp; Order platform as a <b>Modular
+                            Monolith</b> with strict module boundaries and per-module database schemas, extracting the
+                        Notification module as the only independent service.</p>
+
+                    <p><b>Context</b><br>The current .NET application has 7 areas in one tangled codebase. 20
+                        developers, 1 DevOps engineer, 500,000 users, 50,000 orders/day (~150 RPS peak). Month-end
+                        reporting slows checkout. Teams want faster releases. Management has requested "microservices".
+                        Business expects 5× growth in 18 months.</p>
+
+                    <p><b>Options considered</b><br>
+                        A) Keep the current monolith and tune it.<br>
+                        B) Refactor into a Modular Monolith + read replica + extract Notifications.<br>
+                        C) Split into 7 microservices with a database each.</p>
+
+                    <p><b>Decision factors (most important first)</b><br>
+                        1. Team capacity to operate the result (1 DevOps engineer).<br>
+                        2. Time to relieve the checkout/reporting pain.<br>
+                        3. Transactional integrity of Order + Inventory + Payment.<br>
+                        4. Path to scale 5× without rewrite.<br>
+                        5. Release velocity.</p>
+
+                    <p><b>Why B</b><br>Solves the reporting pain in days (replica). Gives module ownership and faster,
+                        safer releases through boundaries and architecture tests. Keeps ACID transactions where the
+                        business needs them. 5× growth (~750 RPS) is well within a horizontally scaled monolith.
+                        Extracting Notifications gives the one team that needs independent releases exactly that, and
+                        validates our container pipeline at low risk.</p>
+
+                    <p><b>Rejected options</b><br>
+                        <b>A</b> — does not address coupling or release speed; pain returns as the team grows.<br>
+                        <b>C</b> — requires operational maturity we do not have; introduces Sagas for
+                        order/payment/inventory; triples infrastructure cost; 9–12 months during which feature delivery
+                        slows. Solves an organisational problem we do not yet have (we are 20 developers, not 200).
+                    </p>
+
+                    <p><b>Risks</b><br>
+                        Boundaries erode without enforcement → mitigated by NetArchTest in CI.<br>
+                        Replica lag confuses users → mitigated by routing only reports/dashboards to the replica.<br>
+                        Notification extraction introduces first network boundary → mitigated by async queue, retries,
+                        monitoring.</p>
+
+                    <p><b>Future review</b><br>Revisit when any of: developers exceed 50; one module needs &gt;10× the
+                        scale of others; a module needs a different runtime; deployment lead time exceeds one week
+                        despite modularisation. Review date: 12 months.</p>
+                </div>
+
+                <div class="callout co-ok rv"><span class="co-label">WHY THIS MATTERS IN INTERVIEWS</span>
+                    <p>When you say <i>"I'd write an ADR with the options, the factors, and the review trigger"</i>, you
+                        are telling the interviewer you have done this for real. Few candidates mention it. It is a
+                        strong signal.</p>
+                </div>
+            </section>
+
+            <!-- PART 8 -->
+            <section class="sec" id="p8">
+                <div class="sec-kicker">PART 8 — BEYOND TECHNICAL QUALITY</div>
+                <h2 class="sec-title rv">Business vs Technical Trade-off</h2>
+                <p class="sec-lead rv">An architect who only optimises for technical elegance is a very expensive senior
+                    developer. The job is to make the <b>business</b> succeed.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Option A — Technically excellent, expensive</b><span>Multi-region,
+                            event-sourced, fully isolated, 99.99% availability, 9 months, $2M, needs 3 new hires.</span>
+                    </div>
+                    <div class="topic"><b>Option B — Good enough, cheaper, faster</b><span>Single region with backups,
+                            modular monolith, 99.9% availability, 10 weeks, $200K, current team.</span></div>
+                </div>
+
+                <h3>The correct answer depends on…</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>FACTOR</th>
+                                <th>WHEN A WINS</th>
+                                <th>WHEN B WINS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Revenue</b></td>
+                                <td>The system processes $50M/day; one hour of downtime costs more than the extra build.
+                                </td>
+                                <td>The system supports a $2M/year product line; A would never pay back.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Deadline</b></td>
+                                <td>No hard date; quality matters more than timing.</td>
+                                <td>A regulatory or market deadline in 3 months. Late = worthless.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Risk</b></td>
+                                <td>Failure is catastrophic (safety, money, law).</td>
+                                <td>Failure is recoverable and rare; users tolerate brief outages.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Users</b></td>
+                                <td>Millions of users across continents; latency and residency matter.</td>
+                                <td>Thousands of users in one country.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Business importance</b></td>
+                                <td>This is the core product the company lives on.</td>
+                                <td>This is an internal tool or an experiment.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout co-key rv"><span class="co-label">THE PRINCIPLE</span>
+                    <p><b>"Technically better" is not the same as "business better."</b> A design that ships in 10 weeks
+                        and earns revenue can fund the better version later. A design that is perfect but arrives after
+                        the market moved has zero value. The architect's job is to know which situation they are in.</p>
+                </div>
+            </section>
+
+            <!-- PART 9 -->
+            <section class="sec" id="p9">
+                <div class="sec-kicker">PART 9 — THE FULL PRICE</div>
+                <h2 class="sec-title rv">How an Architect Thinks About Cost</h2>
+                <p class="sec-lead rv">Most people see one number: the cloud bill. An architect sees five.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. Build cost</b><span>Developer effort and calendar time. The most visible
+                            cost — and the one most often the smallest over the system's life.</span></div>
+                    <div class="topic"><b>2. Run cost</b><span>Servers, databases, storage, network, monitoring,
+                            licences. Every month, forever. Grows with traffic and with the number of components.</span>
+                    </div>
+                    <div class="topic"><b>3. Maintenance cost</b><span>Every future change, upgrade, security patch and
+                            dependency bump. More components = more of these.</span></div>
+                    <div class="topic"><b>4. Failure cost</b><span>What one hour of downtime costs in revenue,
+                            reputation, refunds and staff time. Justifies (or does not justify) high-availability
+                            spend.</span></div>
+                    <div class="topic"><b>5. Complexity cost</b><span>The hidden one. Extra tools, extra skills, extra
+                            people, longer onboarding, slower debugging, more on-call pain. It shows up as slower
+                            delivery, not as a line item.</span></div>
+                </div>
+
+                <h3>Example: simple vs highly distributed (same business, 3 years)</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>COST TYPE</th>
+                                <th>SIMPLE (MODULAR MONOLITH + REPLICA)</th>
+                                <th>HIGHLY DISTRIBUTED (12 SERVICES, K8S, 12 DBs)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Build</b></td>
+                                <td>3 months, existing team</td>
+                                <td>10 months, existing team + 2 hires</td>
+                            </tr>
+                            <tr>
+                                <td><b>Run (monthly)</b></td>
+                                <td>~$1,500 — 3 app instances, 1 DB + replica, cache</td>
+                                <td>~$9,000 — cluster, 12 DBs, broker, gateway, tracing, logs</td>
+                            </tr>
+                            <tr>
+                                <td><b>Maintenance</b></td>
+                                <td>1 pipeline, 1 runtime to upgrade, 1 schema migration path</td>
+                                <td>12 pipelines, 12 base images, contract versioning, 12 migration paths</td>
+                            </tr>
+                            <tr>
+                                <td><b>Failure</b></td>
+                                <td>Fewer moving parts; one clear log stream; fast triage</td>
+                                <td>Partial failures; distributed tracing needed; slower triage</td>
+                            </tr>
+                            <tr>
+                                <td><b>Complexity</b></td>
+                                <td>New hire productive in 1 week</td>
+                                <td>New hire productive in 1–2 months; DevOps becomes a bottleneck</td>
+                            </tr>
+                            <tr>
+                                <td><b>3-year total (rough)</b></td>
+                                <td>Build ~$250K + run ~$55K + ops modest</td>
+                                <td>Build ~$900K + run ~$325K + 2 extra salaries ~$600K</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout co-warn rv"><span class="co-label">WHEN THE CHEAP OPTION BECOMES EXPENSIVE</span>
+                    <p>The reverse is also true. A "cheap" single server with no replica, no backups and no monitoring
+                        looks like $300/month — until the disk dies, a week of orders is lost, and the recovery costs
+                        more than five years of a proper setup. <b>Cheap to build is not cheap to own.</b> Always price
+                        the failure.</p>
+                </div>
+            </section>
+
+            <!-- PART 10 -->
+            <section class="sec" id="p10">
+                <div class="sec-kicker">PART 10 — WHEN REQUIREMENTS FIGHT</div>
+                <h2 class="sec-title rv">Trade-offs Under Conflicting Constraints</h2>
+                <p class="sec-lead rv">Real projects never give you all the money, all the time and all the quality. The
+                    architect's first job is to find out <b>which requirement wins when they collide</b> — and to make
+                    the stakeholders say it out loud.</p>
+
+                <div class="calc-card rv">
+                    <h4>Situation 1 — "Cheap, highly available, fast, and delivered next month"</h4>
+                    <div class="step"><b>Conflict:</b> Very low cost vs very high availability vs very high performance
+                        vs fast delivery. You can have two, maybe three.</div>
+                    <div class="step"><b>Questions to ask:</b> What does one hour of downtime actually cost? Is next
+                        month a real deadline or a wish? What is "fast" in numbers? What budget is the ceiling?</div>
+                    <div class="step"><b>Recommended priority:</b> Delivery date and availability first (they are
+                        usually tied to revenue), performance "good enough", cost as the variable.</div>
+                    <div class="step"><b>Example decision:</b> Managed PaaS with two instances and automated failover,
+                        one region, a cache for the hot path. Ship in 4 weeks. Multi-region and tuning come after launch
+                        when revenue justifies them.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Situation 2 — "Strong consistency everywhere and global low latency"</h4>
+                    <div class="step"><b>Conflict:</b> Immediate consistency across continents means every write waits
+                        for cross-ocean coordination — which destroys latency.</div>
+                    <div class="step"><b>Questions to ask:</b> Which data truly needs immediate global consistency?
+                        Which can be regional? Who reads what, from where?</div>
+                    <div class="step"><b>Recommended priority:</b> Strong consistency only for money and stock at the
+                        point of sale; eventual consistency for catalog, profile and reporting.</div>
+                    <div class="step"><b>Example decision:</b> Single-region primary for transactions; regional read
+                        replicas and CDN for everything else. Users see fast catalog everywhere and correct payment
+                        always.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Situation 3 — "Maximum security and frictionless user experience"</h4>
+                    <div class="step"><b>Conflict:</b> Every extra check (MFA, re-authentication, device verification)
+                        adds friction. Every removed check adds risk.</div>
+                    <div class="step"><b>Questions to ask:</b> What is being protected? What is the regulatory floor?
+                        Where does fraud actually happen in the flow?</div>
+                    <div class="step"><b>Recommended priority:</b> Security as a gate for high-risk actions (payment,
+                        address change, export); low friction for browsing and low-value actions.</div>
+                    <div class="step"><b>Example decision:</b> Step-up authentication only at checkout and account
+                        changes; risk-based checks in the background; browsing stays frictionless.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Situation 4 — "Latest technology and a team that has never used it"</h4>
+                    <div class="step"><b>Conflict:</b> Adopting a new platform (say, Kubernetes or an event-streaming
+                        stack) vs a team with zero experience and a live product to keep running.</div>
+                    <div class="step"><b>Questions to ask:</b> What problem does the new technology solve that we
+                        actually have? Who supports it at 3 a.m.? Can we hire or train in time?</div>
+                    <div class="step"><b>Recommended priority:</b> Team capability over technology novelty. Reliability
+                        of the current product over the new stack's benefits.</div>
+                    <div class="step"><b>Example decision:</b> Stay on the known platform for the core. Pilot the new
+                        technology on one low-risk, non-critical workload with training budget. Adopt wider only after
+                        the pilot proves the team can run it.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>Situation 5 — "Budget cut 30%, same features, same deadline"</h4>
+                    <div class="step"><b>Conflict:</b> Scope, time and money — one of them has to move, and the business
+                        has fixed two.</div>
+                    <div class="step"><b>Questions to ask:</b> Which features drive revenue in the first 90 days? Which
+                        non-functional targets can be relaxed temporarily (99.99% → 99.9%)? What can be bought instead
+                        of built?</div>
+                    <div class="step"><b>Recommended priority:</b> Protect the revenue path and data safety. Cut
+                        redundancy that protects against rare events, defer nice-to-haves, buy commodity pieces.</div>
+                    <div class="step"><b>Example decision:</b> Single region instead of two (keep backups and tested
+                        restore), SaaS for notifications and search instead of custom, defer advanced reporting to phase
+                        2. Document what was deferred and the trigger to restore it.</div>
+                </div>
+
+                <div class="callout co-key rv"><span class="co-label">THE HABIT</span>
+                    <p>When requirements conflict, <b>do not silently pick one</b>. Surface the conflict, propose a
+                        priority, and get the business to agree. Then the trade-off is a shared decision — not your
+                        private gamble.</p>
+                </div>
+            </section>
+
+            <!-- PART 11 -->
+            <section class="sec" id="p11">
+                <div class="sec-kicker">PART 11 — DO NOT SAY THIS</div>
+                <h2 class="sec-title rv">Interview Traps: One-Line Answers That Sink Candidates</h2>
+                <p class="sec-lead rv">Each of these sentences sounds confident and is incomplete. Interviewers use them
+                    to find out whether you think in requirements or in slogans.</p>
+
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th style="width:18%">THE TRAP</th>
+                                <th style="width:34%">WHY IT IS INCOMPLETE</th>
+                                <th>HOW AN ARCHITECT REPHRASES IT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>"Kafka is faster."</b></td>
+                                <td>Faster than what, for what? Kafka is a durable, high-throughput log. If you need 200
+                                    messages/day with simple routing, RabbitMQ or even a database table is simpler and
+                                    "fast enough".</td>
+                                <td>"If we need very high throughput, replay of events, and multiple independent
+                                    consumers, Kafka fits. For modest volume and task-style messaging, a simpler broker
+                                    costs less to run. What is our volume and do we need replay?"</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Microservices are more scalable."</b></td>
+                                <td>A well-designed monolith scales horizontally too. Microservices scale <i>parts</i>
+                                    independently — which only helps if parts have very different load. They also add
+                                    network and operational cost.</td>
+                                <td>"Microservices let us scale one component independently. That matters if, say,
+                                    search needs 50× the capacity of checkout. If load is uniform, a horizontally scaled
+                                    monolith gives the same scale with less complexity."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Cloud is better."</b></td>
+                                <td>Better for spiky load, fast start and no hardware. Worse for steady heavy load cost,
+                                    some compliance rules, and sites with poor connectivity.</td>
+                                <td>"Cloud fits when we need elasticity and want to avoid capital spend and hardware
+                                    ops. If load is flat and heavy, or data must stay on site, on-prem or hybrid can be
+                                    cheaper and compliant. What does our traffic and regulation look like?"</td>
+                            </tr>
+                            <tr>
+                                <td><b>"NoSQL scales better."</b></td>
+                                <td>It scales writes horizontally more easily — at the cost of joins, multi-row
+                                    transactions and ad-hoc queries. Most systems never reach the write volume where
+                                    this matters.</td>
+                                <td>"NoSQL wins for horizontal write scale and flexible shapes with known access
+                                    patterns. For related transactional data with reporting needs, SQL is the better
+                                    trade until write volume proves otherwise. What are our write rates and query
+                                    patterns?"</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Redis is faster."</b></td>
+                                <td>Faster reads, yes — but it is a copy, not the truth. It adds a component, an
+                                    invalidation problem and a failure mode.</td>
+                                <td>"A cache makes repeated reads fast and offloads the database. It pays off when the
+                                    read/write ratio is high and staleness is acceptable. For data that changes
+                                    constantly, it does not help. What is our read ratio and change rate?"</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Kubernetes is more reliable."</b></td>
+                                <td>Kubernetes provides self-healing and orchestration — if you operate it well. Run
+                                    badly, it is a new source of outages. A managed PaaS can be more reliable for a
+                                    small team.</td>
+                                <td>"Kubernetes gives self-healing and portability, and it needs a team that can run it.
+                                    With a small ops team and a handful of services, a managed platform gives similar
+                                    uptime with far less operational risk. How many services and who operates them?"
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>"GraphQL is better than REST."</b></td>
+                                <td>Better for clients that need flexible shapes in one round-trip. Harder to cache,
+                                    easy to over-fetch on the server (N+1), extra learning curve.</td>
+                                <td>"GraphQL helps when many client shapes cause over- or under-fetching. For stable
+                                    internal or partner APIs, REST is simpler and caches well. Do we have a measured
+                                    fetching problem on the client?"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout co-tip rv"><span class="co-label">THE CONVERSION RULE</span>
+                    <p>Any statement of the form <b>"X is better"</b> becomes an architect statement when you add:
+                        <b>"…when [condition], because [requirement]; otherwise [alternative]."</b> Practise this until
+                        it is automatic.
+                    </p>
+                </div>
+            </section>
+
+            <!-- PART 12 -->
+            <section class="sec" id="p12">
+                <div class="sec-kicker">PART 12 — INTERVIEW PREPARATION</div>
+                <h2 class="sec-title rv">20 Trade-off Interview Questions</h2>
+                <p class="sec-lead rv">Click each question to see what the interviewer is testing, a weak answer, a
+                    strong architect answer, and the common mistake.</p>
+
+                <ol class="qlist rv">
+                    <li>Why did you choose microservices?<span class="qt warm">DECISION</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Was it a requirement-driven decision or
+                            fashion?<br><b>Weak:</b> "They scale better and are modern."<br><b>Strong:</b> "We had eight
+                            teams blocking each other on one release train and one component with 40× the load of the
+                            rest. Microservices gave independent deployment and targeted scaling. We accepted network
+                            failures, Sagas and higher operational cost — and we already had a platform team to carry
+                            it. Without those conditions I would have chosen a modular monolith."<br><b>Mistake:</b> Not
+                            naming the organisational reason.</span></li>
+                    <li>Why didn't you use a modular monolith?<span class="qt">DECISION</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you know the middle option exists and
+                            what it gives?<br><b>Weak:</b> "Monoliths don't scale."<br><b>Strong:</b> "A modular
+                            monolith would have given us clean boundaries and simpler operations, and it was my default.
+                            It lost because two teams genuinely needed different runtimes and release cadences, and one
+                            component's load profile was radically different. If those had not been true, the modular
+                            monolith would have won."<br><b>Mistake:</b> Treating "monolith" as one thing.</span></li>
+                    <li>Why SQL instead of NoSQL?<span class="qt warm">DATA</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>Testing:</b> Do you match store to data shape and
+                            access?<br><b>Weak:</b> "SQL is more reliable."<br><b>Strong:</b> "Orders, payments and
+                            stock are related and must change atomically; we also need ad-hoc reporting. Relational
+                            fits. NoSQL would win for horizontal write scale and flexible shapes — which is why the
+                            catalog uses a document model. For the transactional core, giving up transactions for write
+                            scale we don't need would be the wrong trade."<br><b>Mistake:</b> One store for everything
+                            by default.</span></li>
+                    <li>Why Redis?<span class="qt">PERFORMANCE</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Do you understand what a cache costs?<br><b>Weak:</b> "It's
+                            fast."<br><b>Strong:</b> "Read/write ratio on product data was about 500:1 with changes a
+                            few times an hour. A short-TTL cache with invalidation removed most database load at low
+                            cost. I planned for stale reads (acceptable for catalog) and for cache failure (fallback
+                            with request throttling). If the data changed constantly, a cache would not help and I'd use
+                            a replica."<br><b>Mistake:</b> No cache-down or invalidation plan.</span></li>
+                    <li>Why asynchronous processing?<span class="qt warm">DESIGN</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>Testing:</b> Can you split by "does the user need this
+                            now?"<br><b>Weak:</b> "Async is more scalable."<br><b>Strong:</b> "Payment stays synchronous
+                            — the user must know the result. Email, warehouse sync and analytics moved to a queue so
+                            checkout isn't held hostage by slow, flaky dependencies and spikes are absorbed. The cost is
+                            a broker, retries and idempotent handlers, plus an eventual state the UI must show
+                            honestly."<br><b>Mistake:</b> Making everything async, including payment.</span></li>
+                    <li>Why RabbitMQ instead of direct API calls?<span class="qt">INTEGRATION</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you know when a
+                            broker is worth it?<br><b>Weak:</b> "Queues decouple services."<br><b>Strong:</b> "Direct
+                            calls are simpler and I use them where I need an immediate answer. For post-checkout work, a
+                            direct call couples our success to the email provider's uptime. The queue gives retries,
+                            buffering and fan-out to multiple consumers. If volume were tiny and there were one
+                            consumer, a database-backed job table would be simpler than running a
+                            broker."<br><b>Mistake:</b> Never mentioning the simpler alternative.</span></li>
+                    <li>Why cloud instead of on-premises?<span class="qt warm">PLATFORM</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you know cloud is not automatically
+                            cheaper?<br><b>Weak:</b> "Cloud is cheaper and better."<br><b>Strong:</b> "Our load is
+                            spiky, we have no hardware team, and we need to launch in three months — cloud fits. On-prem
+                            would win for flat heavy load with a paid-off data centre or for strict data-residency
+                            rules. I priced both over three years and cloud was lower for our profile, mostly because of
+                            elasticity and avoided ops headcount."<br><b>Mistake:</b> No cost comparison.</span></li>
+                    <li>Why Kubernetes?<span class="qt curve">PLATFORM</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>Testing:</b> Do you know what it costs to
+                            run?<br><b>Weak:</b> "It's the industry standard."<br><b>Strong:</b> "We have 25 services, a
+                            platform team of four, mixed workloads, and a portability requirement across two clouds.
+                            Kubernetes gives one operating model for all of it. With five services and one ops engineer
+                            I would choose a managed PaaS — Kubernetes would be a full-time job that adds risk rather
+                            than removing it."<br><b>Mistake:</b> Ignoring team size.</span></li>
+                    <li>Why separate databases?<span class="qt">DATA</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>Testing:</b> Do you understand ownership vs
+                            cost?<br><b>Weak:</b> "Each service should own its data."<br><b>Strong:</b> "Separate
+                            databases give independent schemas and failure isolation, which we needed for two services
+                            with different scaling and release needs. Everything else shares one database with
+                            schema-level ownership, because separate stores would mean Sagas for transactions that must
+                            be atomic and ten times the operational surface. The rule is separate where the benefit is
+                            measured, not everywhere."<br><b>Mistake:</b> Applying "database per service" as
+                            dogma.</span></li>
+                    <li>Why not choose the cheapest option?<span class="qt warm">COST</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>Testing:</b> Do you price failure and
+                            maintenance?<br><b>Weak:</b> "Cheap options are low quality."<br><b>Strong:</b> "The
+                            cheapest build is rarely the cheapest to own. The single-server option saved $400 a month
+                            but had no replica, no tested restore and no monitoring. One disk failure would cost more
+                            than five years of the difference. I chose the option with the lowest total cost over three
+                            years, including the cost of the failure we are protecting against."<br><b>Mistake:</b>
+                            Comparing monthly bills only.</span></li>
+                    <li>How do you handle conflicting requirements?<span class="qt deep">PROCESS</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you surface
+                            conflicts or hide them?<br><b>Weak:</b> "I try to satisfy all of them."<br><b>Strong:</b> "I
+                            make the conflict explicit, quantify each side — what an hour of downtime costs versus what
+                            a second region costs — and propose a priority. Then I get the business owner to agree, and
+                            I document what was traded away and the trigger to revisit. The worst outcome is a silent
+                            compromise nobody signed up for."<br><b>Mistake:</b> Deciding alone.</span></li>
+                    <li>How do you measure whether an architecture decision was successful?<span
+                            class="qt deep">OUTCOME</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Do you close the loop?<br><b>Weak:</b> "If it works in
+                            production."<br><b>Strong:</b> "Against the reason we made it. If we chose a replica to fix
+                            checkout timeouts, success is p95 checkout latency and zero report-related incidents. If we
+                            extracted a service for release speed, success is deployment frequency and lead time for
+                            that team. I set those metrics in the ADR before we build, and review at the agreed
+                            date."<br><b>Mistake:</b> No metric defined up front.</span></li>
+                    <li>What is the biggest trade-off in your current architecture?<span
+                            class="qt">SELF-AWARENESS</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Can you see your own design's weaknesses?<br><b>Weak:</b> "I
+                            don't think there are major trade-offs."<br><b>Strong:</b> "We chose a single primary
+                            database for transactional integrity. The trade-off is a vertical scaling ceiling and a
+                            single write bottleneck. We accepted it because our write volume is far below that ceiling,
+                            and we have partitioning as the next step before sharding. I monitor write latency and
+                            connection saturation as the early warning."<br><b>Mistake:</b> Claiming the design has no
+                            weakness.</span></li>
+                    <li>When would you choose a less performant option on purpose?<span
+                            class="qt curve">JUDGEMENT</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Do you know performance is one factor among ten?<br><b>Weak:</b>
+                            "Never — performance is critical."<br><b>Strong:</b> "Often. If the slower option is fast
+                            enough for the target, simpler to operate, and the team knows it, it wins. Meeting p95 under
+                            500 ms with a managed SQL database beats hitting 50 ms with a technology nobody can debug at
+                            3 a.m. Performance beyond the requirement is cost without value."<br><b>Mistake:</b>
+                            Optimising past the requirement.</span></li>
+                    <li>How do you decide between build and buy?<span class="qt warm">STRATEGY</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you know where your
+                            business's value lives?<br><b>Weak:</b> "Building gives more control."<br><b>Strong:</b>
+                            "Build what differentiates the business; buy the rest. Our order rules are our advantage —
+                            build. Email delivery, search indexing and payments are commodities — buy, behind a thin
+                            interface to limit lock-in. I compare 3-year cost including maintenance, and check vendor
+                            risk and data-handling before signing."<br><b>Mistake:</b> Building commodity
+                            capabilities.</span></li>
+                    <li>What would make you reverse a decision you already made?<span class="qt">PROCESS</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you set review
+                            triggers?<br><b>Weak:</b> "If it stops working."<br><b>Strong:</b> "The triggers I wrote in
+                            the ADR. For example: team passes 50 developers, one module needs 10× scale, deployment lead
+                            time exceeds a week, or a compliance rule changes. I review on a schedule as well, so we do
+                            not only react to pain."<br><b>Mistake:</b> Treating decisions as permanent.</span></li>
+                    <li>How do you explain a technical trade-off to a non-technical executive?<span
+                            class="qt">COMMUNICATION</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Can you translate?<br><b>Weak:</b> Using the same technical words
+                            more slowly.<br><b>Strong:</b> "In their units: money, time, risk. 'Option A costs $9K a
+                            month and needs two hires but keeps us up during a regional outage. Option B costs $1.5K and
+                            we can be down for up to an hour a year. An hour costs us about $40K. Which risk do you want
+                            to carry?' Then let them decide the business trade-off with the numbers in front of
+                            them."<br><b>Mistake:</b> Making the business decision for them without showing the
+                            numbers.</span></li>
+                    <li>Is it ever right to accept technical debt on purpose?<span class="qt deep">JUDGEMENT</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Do you understand debt
+                            as a tool?<br><b>Weak:</b> "No, we should always do it properly."<br><b>Strong:</b> "Yes,
+                            when the deadline or the learning is worth more than the cleanliness — and when the debt is
+                            written down with a repayment plan. Shipping a single-region MVP to hit a market window is
+                            deliberate debt. Not knowing you took it, or never paying it back, is the
+                            failure."<br><b>Mistake:</b> Treating all debt as a mistake.</span></li>
+                    <li>What is the most common trade-off mistake you see?<span class="qt">EXPERIENCE</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>Testing:</b> Pattern
+                            recognition.<br><b>Weak:</b> "Choosing the wrong technology."<br><b>Strong:</b> "Solving for
+                            a scale or an organisation you do not have. Teams build for 100 million users at 10,000, or
+                            for 20 teams when they have two. The cost is paid every day; the benefit never arrives. The
+                            fix is to design for 3–5× current and keep a clear path to the next
+                            step."<br><b>Mistake:</b> Answering with a technology instead of a pattern.</span></li>
+                    <li>How do you avoid your own bias toward technologies you like?<span
+                            class="qt curve">SELF-AWARENESS</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>Testing:</b> Honesty and process discipline.<br><b>Weak:</b> "I don't have
+                            biases."<br><b>Strong:</b> "Everyone does. I force myself to write the case for the option I
+                            like least, and I make the team argue the other side. I weight the factors before I look at
+                            the options. And the ADR makes me name what the rejected option does better — if I cannot, I
+                            know I did not really evaluate it."<br><b>Mistake:</b> Denying bias exists.</span></li>
+                </ol>
+            </section>
+
+            <!-- PART 13 -->
+            <section class="sec" id="p13">
+                <div class="sec-kicker">PART 13 — YOUR TURN</div>
+                <h2 class="sec-title rv">Architecture Decision Exercise</h2>
+                <p class="sec-lead rv">Make five decisions for the platform below. For each, write: requirement,
+                    options, comparison, decision, reason, rejected alternative, risk, future review condition. <b>Do it
+                        on paper first.</b> Then reveal the suggested decisions.</p>
+
+                <div class="panel rv">
+                    <h4>THE SYSTEM — MULTI-COMPANY INVENTORY &amp; ORDER MANAGEMENT</h4>
+                    <div class="tblwrap" style="margin:0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>REQUIREMENT</th>
+                                    <th>DIMENSION</th>
+                                    <th>REQUIREMENT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Companies</b></td>
+                                    <td>10,000</td>
+                                    <td><b>Users</b></td>
+                                    <td>1,000,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Traffic</b></td>
+                                    <td>High dashboard, heavy reporting, frequent orders</td>
+                                    <td><b>Growth</b></td>
+                                    <td>5× expected</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Availability</b></td>
+                                    <td>High</td>
+                                    <td><b>Security</b></td>
+                                    <td>Strong (tenant isolation, audit)</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Budget</b></td>
+                                    <td>Limited</td>
+                                    <td><b>DevOps</b></td>
+                                    <td>Small team</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Future</b></td>
+                                    <td colspan="3">AI capabilities (recommendations, anomaly detection) expected within
+                                        2 years</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top:14px"><b>Decisions to make:</b></p>
+                    <ol class="nlist">
+                        <li>Monolith vs Modular Monolith vs Microservices</li>
+                        <li>SQL vs NoSQL</li>
+                        <li>Cache vs direct database access</li>
+                        <li>Synchronous vs asynchronous processing</li>
+                        <li>Shared database vs separate data stores</li>
+                    </ol>
+                    <button class="btn" style="margin-top:12px"
+                        onclick="var a=this.parentNode.querySelector('.ans');a.style.display=(a.style.display=='block'?'none':'block')">REVEAL
+                        SUGGESTED ARCHITECT DECISIONS</button>
+                    <div class="ans">
+                        <h4>Suggested Architect Decisions</h4>
+
+                        <p><b>1. Application structure → Modular Monolith</b><br>
+                            <i>Requirement:</i> high availability, limited budget, small DevOps, 5× growth.<br>
+                            <i>Options:</i> Monolith / Modular Monolith / Microservices.<br>
+                            <i>Comparison:</i> Microservices best for independence and isolation but needs operational
+                            maturity we lack and triples cost. Plain monolith cheapest but couples code and slows teams.
+                            Modular monolith gives boundaries, single deployment, in-process speed.<br>
+                            <i>Decision &amp; reason:</i> Modular monolith, horizontally scaled, with strict module
+                            contracts and schema ownership. 5× growth is a few more instances, not a rewrite.<br>
+                            <i>Rejected:</i> Microservices — solves an organisational problem we do not have and the
+                            DevOps team cannot carry it.<br>
+                            <i>Risk:</i> boundary erosion → architecture tests in CI.<br>
+                            <i>Revisit:</i> team &gt; 50, or the AI module needs a different runtime (likely first
+                            extraction candidate).
+                        </p>
+
+                        <p><b>2. Data store → SQL (relational) as the core, with room for a specialised store
+                                later</b><br>
+                            <i>Requirement:</i> related transactional data (orders, stock, payments), reporting,
+                            audit.<br>
+                            <i>Comparison:</i> SQL gives transactions, joins, ad-hoc reports, mature security and audit.
+                            NoSQL gives write scale and flexible shapes we do not need for the core.<br>
+                            <i>Decision &amp; reason:</i> Managed SQL (PostgreSQL or SQL Server per licensing) with
+                            per-module schemas and a read replica.<br>
+                            <i>Rejected:</i> NoSQL as the primary — loses atomic multi-table updates and reporting.<br>
+                            <i>Risk:</i> single write primary ceiling → partition by tenant/date before considering
+                            sharding.<br>
+                            <i>Revisit:</i> when write volume approaches the primary's measured limit, or when AI
+                            features need a vector/feature store (add alongside, do not replace).
+                        </p>
+
+                        <p><b>3. Cache vs direct DB → Cache the hot read paths</b><br>
+                            <i>Requirement:</i> high dashboard traffic, product/catalog reads, limited budget.<br>
+                            <i>Comparison:</i> Direct access is simplest but puts every dashboard hit on the database.
+                            Cache removes most repeated reads at low cost, adds one component and an invalidation
+                            duty.<br>
+                            <i>Decision &amp; reason:</i> Redis for catalog, tenant configuration and dashboard
+                            aggregates with short TTLs; never for stock-at-checkout or payment state.<br>
+                            <i>Rejected:</i> no cache — replica alone still carries the full read volume and costs more
+                            at 5×.<br>
+                            <i>Risk:</i> stale dashboard numbers; cache outage storm → fallback throttling and clear "as
+                            of" timestamps in the UI.<br>
+                            <i>Revisit:</i> if hit rate falls below ~80% or if data change frequency makes caching
+                            pointless.
+                        </p>
+
+                        <p><b>4. Sync vs async → Split by user need</b><br>
+                            <i>Requirement:</i> frequent orders, high availability, external providers.<br>
+                            <i>Comparison:</i> All-sync is simple but couples checkout to the slowest dependency.
+                            All-async hides payment results from the user.<br>
+                            <i>Decision &amp; reason:</i> Order save + payment synchronous; notifications, warehouse
+                            sync, audit projection and report refresh asynchronous via a managed queue with retries and
+                            idempotent consumers.<br>
+                            <i>Rejected:</i> all synchronous — fails availability under provider outages; all
+                            asynchronous — unacceptable UX for payment.<br>
+                            <i>Risk:</i> duplicate messages → idempotency keys; queue backlog → depth alerts and
+                            consumer auto-scale.<br>
+                            <i>Revisit:</i> if a downstream system becomes a hard real-time requirement (e.g. warehouse
+                            demands instant stock).
+                        </p>
+
+                        <p><b>5. Shared vs separate data stores → Shared database with strict tenant + schema ownership;
+                                separate store only for reporting</b><br>
+                            <i>Requirement:</i> strong security, 10,000 tenants, heavy reporting, limited budget.<br>
+                            <i>Comparison:</i> Separate stores per module/tenant give isolation but explode operational
+                            cost and break transactions. Shared with `TenantId` and schema ownership keeps cost low and
+                            transactions intact; reporting still competes with checkout unless separated.<br>
+                            <i>Decision &amp; reason:</i> One transactional database with row-level tenant filtering
+                            enforced centrally, per-module schemas; a separate read replica / reporting store for
+                            dashboards and reports; dedicated database only for a small number of premium or regulated
+                            tenants.<br>
+                            <i>Rejected:</i> database per tenant for all — 10,000 databases is unmanageable for a small
+                            team.<br>
+                            <i>Risk:</i> a missed tenant filter leaks data → enforced at the data-access layer plus
+                            automated tests; noisy tenant → per-tenant quotas and monitoring.<br>
+                            <i>Revisit:</i> if compliance requires physical isolation broadly, or if reporting needs a
+                            true warehouse.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 14 -->
+            <section class="sec" id="p14">
+                <div class="sec-kicker">PART 14 — THE PRESSURE ROUND</div>
+                <h2 class="sec-title rv">Final Architecture Defense</h2>
+                <p class="sec-lead rv">You have chosen the architecture from Part 13: <b>modular monolith, managed SQL
+                        with replica, Redis for hot reads, queue for post-checkout work, shared database with strict
+                        tenant ownership, one extracted Notification service</b>. Now the interviewer leans forward.
+                    Answer each question out loud before revealing the model answers.</p>
+
+                <div class="panel rv">
+                    <h4>15 CHALLENGING QUESTIONS</h4>
+                    <ol class="nlist">
+                        <li>Why this technology stack and not something more modern?</li>
+                        <li>Why not microservices from day one, given 5× growth is expected?</li>
+                        <li>What happens if traffic becomes 10×, not 5×?</li>
+                        <li>What happens when the database primary fails?</li>
+                        <li>What happens when Redis fails during peak?</li>
+                        <li>What happens when the queue broker is down?</li>
+                        <li>How much does this cost per month, and at 5×?</li>
+                        <li>What if the team does not know PostgreSQL / the queue technology?</li>
+                        <li>What if management cuts the budget by 30% next quarter?</li>
+                        <li>What if a large customer demands a fully isolated environment?</li>
+                        <li>What if the business requirement changes to real-time stock across warehouses?</li>
+                        <li>How do you prevent one tenant from slowing down the others?</li>
+                        <li>How will you add AI features into this architecture later?</li>
+                        <li>How do you know your module boundaries are right?</li>
+                        <li>How will you measure whether this architecture was the correct decision in 12 months?</li>
+                    </ol>
+                    <button class="btn" style="margin-top:12px"
+                        onclick="var a=this.parentNode.querySelector('.ans');a.style.display=(a.style.display=='block'?'none':'block')">REVEAL
+                        MODEL ANSWERS</button>
+                    <div class="ans">
+                        <h4>Model Answers</h4>
+                        <p><b>1. Why this stack?</b> Because it matches the constraints: a small DevOps team, limited
+                            budget, transactional data, and a team that already knows .NET and SQL. "Modern" is not a
+                            requirement; reliability, cost and delivery speed are. Every piece is managed or
+                            well-understood, which is the cheapest reliability we can buy.</p>
+                        <p><b>2. Why not microservices for 5× growth?</b> 5× of ~150 RPS is ~750 RPS — comfortably
+                            within a horizontally scaled monolith and a tuned database. Microservices solve team-scale
+                            and divergent-load problems, not a 5× uniform increase. We keep strict module boundaries so
+                            extraction is cheap if that changes.</p>
+                        <p><b>3. 10× traffic?</b> App tier: add instances behind the load balancer. Reads: more replicas
+                            and higher cache hit rate. Writes: the first real ceiling. Plan: partition orders by
+                            tenant/date, move reporting fully off the primary, and if the write primary still saturates,
+                            shard by tenant group. All of these are staged, none is a rewrite.</p>
+                        <p><b>4. Primary database fails?</b> Managed failover promotes the replica within the platform's
+                            RTO (minutes). Application reconnects via retry policies. We test the failover quarterly and
+                            monitor replication lag so we know our RPO. The queue buffers post-checkout work during the
+                            switch.</p>
+                        <p><b>5. Redis fails at peak?</b> Requests fall through to the database with a request-throttle
+                            to prevent a thundering herd; dashboards show slightly slower and "as of" times. Nothing
+                            that affects money or stock lives only in the cache. We alert on cache availability and
+                            rebuild/warm it on recovery.</p>
+                        <p><b>6. Queue broker down?</b> Checkout still succeeds because payment is synchronous and the
+                            order is durably saved. Outgoing messages are written to an outbox table in the same
+                            transaction and published when the broker returns — nothing is lost, only delayed.
+                            Notifications and stock sync catch up automatically.</p>
+                        <p><b>7. Cost?</b> Roughly: app tier and workers ~$600, managed SQL + replica ~$700, cache
+                            ~$150, queue ~$100, monitoring ~$150 — about $1,700/month today. At 5×, mostly linear on app
+                            and replica tiers, ~$4–5K/month. Compared with a 12-service Kubernetes estate at ~$9K plus
+                            two extra salaries, this is the low-cost path.</p>
+                        <p><b>8. Team doesn't know the technology?</b> Then that is a first-class factor. If the team
+                            knows SQL Server, we use SQL Server and accept the licence cost. If they have never run a
+                            broker, we start with a managed queue service and a database-backed outbox, and train before
+                            adding complexity. A design the team cannot operate is not a good design.</p>
+                        <p><b>9. Budget cut 30%?</b> Protect the revenue path and data safety first. Options in order:
+                            drop the second replica and keep one; reduce cache size; defer the reporting store and route
+                            reports to the single replica off-peak; keep backups and tested restore untouched. Document
+                            what was removed and the trigger to restore it.</p>
+                        <p><b>10. Customer demands full isolation?</b> The hybrid tenant model already allows a
+                            dedicated database (and if needed a dedicated deployment) for specific tenants. It costs
+                            more, so it is priced into that customer's contract. We do not move all 10,000 tenants
+                            because of one.</p>
+                        <p><b>11. Real-time stock across warehouses?</b> That changes Inventory from "eventual is fine"
+                            to "strongly consistent, cross-site". I would keep stock reservation synchronous within the
+                            transactional database, introduce a reservation/hold model, and look at whether Inventory
+                            becomes the second extracted service with its own scaling. It is a requirement change, so it
+                            triggers an ADR review.</p>
+                        <p><b>12. Noisy tenant?</b> Per-tenant rate limits at the API layer, per-tenant query
+                            monitoring, and the ability to move a tenant to a dedicated pool. The observability from Day
+                            12 — tenant as a dimension on every metric — is what makes this possible.</p>
+                        <p><b>13. Adding AI later?</b> The modular boundaries and event stream make this
+                            straightforward: AI features consume domain events (orders placed, stock moved) into their
+                            own store — likely a separate service in Python with a vector or feature store — without
+                            touching the transactional core. That is the most likely first extraction and the design
+                            leaves room for it.</p>
+                        <p><b>14. Right boundaries?</b> Each module owns its data and can be tested alone; changes
+                            rarely cross modules; the vocabulary differs (a "product" in catalog vs in warehouse); and
+                            the architecture tests fail the build on violations. If we see constant cross-module
+                            changes, the boundary is wrong and we merge or redraw it.</p>
+                        <p><b>15. Measuring success in 12 months?</b> Against the ADR: checkout p95 under target during
+                            month-end; zero report-caused incidents; deployment lead time down; cost per order flat or
+                            lower at higher volume; no cross-tenant data incidents. If these hold, the decision was
+                            right. If deployment lead time is still slow despite modularisation, that is the trigger to
+                            extract the next service.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 15 -->
+            <section class="sec" id="p15">
+                <div class="sec-kicker">PART 15 — THE FINAL TEST</div>
+                <h2 class="sec-title rv">20-Minute Architect Challenge</h2>
+                <p class="sec-lead rv">Set a timer. Read the problem once. Then, without looking at the model answer,
+                    produce the ten deliverables below.</p>
+
+                <div class="panel rv">
+                    <h4>THE PROBLEM — FIELD SERVICE PLATFORM</h4>
+                    <p>A company that maintains industrial equipment wants a platform for its 3,000 field technicians
+                        and 400 back-office staff across 12 countries.</p>
+                    <p><b>Business requirements:</b> Technicians receive jobs, log work and parts used, and capture
+                        photos and signatures on site. Back-office schedules jobs, approves invoices and runs monthly
+                        SLA reports for customers. Invoices must be correct to the cent and legally auditable for 7
+                        years.</p>
+                    <p><b>Technical requirements:</b> Mobile app works offline for hours in factories with poor
+                        connectivity and syncs later. Scheduling must reflect a technician's latest status within 30
+                        seconds. Photos average 3 MB, about 40,000 per day.</p>
+                    <p><b>Conflicting requirements:</b> Sales wants "real-time everything" on the dashboards; finance
+                        insists invoice data is never eventually consistent; operations wants launch in 5 months;
+                        security requires customer data to stay inside the EU for EU customers.</p>
+                    <p><b>Constraints:</b> Budget ceiling $8,000/month run cost. Team: 12 developers (strong .NET/SQL,
+                        no Kubernetes experience), 1 DevOps engineer, 1 mobile developer. Existing on-prem SQL Server
+                        with 6 years of history that must be migrated.</p>
+                    <p><b>Growth:</b> 3× technicians in 3 years; two acquisitions possible. <b>Availability:</b> 99.9%
+                        during working hours in each region; overnight maintenance windows acceptable. <b>Security:</b>
+                        customer-level data isolation, full audit trail, EU residency.</p>
+                    <p style="margin-top:14px"><b>Your deliverables:</b></p>
+                    <ol class="nlist">
+                        <li>The important requirements (ranked)</li>
+                        <li>The conflicting requirements and how you resolve each</li>
+                        <li>Three architecture options</li>
+                        <li>Comparison against the 10 factors</li>
+                        <li>Your selection</li>
+                        <li>Why</li>
+                        <li>Why you rejected the alternatives</li>
+                        <li>Risks</li>
+                        <li>Cost impact</li>
+                        <li>When you would revisit</li>
+                    </ol>
+                    <button class="btn" style="margin-top:12px"
+                        onclick="var a=this.parentNode.querySelector('.ans');a.style.display=(a.style.display=='block'?'none':'block')">REVEAL
+                        MODEL ARCHITECT ANSWER</button>
+                    <div class="ans">
+                        <h4>Model Architect Answer</h4>
+
+                        <p><b>1. Ranked requirements.</b> (1) Invoice correctness and 7-year auditability — legal gate.
+                            (2) EU data residency — legal gate. (3) Offline-capable mobile with reliable sync — the core
+                            job. (4) 5-month launch. (5) 99.9% working-hours availability. (6) 30-second scheduling
+                            freshness. (7) $8K/month ceiling. (8) 3× growth path. "Real-time dashboards" is a
+                            preference, not a requirement.</p>
+
+                        <p><b>2. Conflicts resolved.</b> <i>Real-time vs cost/complexity:</i> dashboards refresh every
+                            30–60 s from a read replica; sales agrees "near real-time" once shown the cost of true
+                            streaming. <i>Finance consistency vs mobile offline:</i> the mobile app records <b>work
+                                events</b> offline; invoices are generated server-side, transactionally, only after sync
+                            and approval — so invoice data is never eventually consistent, even though field data is.
+                            <i>5 months vs residency:</i> deploy in one EU region first (covers residency), add a second
+                            region for non-EU later. <i>Team skills vs platform:</i> managed PaaS, no Kubernetes.
+                        </p>
+
+                        <p><b>3. Options.</b> <b>A — Lift-and-shift:</b> move the on-prem SQL and a web API to cloud
+                            VMs, add a mobile app talking directly to the API. <b>B — Modular monolith on managed
+                                PaaS:</b> .NET modular monolith (Jobs, Scheduling, Invoicing, Media, Reporting), managed
+                            SQL Server with replica, blob storage + CDN for photos, managed queue for sync/outbox,
+                            mobile app with local store and sync protocol. <b>C — Microservices:</b> 6–8 services on
+                            Kubernetes, database per service, event bus, separate mobile BFF.</p>
+
+                        <p><b>4. Comparison.</b> <i>Business:</i> A fails offline sync robustness; B and C both meet it.
+                            <i>Cost:</i> A ~$3K but hidden ops; B ~$5–6K; C ~$12K+ and over ceiling. <i>Performance:</i>
+                            all adequate; photos must go to blob/CDN in any option. <i>Scale:</i> A weakest; B handles
+                            3× by adding instances; C best but unneeded. <i>Availability:</i> A single-VM risk; B
+                            managed failover; C good but operationally fragile for this team. <i>Security:</i> B and C
+                            fine with residency in-region; A weaker patching story. <i>Complexity:</i> A low, B
+                            moderate, C high. <i>Team:</i> A and B fit; C does not (no Kubernetes, 1 DevOps).
+                            <i>Maintenance:</i> B best balance. <i>Risk:</i> A = availability and scale risk; C =
+                            delivery and operations risk; B = moderate, mitigable.
+                        </p>
+
+                        <p><b>5–6. Selection and why: Option B.</b> It passes both legal gates, fits the team, lands
+                            inside budget, and meets the 5-month date because everything is managed and familiar. The
+                            invoicing module keeps strict transactions in SQL; the media module offloads 120 GB/day of
+                            photos to blob storage and CDN, keeping the database small and fast; the queue and outbox
+                            give reliable sync and let scheduling update within seconds; the replica serves reports and
+                            dashboards without touching invoicing.</p>
+
+                        <p><b>7. Why not the others.</b> <b>A</b> was rejected because it simply relocates the existing
+                            weaknesses: no failover story, no clean sync design, photos in the database, and it does not
+                            prepare for 3× or acquisitions. It is cheaper only until the first outage. <b>C</b> was
+                            rejected because it exceeds the run budget, cannot be operated by one DevOps engineer with
+                            no Kubernetes experience, would put the 5-month date at serious risk, and forces Sagas
+                            across Jobs/Invoicing where finance demands atomicity. It solves a scale-of-organisation
+                            problem this company does not have.</p>
+
+                        <p><b>8. Risks.</b> Sync conflicts when two people edit one job offline → last-writer-wins with
+                            conflict flags and a review queue. Migration of 6 years of SQL data → dry runs, checksums,
+                            parallel run for one billing cycle. Single EU region for launch → tested backup/restore and
+                            documented RTO; second region on the roadmap. Photo storage cost growth → lifecycle policy
+                            to cool storage after 90 days. Acquisitions bringing different data models → the module
+                            boundaries and tenant model give a place to plug them in.</p>
+
+                        <p><b>9. Cost impact.</b> Run cost ~$5–6K/month at launch (PaaS instances, managed SQL +
+                            replica, blob + CDN, queue, monitoring), rising to ~$7–8K at 3× — at the ceiling but not
+                            over it, and roughly half of Option C before salaries. Build cost is dominated by the sync
+                            protocol and migration, not by infrastructure. Failure cost is bounded by managed failover
+                            and tested restores.</p>
+
+                        <p><b>10. Revisit when.</b> A second acquisition doubles the team; a specific module (likely
+                            Media or Scheduling) needs scale or a runtime the monolith cannot provide; residency rules
+                            require active-active regions; or monthly run cost trends past $8K despite tuning. Scheduled
+                            review at 12 months against the metrics in the ADR: sync success rate, invoice defects
+                            (target zero), deployment lead time, p95 API latency, cost per active technician.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- SUMMARY -->
+    <section class="mindset" id="summary">
+        <div class="mindset-in">
+            <div class="sec-kicker">DAY 20 — CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">10 Rules of Architecture Trade-offs</h2>
+            <p class="sec-lead rv">Short enough to remember in an interview. True enough to use for a career.</p>
+
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Every decision is a trade-off.</h3>
+                    <p>If you cannot name what you gave up, you have not made a decision — you have made a wish.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Start with the business problem, not the technology.</h3>
+                    <p>Restate the pain in money or customer impact before you draw a single box.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Always compare at least three options.</h3>
+                    <p>Including "do the minimum". You only see the price of a choice next to its alternatives.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Weight the factors before you score the options.</h3>
+                    <p>Decide what matters most for this business first — otherwise the shiny option wins by default.
+                    </p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Some factors are gates, not weights.</h3>
+                    <p>Security, compliance and team capability can disqualify an option no matter how well it scores
+                        elsewhere.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">06</div>
+                <div>
+                    <h3>"Fast enough" beats "fastest".</h3>
+                    <p>Performance beyond the requirement is cost without value.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">07</div>
+                <div>
+                    <h3>Price the whole life, including failure.</h3>
+                    <p>Build, run, maintain, fail, and the hidden cost of complexity. Cheap to build is not cheap to
+                        own.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">08</div>
+                <div>
+                    <h3>Say something good about the option you rejected.</h3>
+                    <p>If you cannot, you never really considered it — and the interviewer knows.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">09</div>
+                <div>
+                    <h3>Write it down with a review date.</h3>
+                    <p>An ADR with options, reasons, risks and a revisit trigger turns a decision into an asset.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">10</div>
+                <div>
+                    <h3>Design for the business you have, with a path to the one you expect.</h3>
+                    <p>Three to five times current scale, and a clear next step — not a rewrite.</p>
+                </div>
+            </div>
+
+            <div class="callout co-key rv" style="margin-top:44px"><span class="co-label">ONE-MINUTE INTERVIEW ANSWER —
+                    "HOW DO YOU MAKE AN ARCHITECTURE DECISION WHEN THERE ARE MULTIPLE POSSIBLE SOLUTIONS?"</span>
+                <p><b>"I start by making sure I understand the actual business problem and what success looks like in
+                        numbers — latency, availability, cost, deadline. Then I list the constraints that cut options
+                        before I compare anything: budget, team skills, existing systems, compliance. I put at least
+                        three options side by side, including the simplest one, and I evaluate each against the same
+                        factors — business fit, cost, performance, scale, availability, security, complexity, team,
+                        maintenance and risk — but I weight those factors for this specific business first, because for
+                        a bank security is a gate and for a startup delivery speed might be. I pick the option that wins
+                        the factors that matter most and doesn't fail badly on the rest. Then I write it up as a
+                        decision record: what we chose, what we rejected and what the rejected options did better, the
+                        risks and how we mitigate them, and the trigger that would make us revisit. That last part
+                        matters — the decision is right for today's constraints, and I want the team to know when today
+                        has changed."</b></p>
+            </div>
+
+            <div class="callout co-ok rv" style="margin-top:20px"><span class="co-label">THE ARCHITECT'S POWER
+                    STATEMENT</span>
+                <p><b>"There is no perfect architecture — only the set of trade-offs a business can afford, a team can
+                        run, and an architect can explain. My job is not to find the best technology. It is to choose
+                        the right compromises on purpose, write down what we gave up, and know the moment to choose
+                        again."</b></p>
+            </div>
+            <p class="mind-close rv">Twenty days in, you can now do the thing that separates architects from senior
+                developers: hold two good options in your head, choose one for reasons you can defend, and respect the
+                one you did not pick.</p>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 20 / 30 — ARCHITECTURE TRADE-OFFS &amp; DECISION
+                MAKING</div>
+            <div class="f-r">WEEK 3 · <b>DAY 21 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'summary']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day20-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day20-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function () { li.classList.toggle('qopen'); }); }); });
+    </script>
+</body>
+
+</html>

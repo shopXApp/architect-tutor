@@ -1,0 +1,2781 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 14 of the 30-Day Technical Architect Track: Back-of-the-Envelope Estimation and Capacity Planning — QPS, RPS, storage, bandwidth, cache sizing, queue volume, and architecture decisions using numbers." />
+    <title>Day 14 — Back-of-the-Envelope Estimation &amp; Capacity Planning · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 4 4
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .devlist {
+            list-style: none;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .devlist li {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s
+        }
+
+        .devlist li:hover {
+            border-color: var(--accent)
+        }
+
+        .devlist li b {
+            color: var(--ink)
+        }
+
+        .devlist li .cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 3px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .devlist li.checked .cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .devlist li.checked .cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .devlist li.checked {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .chain {
+            display: flex;
+            margin: 26px 0;
+            max-width: 860px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--card)
+        }
+
+        .chain div {
+            flex: 1;
+            padding: 16px 18px;
+            border-left: 1px solid var(--line)
+        }
+
+        .chain div:first-child {
+            border-left: 0
+        }
+
+        .chain b {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .18em;
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .chain span {
+            font-size: 14px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .chain .c1 b {
+            color: var(--accent)
+        }
+
+        .chain .c2 b {
+            color: var(--blue)
+        }
+
+        .chain .c3 b {
+            color: var(--teal)
+        }
+
+        .codebox {
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--teal);
+            background: var(--card2);
+            border-radius: 0 6px 6px 0;
+            padding: 16px 18px;
+            margin: 22px 0;
+            max-width: 860px;
+            overflow-x: auto;
+            font-family: var(--mono);
+            font-size: 12.5px;
+            line-height: 1.7;
+            white-space: pre;
+            color: var(--ink2)
+        }
+
+        .codebox .lg-t {
+            color: var(--teal)
+        }
+
+        .codebox .lg-w {
+            color: var(--accent);
+            font-weight: 600
+        }
+
+        .codebox .lg-k {
+            color: var(--ink3)
+        }
+
+        .codebox .lg-v {
+            color: var(--ink)
+        }
+
+        .asg-progress {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 24px 0 16px;
+            max-width: 860px
+        }
+
+        .asg-bar {
+            flex: 1;
+            height: 9px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            background: var(--card);
+            overflow: hidden
+        }
+
+        .asg-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .5s ease
+        }
+
+        .asg-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .asg-item {
+            position: relative;
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s;
+            max-width: 860px
+        }
+
+        .asg-item:hover {
+            border-color: var(--accent)
+        }
+
+        .asg-item input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none
+        }
+
+        .asg-cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 2px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .asg-item.checked .asg-cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .asg-item.checked .asg-cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .asg-item.checked {
+            color: var(--ink3)
+        }
+
+        .asg-item.checked .asg-tx {
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .asg-tx b {
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            margin-right: 10px
+        }
+
+        .formula-box {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 20px 0;
+            max-width: 860px
+        }
+
+        .formula-box h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--accent);
+            margin-bottom: 12px
+        }
+
+        .formula-box .formula {
+            font-family: var(--mono);
+            font-size: 15px;
+            color: var(--ink);
+            line-height: 2;
+            white-space: pre;
+            padding: 4px 0;
+            border-bottom: 1px dashed var(--line)
+        }
+
+        .formula-box .formula:last-child {
+            border-bottom: 0
+        }
+
+        .formula-box .formula em {
+            font-style: normal;
+            color: var(--teal);
+            font-weight: 600
+        }
+
+        .formula-box .formula .cm {
+            color: var(--ink3);
+            font-style: italic;
+            font-size: 13px
+        }
+
+        .calc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 18px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--teal)
+        }
+
+        .calc-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px
+        }
+
+        .calc-card .step {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--ink2);
+            line-height: 2;
+            padding: 3px 0
+        }
+
+        .calc-card .step b {
+            color: var(--ink);
+            font-weight: 600
+        }
+
+        .calc-card .step .res {
+            color: var(--accent);
+            font-weight: 600
+        }
+
+        .calc-card .step .note {
+            color: var(--ink3);
+            font-style: italic;
+            font-size: 12px
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+
+            .chain {
+                flex-direction: column
+            }
+
+            .chain div {
+                border-left: 0;
+                border-top: 1px solid var(--line)
+            }
+
+            .chain div:first-child {
+                border-top: 0
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 14 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 14 / 30 · ESTIMATION &amp; CAPACITY
+                </div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Numbers are not</span></span>
+                    <span class="mask"><span class="line d2">guesses — they are</span></span>
+                    <span class="mask"><span class="line d2"
+                            style="animation-delay:.36s"><em>architecture.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 14 teaches you to <b>estimate system capacity without a spreadsheet</b>. You
+                    will learn to calculate QPS, storage, bandwidth, cache size, queue volume, and server count — using
+                    simple math and <b>clear assumptions</b>. This is what separates architects who design with
+                    intuition from architects who design with <b>evidence</b>.</p>
+                <div class="hero-meta"><span class="chip hot">QPS · RPS</span><span class="chip">STORAGE</span><span
+                        class="chip">BANDWIDTH</span><span class="chip">CACHE SIZING</span><span class="chip">QUEUE
+                        VOLUME</span><span class="chip">SAFETY MARGIN</span></div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS DAY</h4>
+                    <ol>
+                        <li><b>01</b> Read Sections 1–3 — the formulas and the 13-step method.</li>
+                        <li><b>02</b> Study Sections 4–5 — the worked examples and real-world case.</li>
+                        <li><b>03</b> Work Sections 6–7 — capacity planning decisions and interview technique.</li>
+                        <li><b>04</b> Complete Sections 8–10 — the assignment, self-test, and success checklist.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">10 SECTIONS · 13-STEP METHOD · 3 WORKED EXAMPLES · 1 CASE STUDY · 15 INTERVIEW
+                    QUESTIONS</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 14 → THE ARCHITECT CALCULATOR</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 14.0 — ESTIMATION INPUTS</text>
+                    <rect class="box hot" x="36" y="58" width="210" height="34" /><text x="141" y="73" font-size="9"
+                        class="ta" text-anchor="middle">1,000,000 REGISTERED USERS</text>
+                    <path class="thin" d="M141 92 V108" />
+                    <path class="arr" d="M137 108 h8 l-4 6 z" />
+                    <rect class="box" x="36" y="114" width="140" height="30" /><text x="106" y="133" font-size="9"
+                        class="t1" text-anchor="middle">100,000 ACTIVE/DAY</text>
+                    <path class="thin" d="M106 144 V156" />
+                    <path class="arr" d="M102 156 h8 l-4 6 z" />
+                    <rect class="box" x="36" y="162" width="140" height="30" /><text x="106" y="181" font-size="9"
+                        class="t1" text-anchor="middle">10,000 CONCURRENT</text>
+                    <path class="thin" d="M106 192 V204" />
+                    <path class="arr" d="M102 204 h8 l-4 6 z" />
+                    <rect class="box ok" x="36" y="210" width="140" height="30" /><text x="106" y="229" font-size="9"
+                        class="tt" text-anchor="middle">5,000 PEAK RPS</text>
+                    <rect class="box" x="260" y="58" width="224" height="34" /><text x="372" y="73" font-size="9"
+                        class="t1" text-anchor="middle">100 REQ/USER/DAY × 100K = 10M</text>
+                    <rect class="box" x="260" y="100" width="224" height="30" /><text x="372" y="119" font-size="9"
+                        class="t1" text-anchor="middle">10M / 86,400 = ~116 AVG RPS</text>
+                    <rect class="box hot" x="260" y="140" width="224" height="30" /><text x="372" y="159" font-size="9"
+                        class="ta" text-anchor="middle">116 × 40 PEAK = ~4,600 PEAK</text>
+                    <rect class="box" x="260" y="180" width="224" height="30" /><text x="372" y="199" font-size="9"
+                        class="t1" text-anchor="middle">80% READS, 20% WRITES</text>
+                    <rect class="box" x="260" y="220" width="224" height="30" /><text x="372" y="239" font-size="9"
+                        class="t1" text-anchor="middle">920 READ RPS / 230 WRITE RPS</text>
+                    <text x="36" y="270" font-size="9" class="t1">STORAGE: 10M ORDERS × 2KB = 20 GB/YEAR</text>
+                    <text x="36" y="286" font-size="9" class="t1">BANDWIDTH: 5,000 RPS × 50KB = 2.4 GB/S</text>
+                    <text x="36" y="302" font-size="9" class="t1">CACHE: 100K PRODUCTS × 4KB = ~400 MB</text>
+                    <text x="36" y="318" font-size="9" class="t1">QUEUE: 200K MSG/DAY × 2KB = ~400 MB/DAY</text>
+                    <text x="36" y="340" font-size="8" class="t3">EVERY NUMBER COMES FROM AN ASSUMPTION. NAME THE
+                        ASSUMPTION.</text>
+                    <rect class="fr" x="36" y="352" width="448" height="30" />
+                    <text x="52" y="370" font-size="9" class="ta">WHAT IS THE SCALE → WHAT IS THE LOAD → WHAT IS THE
+                        CAPACITY → WHERE IS THE BOTTLENECK</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 19l8-4 4 2 4-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                    <rect x="4" y="6" width="4" height="4" rx=".5" fill="currentColor" />
+                    <rect x="10" y="9" width="4" height="4" rx=".5" fill="currentColor" />
+                    <rect x="16" y="11" width="4" height="4" rx=".5" fill="currentColor" />
+                </svg><span><span class="p-nm">The Basics</span><span class="p-tg">FORMULAS &amp;
+                        ASSUMPTIONS</span></span></a>
+            <a class="pstrip" href="#s3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M9 5H5v14a2 2 0 0 0 2 2h14v-4M9 5l10 0M9 5v14" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">13-Step Method</span><span class="p-tg">THE INTERVIEW
+                        PROCESS</span></span></a>
+            <a class="pstrip" href="#s4" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 8v4l2.5 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Worked Examples</span><span class="p-tg">SMALL → LARGE
+                        SCALE</span></span></a>
+            <a class="pstrip" href="#s6" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M13 3L5 14h5l-1 7 9-12h-5l1-6Z" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Capacity Planning</span><span class="p-tg">NUMBERS DRIVE
+                        DESIGN</span></span></a>
+            <a class="pstrip" href="#s8" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M9 9h6M9 13h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Assignment</span><span class="p-tg">FULL ESTIMATION</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> The basics</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> Rules of thumb</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> 13-step method</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> Worked examples</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Case study</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> Capacity planning</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> Interview technique</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Assignment</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Self-test</a>
+            <a class="tn" href="#s10" data-spy="s10"><span>10</span> Success criteria</a>
+            <a class="tn" href="#mindset" data-spy="mindset"><span>★</span> Day 14 close</a>
+        </aside>
+        <main class="doc">
+
+            <section class="sec" id="s1">
+                <div class="sec-kicker">SECTION 01 — THE BASICS</div>
+                <h2 class="sec-title rv">Back-of-the-Envelope Estimation</h2>
+                <p class="sec-lead rv">You do not need a calculator or a spreadsheet. You need <b>simple math</b>,
+                    <b>clear assumptions</b>, and the ability to say them out loud. Every architecture decision starts
+                    with a number.</p>
+                <h3>What is Back-of-the-Envelope Estimation?</h3>
+                <p class="rv">It is the architect's quick calculation — rough, honest, and useful. Not precise, but
+                    <b>good enough to make decisions</b>. The goal is to answer: "Is this design big enough? Where will
+                    it break? When do we need to change it?"</p>
+                <p class="rv"><b>Why architects use it:</b> In a system design interview, you cannot code a load test.
+                    You cannot run a benchmark. You have a whiteboard and a conversation. Estimation is how you prove
+                    your design works at scale — with numbers, not hope.</p>
+                <h3>Assumptions you must clarify first</h3>
+                <ul class="nlist">
+                    <li><b>Registered users</b> — total signups, not active people.</li>
+                    <li><b>Daily active users (DAU)</b> — who actually logs in each day. Usually 1–20% of registered.
+                    </li>
+                    <li><b>Concurrent users</b> — active right now. Usually 1–10% of DAU.</li>
+                    <li><b>Requests per user per day</b> — how many API calls, page loads, clicks one person makes.
+                        Varies widely: a weather app = 5, an e-commerce site = 100+.</li>
+                    <li><b>Read/write ratio</b> — most systems are 70–90% reads. Social media: 90%. E-commerce: 80%.
+                        Banking: 50/50 or write-heavy.</li>
+                    <li><b>Peak factor</b> — peak is not average. Typically 5–40× the average, depending on the
+                        business. E-commerce at Black Friday can be 40×. A dashboard tool: maybe 5×.</li>
+                </ul>
+                <h3>Core formulas</h3>
+                <div class="formula-box rv">
+                    <h4>TRAFFIC</h4>
+                    <div class="formula"><em>Daily Requests</em> = Active Users × Requests/User/Day</div>
+                    <div class="formula"><em>Average QPS</em> = Daily Requests / 86,400 <span class="cm">// 86,400 =
+                            seconds in a day</span></div>
+                    <div class="formula"><em>Peak QPS</em> = Average QPS × Peak Factor</div>
+                    <div class="formula"><em>Read QPS</em> = Peak QPS × Read %</div>
+                    <div class="formula"><em>Write QPS</em> = Peak QPS × Write %</div>
+                </div>
+                <div class="formula-box rv">
+                    <h4>STORAGE</h4>
+                    <div class="formula"><em>One Year Storage</em> = Records/Year × Avg Record Size</div>
+                    <div class="formula"><em>Total Storage</em> = One Year Storage × Years + Overhead <span
+                            class="cm">// ~30% for indexes, logs, backups</span></div>
+                </div>
+                <div class="formula-box rv">
+                    <h4>BANDWIDTH</h4>
+                    <div class="formula"><em>Read Bandwidth</em> = Read QPS × Avg Response Size</div>
+                    <div class="formula"><em>Write Bandwidth</em> = Write QPS × Avg Request Size</div>
+                </div>
+                <div class="formula-box rv">
+                    <h4>CACHE</h4>
+                    <div class="formula"><em>Cache Size</em> = Items to Cache × Avg Item Size</div>
+                </div>
+                <div class="formula-box rv">
+                    <h4>QUEUE</h4>
+                    <div class="formula"><em>Daily Messages</em> = Events/Day × Messages/Event</div>
+                    <div class="formula"><em>Peak Queue Rate</em> = Daily Messages / 86,400 × Peak Factor</div>
+                </div>
+                <h3>Unit conversions you must know</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>DATETIME</th>
+                                <th>CONVERSION</th>
+                                <th>STORAGE</th>
+                                <th>CONVERSION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>60 seconds</b></td>
+                                <td>= 1 minute</td>
+                                <td><b>1,024 bytes</b></td>
+                                <td>= 1 KB (~1K)</td>
+                            </tr>
+                            <tr>
+                                <td><b>3,600 seconds</b></td>
+                                <td>= 1 hour</td>
+                                <td><b>1,024 KB</b></td>
+                                <td>= 1 MB (~1M)</td>
+                            </tr>
+                            <tr>
+                                <td><b>86,400 seconds</b></td>
+                                <td>= 1 day <b>— remember this</b></td>
+                                <td><b>1,024 MB</b></td>
+                                <td>= 1 GB (~1B)</td>
+                            </tr>
+                            <tr>
+                                <td><b>525,600 minutes</b></td>
+                                <td>= 1 year</td>
+                                <td><b>1,024 GB</b></td>
+                                <td>= 1 TB</td>
+                            </tr>
+                            <tr>
+                                <td><b>~31.5M seconds</b></td>
+                                <td>= 1 year</td>
+                                <td><b>1,024 TB</b></td>
+                                <td>= 1 PB</td>
+                            </tr>
+                            <tr>
+                                <td colspan="4" style="text-align:center;color:var(--ink3);font-size:12px">In
+                                    estimation, use 1K=1000, 1M=1,000,000, 1B=1,000,000,000. The 1024 difference is
+                                    noise at this level.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE RULE</span>
+                    <p><b>State every assumption out loud.</b> "I'm assuming 10% of registered users are active daily."
+                        The interviewer is not grading your math — they are grading whether you can think clearly about
+                        scale. If your assumption is wrong, say so and adjust. That is the whole skill.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">SECTION 02 — THE CHEAT SHEET</div>
+                <h2 class="sec-title rv">Rules of Thumb</h2>
+                <p class="sec-lead rv">Memorize these. They appear in almost every estimation.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:700px">
+                        <thead>
+                            <tr>
+                                <th>CONCEPT</th>
+                                <th>RULE OF THUMB</th>
+                                <th>WHY</th>
+                                <th>ASSUMPTION OR FACT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>86,400 seconds</b></td>
+                                <td>Seconds in one day — divide daily traffic by this to get average QPS</td>
+                                <td>24 × 60 × 60</td>
+                                <td><span class="pros">FACT</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>1 million seconds</b></td>
+                                <td>≈ 11.6 days</td>
+                                <td>1,000,000 / 86,400 ≈ 11.57</td>
+                                <td><span class="pros">FACT</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>1 billion requests</b></td>
+                                <td>At 100 QPS, takes ~116 days; at 1,000 QPS, ~12 days</td>
+                                <td>1,000,000,000 / QPS / 86,400</td>
+                                <td><span class="pros">FACT</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>DAU ratio</b></td>
+                                <td>10% of registered is a reasonable default for most apps</td>
+                                <td>Social: 5–20%, B2B: 20–40%, niche: 1–5%</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Concurrent ratio</b></td>
+                                <td>5% of DAU are concurrent at any moment</td>
+                                <td>Peaks during business hours; 1–10% depending on type</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak factor</b></td>
+                                <td>10× for steady apps, 20–40× for e-commerce/holiday</td>
+                                <td>Peak is when 80% of users hit in 20% of the time</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Read/write ratio</b></td>
+                                <td>80/20 for most apps, 90/10 for read-heavy, 50/50 for transactions</td>
+                                <td>Determines if you need read replicas</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Page/API response</b></td>
+                                <td>Read: 2–50 KB; Write: 1–5 KB; Image/media: 100 KB – 2 MB</td>
+                                <td>Used for bandwidth calculation</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Record size</b></td>
+                                <td>Order: 1–5 KB; User profile: 2–10 KB; Log entry: 0.5–2 KB</td>
+                                <td>Used for storage calculation</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Storage overhead</b></td>
+                                <td>Add 30–50% for indexes, replication, backups, logs</td>
+                                <td>Raw data is never the full cost</td>
+                                <td><span class="pros">RULE OF THUMB</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Replication overhead</b></td>
+                                <td>Each replica = full copy of storage</td>
+                                <td>2 replicas = 2× more storage</td>
+                                <td><span class="pros">FACT</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Backup storage</b></td>
+                                <td>Plan 2–3× your active data for retention and safety</td>
+                                <td>Daily + weekly + monthly backups</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Cache hit ratio</b></td>
+                                <td>Good cache: 80–95%; Poor cache: 40–60%</td>
+                                <td>Higher = less database load</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Server capacity</b></td>
+                                <td>1 API server: ~100–500 QPS (depends on complexity)</td>
+                                <td>Simple API: 500; heavy computation: 100</td>
+                                <td><span class="cons">ASSUMPTION</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Safety margin</b></td>
+                                <td>Design for 2× your estimated peak — never design at 1×</td>
+                                <td>You will always underestimate something</td>
+                                <td><span class="pros">RULE</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout rv"><span class="co-label">ASSUMPTION VS FACT</span>
+                    <p><b>Facts</b> (86,400 seconds/day, 1K = 1024 bytes, 1 replica = 1× storage) are always correct.
+                        <b>Assumptions</b> (DAU ratio, peak factor, page size) must come from the interviewer or be
+                        stated clearly. In an interview: <i>"I'll assume 10% DAU — please tell me if that's off and I'll
+                            recalculate."</i></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">SECTION 03 — THE METHOD</div>
+                <h2 class="sec-title rv">The 13-Step Estimation Method</h2>
+                <p class="sec-lead rv">Follow this order in every interview. Each step feeds the next. If you skip a
+                    step, the numbers that follow are wrong.</p>
+                <ol class="framework rv">
+                    <li><b>Clarify requirements</b><span>What is the system? Who uses it? What are the core features?
+                            What numbers were given? What is missing?</span><span class="fr-hint">SAY: "let me clarify
+                            the scale before I start calculating"</span></li>
+                    <li><b>Estimate total registered users</b><span>Given or estimated. This is the top of the funnel —
+                            never the active number.</span><span class="fr-hint">SAY: "1M registered users is the
+                            marketing number"</span></li>
+                    <li><b>Estimate daily active users (DAU)</b><span>10% of registered is a safe default. Adjust for
+                            the type of app.</span><span class="fr-hint">SAY: "assuming 10% DAU, that's 100,000 active
+                            users"</span></li>
+                    <li><b>Estimate requests per user per day</b><span>How many API calls, page loads, interactions?
+                            E-commerce: ~100. Social: ~200. Dashboard: ~20. State your assumption.</span><span
+                            class="fr-hint">SAY: "each user makes about 100 requests a day"</span></li>
+                    <li><b>Calculate average QPS</b><span>Daily Requests / 86,400. This is the baseline — traffic never
+                            stays here.</span><span class="fr-hint">SAY: "10M / 86,400 = about 116 requests per second
+                            on average"</span></li>
+                    <li><b>Calculate peak QPS</b><span>Average QPS × peak factor (10–40×). Peak is when you design
+                            for.</span><span class="fr-hint">SAY: "with a 40× peak factor, that's about 4,600 peak
+                            RPS"</span></li>
+                    <li><b>Split read/write</b><span>Peak QPS × read% and write%. Tells you if read replicas are
+                            needed.</span><span class="fr-hint">SAY: "at 80/20, that's 3,680 read RPS and 920 write
+                            RPS"</span></li>
+                    <li><b>Estimate storage</b><span>Records per year × record size. Add 30–50% overhead for indexes and
+                            metadata.</span><span class="fr-hint">SAY: "10M orders × 2KB = 20 GB, plus overhead = ~25
+                            GB"</span></li>
+                    <li><b>Estimate bandwidth</b><span>Peak RPS × payload size. This tells you if you need a CDN or
+                            bigger network.</span><span class="fr-hint">SAY: "4,600 RPS × 50KB = about 2.3 GB per
+                            second"</span></li>
+                    <li><b>Estimate cache size</b><span>Items to cache × item size. If cache is bigger than memory, it
+                            will not work.</span><span class="fr-hint">SAY: "100K products × 4KB = ~400 MB cache — fits
+                            in Redis"</span></li>
+                    <li><b>Estimate queue volume</b><span>Events per day × messages per event. Tells you queue
+                            throughput needs.</span><span class="fr-hint">SAY: "200K orders × 3 messages = 600K
+                            messages/day"</span></li>
+                    <li><b>Add growth and safety margin</b><span>Double your peak. Plan for 3× growth in 3 years. This
+                            is non-negotiable.</span><span class="fr-hint">SAY: "I'd design for 9,200 RPS — double the
+                            peak — and plan for 3× in three years"</span></li>
+                    <li><b>Identify the likely bottleneck</b><span>Write throughput to database? Cache memory? Network
+                            bandwidth? Queue consumers? The bottleneck drives your architecture.</span><span
+                            class="fr-hint">SAY: "at 920 write RPS, the database is the bottleneck — I need read
+                            replicas and possibly sharding"</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">HOW TO SPEAK IT IN AN INTERVIEW</span>
+                    <p>"So I have 1M registered, I'll assume 100K daily active. Each user makes about 100 requests a day
+                        — mostly reads, like browsing products and searching. That's 10M daily requests, which is about
+                        116 per second on average. Peak could be 40× that during sales events, so roughly 4,600 RPS. At
+                        80/20 reads to writes, I'm looking at about 3,680 reads and 920 writes. The writes will pressure
+                        the database, so I'd add read replicas and consider caching for the read path."</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">SECTION 04 — PRACTICE</div>
+                <h2 class="sec-title rv">Three Worked Examples</h2>
+                <p class="sec-lead rv">Three systems, growing in complexity. Follow the 13-step method in each.</p>
+
+                <div class="calc-card rv">
+                    <h4>EXAMPLE 1 — SMALL APPLICATION (INTERNAL TOOLS)</h4>
+                    <div class="step"><b>Step 1:</b> Internal project management tool for 500 employees</div>
+                    <div class="step"><b>Step 2:</b> 500 registered users</div>
+                    <div class="step"><b>Step 3:</b> 300 DAU (60% — internal tool, everyone uses it daily)</div>
+                    <div class="step"><b>Step 4:</b> 30 requests/user/day (clicks, edits, loads) <span class="note">//
+                            conservative — internal tool</span></div>
+                    <div class="step"><b>Step 5:</b> 300 × 30 = 9,000 daily requests → <span class="res">9,000 / 86,400
+                            ≈ 0.1 QPS average</span></div>
+                    <div class="step"><b>Step 6:</b> Peak factor 5× (internal — no spikes) → <span class="res">0.1 × 5 =
+                            0.5 peak QPS</span></div>
+                    <div class="step"><b>Step 7:</b> 70/30 read/write → <span class="res">0.35 reads, 0.15 writes per
+                            second</span></div>
+                    <div class="step"><b>Step 8:</b> 9K records/year × 2KB = 18KB → <span class="res">negligible storage
+                            (kilobytes!)</span></div>
+                    <div class="step"><b>Step 9:</b> Bandwidth: 0.5 RPS × 10KB = <span class="res">5 KB/s —
+                            nothing</span></div>
+                    <div class="step"><b>Step 10:</b> Cache: 500 projects × 10KB = <span class="res">5 MB —
+                            trivial</span></div>
+                    <div class="step"><b>Step 11:</b> No queue needed — 0.5 QPS is tiny</div>
+                    <div class="step"><b>Step 12:</b> Even 2× margin = 1 QPS. <span class="res">ONE SERVER IS
+                            ENOUGH.</span></div>
+                    <div class="step"><b>Step 13:</b> <span class="res">No bottleneck. A single small VM handles this.
+                            Do not over-design.</span></div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>EXAMPLE 2 — MEDIUM SAAS APPLICATION</h4>
+                    <div class="step"><b>Step 1:</b> B2B analytics platform, 50,000 registered, 10,000 companies</div>
+                    <div class="step"><b>Step 2:</b> 50,000 registered</div>
+                    <div class="step"><b>Step 3:</b> 10,000 DAU (20% — B2B, serious users) <span class="note">// higher
+                            than consumer apps</span></div>
+                    <div class="step"><b>Step 4:</b> 50 requests/user/day (dashboards, queries, exports) <span
+                            class="note">// read-heavy</span></div>
+                    <div class="step"><b>Step 5:</b> 10K × 50 = 500K daily → <span class="res">500,000 / 86,400 ≈ 6 QPS
+                            average</span></div>
+                    <div class="step"><b>Step 6:</b> Peak factor 10× (business hours) → <span class="res">6 × 10 = 60
+                            peak QPS</span></div>
+                    <div class="step"><b>Step 7:</b> 85/15 read/write → <span class="res">51 read RPS, 9 write
+                            RPS</span></div>
+                    <div class="step"><b>Step 8:</b> 500K reports/year × 5KB = 2.5M KB ≈ <span class="res">2.5 GB/year +
+                            30% = ~3.3 GB</span></div>
+                    <div class="step"><b>Step 9:</b> 60 RPS × 20KB avg = <span class="res">1.2 MB/s bandwidth</span>
+                    </div>
+                    <div class="step"><b>Step 10:</b> 50K dashboards × 20KB = <span class="res">1 GB cache — fits in
+                            Redis</span></div>
+                    <div class="step"><b>Step 11:</b> 10K email notifications/day × 1KB = <span class="res">10 MB/day
+                            queue</span></div>
+                    <div class="step"><b>Step 12:</b> 2× margin = 120 QPS. <span class="res">Still manageable on 1–2
+                            servers.</span></div>
+                    <div class="step"><b>Step 13:</b> <span class="res">Database write load (9 RPS) is fine. Reading
+                            heavy dashboards — cache is the real help. One server + cache is enough.</span></div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>EXAMPLE 3 — LARGE-SCALE E-COMMERCE</h4>
+                    <div class="step"><b>Step 1:</b> Multi-tenant e-commerce SaaS, 1M registered users</div>
+                    <div class="step"><b>Step 2:</b> 1,000,000 registered</div>
+                    <div class="step"><b>Step 3:</b> 100,000 DAU (10%) <span class="note">// realistic for large
+                            SaaS</span></div>
+                    <div class="step"><b>Step 4:</b> 100 requests/user/day (browse, search, cart, order, profile) <span
+                            class="note">// typical e-commerce</span></div>
+                    <div class="step"><b>Step 5:</b> 100K × 100 = 10M daily → <span class="res">10,000,000 / 86,400 ≈
+                            116 QPS average</span></div>
+                    <div class="step"><b>Step 6:</b> Peak factor 40× (Black Friday, flash sales) → <span class="res">116
+                            × 40 ≈ 4,640 peak QPS</span></div>
+                    <div class="step"><b>Step 7:</b> 80/20 read/write → <span class="res">3,712 read RPS, 928 write
+                            RPS</span></div>
+                    <div class="step"><b>Step 8:</b> 10M orders/year × 2KB = 20M KB ≈ <span class="res">20 GB/year + 30%
+                            = ~26 GB</span></div>
+                    <div class="step"><b>Step 9:</b> 4,640 RPS × 50KB avg = <span class="res">232 MB/s ≈ 1.86 Gbps
+                            bandwidth</span></div>
+                    <div class="step"><b>Step 10:</b> 200K products × 4KB = <span class="res">800 MB cache — fits in
+                            Redis cluster</span></div>
+                    <div class="step"><b>Step 11:</b> 200K orders/day × 3 messages/order = <span class="res">600K
+                            messages/day ≈ 7 messages/sec avg, peak ~280 msg/s</span></div>
+                    <div class="step"><b>Step 12:</b> 2× margin = 9,280 QPS. <span class="res">Need horizontal scaling —
+                            20–40 API servers.</span></div>
+                    <div class="step"><b>Step 13:</b> <span class="res">BOTTLENECKS: Write RPS to database (928) — needs
+                            read replicas. Bandwidth (1.86 Gbps) — needs CDN. Queue (280 msg/s peak) — needs scaling
+                            consumers. Cache (800 MB) — Redis cluster for redundancy.</span></div>
+                </div>
+                <div class="callout co-ok rv"><span class="co-label">THE PATTERN</span>
+                    <p>Example 1: one server. Example 2: one server + cache. Example 3: horizontal cluster + replicas +
+                        CDN + queue + cache cluster. <b>The architecture grows with the numbers — not before.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">SECTION 05 — THE CASE</div>
+                <h2 class="sec-title rv">Real-World Case Study</h2>
+                <p class="sec-lead rv">The multi-tenant e-commerce SaaS from previous days. Now estimate
+                    <b>everything</b>.</p>
+                <div class="panel rv">
+                    <h4>THE SYSTEM</h4>
+                    <div class="tblwrap" style="margin:0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Companies</b></td>
+                                    <td>10,000</td>
+                                    <td><b>Registered users</b></td>
+                                    <td>1,000,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>DAU</b></td>
+                                    <td>100,000</td>
+                                    <td><b>Concurrent users</b></td>
+                                    <td>10,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Peak RPS</b></td>
+                                    <td>5,000</td>
+                                    <td><b>Features</b></td>
+                                    <td>orders, products, inventory, payments, notifications, reporting</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Components</b></td>
+                                    <td colspan="3">Redis cache · message queue · SQL database · historical data
+                                        reaching billions of orders · Azure/AWS deployment</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <p class="rv">This is your assignment prep. Calculate all 15 metrics below — on paper, before reading
+                    on.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:700px">
+                        <thead>
+                            <tr>
+                                <th>ESTIMATE</th>
+                                <th>FIRST, CALCULATE THIS YOURSELF</th>
+                                <th>WHY IT MATTERS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Average RPS</b></td>
+                                <td></td>
+                                <td>Baseline traffic — your starting number</td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak RPS</b></td>
+                                <td></td>
+                                <td>What you design for</td>
+                            </tr>
+                            <tr>
+                                <td><b>Read RPS at peak</b></td>
+                                <td></td>
+                                <td>Does it justify read replicas?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Write RPS at peak</b></td>
+                                <td></td>
+                                <td>Database pressure — the real bottleneck</td>
+                            </tr>
+                            <tr>
+                                <td><b>Daily requests</b></td>
+                                <td></td>
+                                <td>Total system load for the day</td>
+                            </tr>
+                            <tr>
+                                <td><b>Daily orders</b></td>
+                                <td></td>
+                                <td>Business metric and write volume</td>
+                            </tr>
+                            <tr>
+                                <td><b>Daily DB writes</b></td>
+                                <td></td>
+                                <td>Total write operations to the database</td>
+                            </tr>
+                            <tr>
+                                <td><b>One-year storage</b></td>
+                                <td></td>
+                                <td>Plan your disk and backup costs</td>
+                            </tr>
+                            <tr>
+                                <td><b>Five-year storage</b></td>
+                                <td></td>
+                                <td>Growth planning — will you need to archive?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Redis cache size</b></td>
+                                <td></td>
+                                <td>Will your Redis instances be big enough?</td>
+                            </tr>
+                            <tr>
+                                <td><b>Queue messages/day</b></td>
+                                <td></td>
+                                <td>Queue throughput and consumer count</td>
+                            </tr>
+                            <tr>
+                                <td><b>Network bandwidth</b></td>
+                                <td></td>
+                                <td>CDN sizing and network cost</td>
+                            </tr>
+                            <tr>
+                                <td><b>API instances needed</b></td>
+                                <td></td>
+                                <td>How many servers? The cost question</td>
+                            </tr>
+                            <tr>
+                                <td><b>Backup storage</b></td>
+                                <td></td>
+                                <td>2–3× active data for safety</td>
+                            </tr>
+                            <tr>
+                                <td><b>3-year growth</b></td>
+                                <td></td>
+                                <td>Will you need to shard in 3 years?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">NO ANSWERS YET</span>
+                    <p>Calculate these yourself. The assignment in Section 8 asks for the same — and the solution is
+                        <b>not on this page</b>. Your numbers will be slightly different from any "correct" answer, and
+                        that is the point — the assumption matters more than the result.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s6">
+                <div class="sec-kicker">SECTION 06 — NUMBERS DRIVE DESIGN</div>
+                <h2 class="sec-title rv">Capacity Planning: When Numbers Change Architecture</h2>
+                <p class="sec-lead rv">Estimation is not about being perfectly accurate. It is about knowing <b>when
+                        your design stops working</b> and what to do next.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th>NUMBER</th>
+                                <th>ARCHITECTURE DECISION</th>
+                                <th>WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>&lt; 100 QPS</b></td>
+                                <td><b>One server is enough.</b> Simple monolith, one database, maybe a small cache.
+                                </td>
+                                <td>Any modern server handles this. Don't over-design.</td>
+                            </tr>
+                            <tr>
+                                <td><b>100–1,000 QPS</b></td>
+                                <td><b>Start thinking about scale.</b> Add caching, maybe one read replica. Monitor
+                                    carefully.</td>
+                                <td>One server still works, but you are approaching limits during peak.</td>
+                            </tr>
+                            <tr>
+                                <td><b>1,000–5,000 QPS</b></td>
+                                <td><b>Horizontal scaling needed.</b> Multiple API servers behind a load balancer. Read
+                                    replicas for heavy reads. CDN for static assets.</td>
+                                <td>Single server CPU and connections are maxed. The database becomes the bottleneck.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Read replicas when?</b></td>
+                                <td><b>When read QPS &gt; 500</b> or read/write ratio is &gt; 80/20</td>
+                                <td>Primary cannot serve both reads and writes at high volume. Replicas absorb reads.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Caching important when?</b></td>
+                                <td><b>When repeated reads dominate.</b> Product catalog, user profiles, configuration
+                                    data.</td>
+                                <td>Cache saves a database query. At 3,000+ read RPS, cache is not optional — it is
+                                    survival.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Sharding may be needed when?</b></td>
+                                <td><b>Write QPS &gt; 2,000</b> or database storage &gt; 1 TB and growing fast</td>
+                                <td>Vertical scaling and read replicas are maxed. The single writer cannot handle more
+                                    writes.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Async processing useful when?</b></td>
+                                <td><b>When not every action must be instant.</b> Email, notifications, reporting, data
+                                    sync.</td>
+                                <td>Queue removes work from the critical path — the API answers fast, the background
+                                    does the slow work.</td>
+                            </tr>
+                            <tr>
+                                <td><b>CDN useful when?</b></td>
+                                <td><b>When static content is &gt; 100 MB/s</b> or users are globally distributed</td>
+                                <td>Serves images, CSS, JS from edge locations — saves your origin bandwidth and reduces
+                                    latency.</td>
+                            </tr>
+                            <tr>
+                                <td><b>DB optimization before servers</b></td>
+                                <td><b>Always.</b> Fix queries and indexes before adding hardware.</td>
+                                <td>A bad query on 100 servers is still slow. A good query on 1 server is fast. Database
+                                    performance is free if you find it first.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE ARCHITECT'S MINDSET</span>
+                    <p>Never add servers before fixing the database. Never shard before partitioning. Never partition
+                        before indexing. Never index before measuring. Each step costs less and works better than the
+                        one after it. <b>Simple before complex, always.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">SECTION 07 — THE ANSWER STRUCTURE</div>
+                <h2 class="sec-title rv">Interview Technique</h2>
+                <p class="sec-lead rv">When the interviewer asks an estimation question, structure your answer in
+                    <b>four parts</b>: clarify, calculate, conclude, caveat.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. Clarify</b><span>Restate the problem and ask for missing numbers. "I'm
+                            assuming 10% DAU — is that right?"</span></div>
+                    <div class="topic"><b>2. Calculate</b><span>Walk through the 13-step method out loud. Show each
+                            formula. Say each assumption.</span></div>
+                    <div class="topic"><b>3. Conclude</b><span>Summarize: "So at peak I'm looking at about 5,000 RPS —
+                            I'd need 15–20 API servers, read replicas for the database, a Redis cluster, and a CDN for
+                            static assets."</span></div>
+                    <div class="topic"><b>4. Caveat</b><span>Name the uncertainty: "These are rough numbers. In
+                            production I'd validate with load testing and adjust based on actual metrics."</span></div>
+                </div>
+                <h3>How to answer specific questions</h3>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:800px">
+                        <thead>
+                            <tr>
+                                <th>QUESTION</th>
+                                <th>ARCHITECT-STYLE ANSWER STRUCTURE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>"How many servers do you need?"</b></td>
+                                <td>"I'd estimate peak RPS first: [calculate]. Then, one server handles about 200–500
+                                    QPS for our API complexity. At [X] peak RPS, I need [X/300] = [N] servers. With 2×
+                                    safety margin, that's [2N]. Plus, I need separate servers for the database, cache,
+                                    and queue."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"How much storage?"</b></td>
+                                <td>"Daily writes are about [X] records at [Y] KB each = [Z] GB/day. Per year that's [Z
+                                    × 365] GB. Adding 30% for indexes and overhead, and planning 3× for backups, the
+                                    total is about [total] TB."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"How much traffic?"</b></td>
+                                <td>"DAU is [X], requests per user is [Y], so daily requests = [X × Y]. Average QPS =
+                                    [daily / 86,400]. Peak is about [factor]× higher = [peak QPS]. At 80/20 read/write,
+                                    that's [reads] reads and [writes] writes per second."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Can this database handle it?"</b></td>
+                                <td>"Write QPS is [X]. A single database typically handles [Y] write QPS comfortably.
+                                    [If X &lt; Y] Yes, with room to grow. [If X &gt; Y] No — I'd add read replicas
+                                    immediately and consider sharding if writes keep growing."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"How will it scale after 3 years?"</b></td>
+                                <td>"If traffic grows [factor]× in 3 years, peak will be [new peak]. The first change
+                                    would be more API servers (horizontal, easy). The database would need read replicas
+                                    and possibly sharding. Cache grows linearly — just add Redis nodes. Queue scales by
+                                    adding consumers."</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">WHAT THE INTERVIEWER SCORES</span>
+                    <p>Not whether your math is perfect. Whether you <b>show your work</b>, <b>name your
+                            assumptions</b>, <b>reach the right conclusion</b> (one server for 1 QPS, horizontal scaling
+                        for 5,000 QPS), and <b>mention the bottleneck</b>. A clean thought process beats a calculator
+                        every time.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">SECTION 08 — YOUR TURN</div>
+                <h2 class="sec-title rv">Day 14 Assignment</h2>
+                <p class="sec-lead rv">Design the complete capacity estimation for the multi-tenant e-commerce SaaS
+                    platform. On paper. <b>No solution on this page.</b></p>
+                <div class="callout co-warn rv"><span class="co-label">READ FIRST — NO SOLUTION HERE</span>
+                    <p>Every number must come with its assumption and formula. The case study in Section 5 gave you the
+                        inputs. Now produce the full estimation. Tick each deliverable as you complete it.</p>
+                </div>
+                <div class="asg-progress rv">
+                    <div class="asg-bar"><i id="asgFill"></i></div><span class="asg-count" id="asgCount">0 / 14
+                        DONE</span>
+                </div>
+                <label class="asg-item rv"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>1</b> Average RPS — with formula and assumption</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>2</b> Peak RPS — with peak factor assumption</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>3</b> Read/write QPS split</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>4</b> Daily request volume</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>5</b> Storage (1-year and 5-year)</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>6</b> Network bandwidth at peak</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>7</b> Redis cache size</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>8</b> Database write load</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>9</b> Queue message volume (daily and peak)</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>10</b> Bottleneck identification — which component breaks first</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>11</b> Capacity recommendation — servers, replicas, cache,
+                        queue</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>12</b> 3-year growth projection</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>13</b> Safety margin applied to every number</span></label>
+                <label class="asg-item rv"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>14</b> What you would monitor in production to validate
+                        assumptions</span></label>
+                <div class="panel rv" style="margin-top:26px">
+                    <h4>KEY QUESTION — ANSWER THIS TOO</h4>
+                    <p style="font-size:16.5px;color:var(--ink)">For every number you calculated: <b>Why this
+                            assumption? What happens if you are wrong? What is the simpler option?</b></p>
+                    <p style="font-size:15px;color:var(--ink2)">The interviewer will ask: "Why 40× peak factor?" or "Why
+                        100 requests per user?" Your answer should be: "Because [reasoning], but I would validate with
+                        production metrics and adjust."</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">SECTION 09 — THE TEST</div>
+                <h2 class="sec-title rv">15 Scenario-Based Interview Questions</h2>
+                <p class="sec-lead rv">Answer out loud. Click a question to see what a strong answer covers.</p>
+                <ol class="qlist rv">
+                    <li>A social media app has 50M registered users and 5M DAU. What is the average QPS? Peak QPS? What
+                        would you assume for peak factor?<span class="qt warm">ESTIMATION</span><span class="qh-btn">▸
+                            WHAT A STRONG ANSWER COVERS</span><span class="qh"><b>LISTEN FOR</b>DAU = 5M, requests/user
+                            = ~200 (social), daily = 1B, avg QPS = ~11,574, peak = 20–40× (social spikes), so ~230K–460K
+                            peak QPS. Peak factor higher for social due to trending events.</span></li>
+                    <li>Your API handles 500 QPS average. A single server handles 200 QPS. How many servers, and why not
+                        exactly 2.5?<span class="qt">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>Need 3 servers minimum, but plan for 2× peak
+                            = 1,000 QPS = 5 servers. Never run at 1× — safety margin is non-negotiable.</span></li>
+                    <li>Storage is 5 TB and growing 200 GB/month. When will you need to plan for more — and what do you
+                        do?<span class="qt warm">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>At 200 GB/month, 5 TB fills in 25 months.
+                            Plan at 80% (4 TB) = about 20 months. Actions: archive old data, compress, move to cheaper
+                            storage, or expand volume.</span></li>
+                    <li>Peak RPS is 2,000 at 85/15 read/write. How many read replicas do you need, and why?<span
+                            class="qt deep">DESIGN</span><span class="qh-btn">▸ WHAT A STRONG ANSWER COVERS</span><span
+                            class="qh"><b>LISTEN FOR</b>1,700 read RPS, 300 write RPS. One replica handles ~500–1,000
+                            read RPS. Need 2–3 replicas. Writes stay on primary. Replicas also provide failover.</span>
+                    </li>
+                    <li>A payment system processes 10,000 transactions/day. What is the write QPS? What is the
+                        peak?<span class="qt warm">ESTIMATION</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>Avg = 10,000 / 86,400 ≈ 0.12 writes/sec. Peak
+                            factor for payments: ~10× (lunchtime, end of day). Peak = ~1.2 write QPS. Very low — but
+                            consistency matters more than scale.</span></li>
+                    <li>Your cache has 1M items at 2 KB each. Redis max memory is 4 GB. Is it safe?<span
+                            class="qt">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER COVERS</span><span
+                            class="qh"><b>LISTEN FOR</b>1M × 2 KB = 2 GB. At 4 GB max, 50% used — safe. But add overhead
+                            for data structures and metadata: real usage ~3 GB. Plan to add more memory or evict less
+                            important items.</span></li>
+                    <li>Queue processes 100 messages/sec with 3 consumers. Peak will be 500 msg/s. How many consumers do
+                        you need?<span class="qt deep">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>100 msg/s / 3 = ~33 msg/s per consumer. At
+                            500 msg/s, need 500/33 ≈ 15 consumers. With 2× margin: 30 consumers. But also check: does
+                            processing one message take longer, creating backpressure?</span></li>
+                    <li>How do you estimate bandwidth for a system that serves images (500 KB each) to 100,000 users
+                        making 5 image requests/day?<span class="qt">ESTIMATION</span><span class="qh-btn">▸ WHAT A
+                            STRONG ANSWER COVERS</span><span class="qh"><b>LISTEN FOR</b>100K × 5 = 500K image
+                            loads/day. 500K × 500 KB = 250 GB/day. Per second: 250 GB / 86,400 ≈ 2.9 MB/s average. Peak
+                            20× = ~58 MB/s = ~464 Mbps. CDN would reduce origin load dramatically.</span></li>
+                    <li>Your database grows 1 TB/year. You need 10 years of data. What is the storage plan?<span
+                            class="qt warm">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>10 TB active + 30% overhead = 13 TB. Backups
+                            at 3× = 30 TB total. Solutions: archive cold data to cheap storage after 2 years, compress,
+                            use column-store for analytics. Never keep 10 TB of data on fast disk if 9 TB is rarely
+                            accessed.</span></li>
+                    <li>A CDN reduces your bandwidth by 90%. Does it reduce your server count?<span
+                            class="qt curve">DESIGN</span><span class="qh-btn">▸ WHAT A STRONG ANSWER COVERS</span><span
+                            class="qh"><b>LISTEN FOR</b>Yes — if 90% of traffic was static content, servers now handle
+                            10% fewer requests. But if all requests are dynamic API calls, CDN helps only with
+                            images/assets, not API. Estimate what percentage of requests the CDN actually serves.</span>
+                    </li>
+                    <li>You estimated 5,000 peak RPS. Load testing shows servers break at 3,000 RPS. What do you
+                        do?<span class="qt warm">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>Estimate was optimistic. Either add more
+                            servers (horizontal) or find the bottleneck (DB connection pool, memory, CPU) and fix it.
+                            The estimate is a starting point — production testing is the truth.</span></li>
+                    <li>How does adding 3 read replicas affect your storage cost?<span
+                            class="qt deep">TRADE-OFF</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>Each replica is a full copy — 3 replicas = 3×
+                            storage. If the primary is 100 GB, 3 replicas add 300 GB. Plus replication overhead. Total
+                            storage goes from 100 GB to 400 GB (before backups).</span></li>
+                    <li>A competitor has 10× your traffic. Is their architecture 10× bigger?<span
+                            class="qt curve">DESIGN</span><span class="qh-btn">▸ WHAT A STRONG ANSWER COVERS</span><span
+                            class="qh"><b>LISTEN FOR</b>Not necessarily. Horizontal scaling is mostly linear — 10×
+                            traffic = ~10× API servers. But database scaling is not linear (sharding is complex). Cache
+                            and CDN scale well. The bottleneck (usually DB) drives disproportionate cost.</span></li>
+                    <li>You need to store 100 billion events at 1 KB each. What is the storage plan?<span
+                            class="qt deep">CAPACITY</span><span class="qh-btn">▸ WHAT A STRONG ANSWER
+                            COVERS</span><span class="qh"><b>LISTEN FOR</b>100B × 1 KB = 100 TB raw. With 30% overhead =
+                            130 TB. Solutions: compress (often 5–10× for text events = 10–20 TB), partition by date,
+                            archive old data to cheap storage (S3 Glacier, Azure Archive). Never put 100 TB on fast
+                            SSD.</span></li>
+                    <li>How do you validate that your estimation assumptions are correct in production?<span
+                            class="qt">DESIGN</span><span class="qh-btn">▸ WHAT A STRONG ANSWER COVERS</span><span
+                            class="qh"><b>LISTEN FOR</b>Monitor actual QPS, storage growth rate, cache hit ratio, queue
+                            throughput, and server CPU/memory. Compare against estimates weekly. Alert if actual exceeds
+                            estimate by 20%. Adjust estimates and architecture based on real data — estimates are
+                            hypotheses, not commitments.</span></li>
+                </ol>
+            </section>
+
+            <section class="sec" id="s10">
+                <div class="sec-kicker">SECTION 10 — THE BAR</div>
+                <h2 class="sec-title rv">Day 14 Success Criteria</h2>
+                <p class="sec-lead rv">Tick each when you can do it without looking at the page. All ten — and Day 14 is
+                    done.</p>
+                <ul class="devlist rv" id="okList">
+                    <li data-d="1"><span class="cb"></span><b>Estimate QPS quickly</b> — from registered users through
+                        peak, with assumptions stated.</li>
+                    <li data-d="2"><span class="cb"></span><b>Calculate peak traffic</b> — average × peak factor, named
+                        and justified.</li>
+                    <li data-d="3"><span class="cb"></span><b>Estimate storage and bandwidth</b> — record size × volume,
+                        with overhead.</li>
+                    <li data-d="4"><span class="cb"></span><b>Estimate cache and queue requirements</b> — item count ×
+                        size, message volume.</li>
+                    <li data-d="5"><span class="cb"></span><b>Perform basic capacity planning</b> — server count,
+                        replica count, safety margin.</li>
+                    <li data-d="6"><span class="cb"></span><b>Identify bottlenecks</b> — database, cache, queue,
+                        network, server.</li>
+                    <li data-d="7"><span class="cb"></span><b>Explain assumptions clearly</b> — every number has a
+                        source.</li>
+                    <li data-d="8"><span class="cb"></span><b>Add growth and safety margins</b> — 2× peak, 3-year
+                        projection.</li>
+                    <li data-d="9"><span class="cb"></span><b>Defend architecture decisions using numbers</b> — "I need
+                        3 replicas because read QPS is 1,700 and each handles ~600."</li>
+                    <li data-d="10"><span class="cb"></span><b>Answer estimation questions confidently in a Technical
+                            Architect interview</b> — clarify, calculate, conclude, caveat.</li>
+                </ul>
+                <div class="callout co-ok rv"><span class="co-label">THE FINAL CHECK</span>
+                    <p>Say out loud: <b>"1M users → 100K DAU → 100 req/user → 10M daily → 116 avg QPS → 4,600 peak QPS →
+                            20 servers → 3 read replicas → 800 MB cache → bottleneck is the database."</b> If you can
+                        walk that chain in 30 seconds, you are ready for the interview.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    </div>
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">DAY 14 — CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">The Architect Who Counts</h2>
+            <p class="sec-lead rv">Five rules from today. If you remember nothing else, these are the whole of
+                estimation and capacity planning.</p>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>State every assumption.</h3>
+                    <p>"I'm assuming 10% DAU." "I'm assuming 100 requests per user." "Peak factor is 40×." The numbers
+                        are not wrong — the assumptions are. And naming them is the whole point of the exercise.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Design for peak, not average.</h3>
+                    <p>116 QPS sounds like one server. 4,600 QPS sounds like twenty. The difference is one number: the
+                        peak factor. Always design for the worst reasonable hour, not the best.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Double your numbers.</h3>
+                    <p>A safety margin of 2× is not paranoia — it is the tax you pay for the thing you forgot to count.
+                        Without it, your architecture fails on launch day.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>The bottleneck is always the database.</h3>
+                    <p>Until it is not — then it is the cache, or the queue, or the network. But it starts there. Fix
+                        the database before you add servers. Fix the query before you add replicas. Fix the index before
+                        you shard.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Estimation is a hypothesis, not a commitment.</h3>
+                    <p>Your numbers are wrong. That is not a failure — it is the starting point. Production monitoring
+                        (Day 12) will tell you the truth. Adjust the design based on real data, not your first guess.
+                    </p>
+                </div>
+            </div>
+            <p class="mind-close rv">An architect who cannot estimate is an architect who cannot plan. Every number you
+                calculate today is a decision tomorrow. Make them honest, make them loud, and always — always — leave
+                room for the unexpected.</p>
+        </div>
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 14 / 30 · ESTIMATION &amp; CAPACITY PLANNING</div>
+            <div class="f-r">WEEK 3 · <b>DAY 15 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $(s) { return document.querySelector(s); } function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 'mindset']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day14-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day14-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); var asg = $$('.asg-item input[type=checkbox]'), fill = document.getElementById('asgFill'), cnt = document.getElementById('asgCount'); var sv = []; try { sv = JSON.parse(localStorage.getItem('arch-day14-asg') || '[]'); } catch (e) { } function upAsg() { var d = 0; asg.forEach(function (c) { if (c.checked) d++; }); if (fill) fill.style.width = Math.round((d / asg.length) * 100) + '%'; if (cnt) cnt.textContent = d + ' / ' + asg.length + ' DONE'; } asg.forEach(function (c) { var id = c.getAttribute('data-asg'); if (sv.indexOf(id) !== -1) { c.checked = true; c.closest('.asg-item').classList.add('checked'); } c.addEventListener('change', function () { c.closest('.asg-item').classList.toggle('checked', c.checked); var s = []; asg.forEach(function (x) { if (x.checked) s.push(x.getAttribute('data-asg')); }); try { localStorage.setItem('arch-day14-asg', JSON.stringify(s)); } catch (e) { } upAsg(); }); }); upAsg(); var oks = $$('#okList li'); var ov = []; try { ov = JSON.parse(localStorage.getItem('arch-day14-ok') || '[]'); } catch (e) { } oks.forEach(function (li) { var id = li.getAttribute('data-d'); if (ov.indexOf(id) !== -1) li.classList.add('checked'); li.addEventListener('click', function () { li.classList.toggle('checked'); var s = []; oks.forEach(function (x) { if (x.classList.contains('checked')) s.push(x.getAttribute('data-d')); }); try { localStorage.setItem('arch-day14-ok', JSON.stringify(s)); } catch (e) { } }); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function (e) { li.classList.toggle('qopen'); }); }); });
+    </script>
+</body>
+
+</html>

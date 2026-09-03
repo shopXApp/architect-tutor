@@ -1,0 +1,3467 @@
+<!DOCTYPE html>
+<html lang="en" option="B">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <meta name="description"
+        content="Day 19 of the 30-Day Technical Architect Track: Modular Monolith vs Microservices — how to choose, defend, and migrate. Practical interview-focused tutorial." />
+    <title>Day 19 — Modular Monolith vs Microservices · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ul.nlist,
+        .sec ol.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ul.nlist li,
+        .sec ol.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ul.nlist li b,
+        .sec ol.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .sc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 16px 0;
+            border-left: 4px solid var(--accent)
+        }
+
+        .sc-card h4 {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .2em;
+            color: var(--accent);
+            margin-bottom: 8px;
+            text-transform: uppercase
+        }
+
+        .sc-card.blue {
+            border-left-color: var(--blue)
+        }
+
+        .sc-card.blue h4 {
+            color: var(--blue)
+        }
+
+        .sc-card.ok {
+            border-left-color: var(--ok)
+        }
+
+        .sc-card.ok h4 {
+            color: var(--ok)
+        }
+
+        .sc-card.warn {
+            border-left-color: var(--red)
+        }
+
+        .sc-card.warn h4 {
+            color: var(--red)
+        }
+
+        .sc-card.gold {
+            border-left-color: var(--gold)
+        }
+
+        .sc-card.gold h4 {
+            color: var(--gold)
+        }
+
+        .reveal-block {
+            margin: 20px 0;
+            max-width: 860px
+        }
+
+        .reveal-btn {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink2);
+            padding: 9px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all .2s
+        }
+
+        .reveal-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .reveal-content {
+            display: none;
+            margin-top: 12px;
+            padding: 18px 22px;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--teal);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .reveal-content b {
+            color: var(--ink)
+        }
+
+        .reveal-content.shown {
+            display: block
+        }
+
+        .badge {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .12em;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-weight: 600
+        }
+
+        .badge.g {
+            background: rgba(47, 109, 92, .12);
+            color: var(--ok)
+        }
+
+        .badge.r {
+            background: var(--warnbg);
+            color: var(--red)
+        }
+
+        .badge.a {
+            background: var(--accent-tint);
+            color: var(--accent)
+        }
+
+        .badge.b {
+            background: var(--tipbg);
+            color: var(--blue)
+        }
+
+        .three-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 12px;
+            margin: 24px 0;
+            max-width: 960px
+        }
+
+        .arch-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px
+        }
+
+        .arch-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 6px
+        }
+
+        .arch-card .tag {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            padding: 3px 8px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 10px
+        }
+
+        .arch-card .tag.mono {
+            background: var(--accent-tint);
+            color: var(--accent)
+        }
+
+        .arch-card .tag.mod {
+            background: var(--tipbg);
+            color: var(--blue)
+        }
+
+        .arch-card .tag.micro {
+            background: rgba(47, 109, 92, .1);
+            color: var(--ok)
+        }
+
+        .arch-card ul {
+            list-style: none;
+            margin: 0
+        }
+
+        .arch-card li {
+            font-size: 14px;
+            color: var(--ink2);
+            padding: 4px 0;
+            border-bottom: 1px dashed var(--line)
+        }
+
+        .arch-card li:last-child {
+            border-bottom: 0
+        }
+
+        .arch-card li::before {
+            content: "→ ";
+            color: var(--accent);
+            font-family: var(--mono)
+        }
+
+        .flow-arrow {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--ink3);
+            text-align: center;
+            padding: 4px 0
+        }
+
+        .mod-module {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 16px 18px;
+            margin: 14px 0
+        }
+
+        .mod-module h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .18em;
+            color: var(--teal);
+            margin-bottom: 6px;
+            text-transform: uppercase
+        }
+
+        .mod-module .owns {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--ok);
+            margin-bottom: 4px
+        }
+
+        .mod-module .not {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--red);
+            margin-bottom: 4px
+        }
+
+        .mod-module .talks {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--blue)
+        }
+
+        .mod-module p {
+            font-size: 14px;
+            color: var(--ink2);
+            margin: 2px 0
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+
+            .three-col {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 19 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode">
+                <svg class="ic-moon" width="15" height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg>
+                <svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+            </button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 19 / 30 · MODULAR MONOLITH vs
+                    MICROSERVICES</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">The missing step</span></span>
+                    <span class="mask"><span class="line d2">between monolith and</span></span>
+                    <span class="mask"><span class="line d2"
+                            style="animation-delay:.36s"><em>microservices.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 19 teaches the architecture decision that most teams skip: the <b>Modular
+                        Monolith</b>. You will learn when it is the right choice over microservices, how to design it
+                    well, how to build good module boundaries, and how to defend this decision confidently in a
+                    Technical Architect interview.</p>
+                <div class="hero-meta">
+                    <span class="chip hot">MODULAR MONOLITH</span><span class="chip">MODULE BOUNDARIES</span><span
+                        class="chip">DATABASE OWNERSHIP</span>
+                    <span class="chip">MIGRATION PATH</span><span class="chip">12 SCENARIOS</span><span class="chip">20
+                        QUESTIONS</span>
+                </div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS DAY</h4>
+                    <ol>
+                        <li><b>01</b> Read Parts 1–5 — the problem, the three options, the comparison, the example, and
+                            why modular monolith wins.</li>
+                        <li><b>02</b> Study Parts 6–10 — how to build it, module boundaries, databases, communication,
+                            and the migration path.</li>
+                        <li><b>03</b> Work Parts 11–14 — signals to extract, mistakes, the decision framework,
+                            scenarios.</li>
+                        <li><b>04</b> Complete Parts 15–17 — interview questions, exercise, and the 20-minute challenge.
+                        </li>
+                    </ol>
+                </div>
+                <div class="hero-stats">17 PARTS · 10 REASONS TO PREFER · 12 SCENARIOS · 20 INTERVIEW QUESTIONS · FULL
+                    DESIGN EXAMPLE</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 19 → MODULAR MONOLITH vs MICROSERVICES</text>
+                    <text x="36" y="66" class="t3" font-size="8">WRONG JUMP:</text>
+                    <rect class="box" x="100" y="56" width="90" height="24" rx="2" /><text x="145" y="72" font-size="8"
+                        class="t1" text-anchor="middle">MONOLITH</text>
+                    <path class="thin" d="M190 68 H224" /><text x="205" y="62" font-size="8" class="t3">skip</text>
+                    <rect class="box hot" x="224" y="56" width="130" height="24" rx="2" /><text x="289" y="72"
+                        font-size="8" class="ta" text-anchor="middle">20 MICROSERVICES</text>
+                    <text x="36" y="108" class="t3" font-size="8">BETTER PATH:</text>
+                    <rect class="box" x="100" y="96" width="90" height="24" rx="2" /><text x="145" y="112" font-size="8"
+                        class="t1" text-anchor="middle">MONOLITH</text>
+                    <path class="thin" d="M190 108 H224" />
+                    <rect class="box ok" x="224" y="96" width="120" height="24" rx="2" /><text x="284" y="112"
+                        font-size="8" class="tt" text-anchor="middle">MOD. MONOLITH</text>
+                    <path class="thin" d="M344 108 H374" />
+                    <rect class="box hot" x="374" y="96" width="110" height="24" rx="2" /><text x="429" y="112"
+                        font-size="8" class="ta" text-anchor="middle">1-2 SERVICES</text>
+                    <text x="36" y="152" class="t1" font-size="8.5">A GOOD MODULAR MONOLITH HAS:</text>
+                    <rect class="box ok" x="36" y="164" width="104" height="26" rx="2" /><text x="88" y="181"
+                        font-size="8" class="tt" text-anchor="middle">ORDER MODULE</text>
+                    <rect class="box ok" x="150" y="164" width="104" height="26" rx="2" /><text x="202" y="181"
+                        font-size="8" class="tt" text-anchor="middle">INVENTORY MOD</text>
+                    <rect class="box ok" x="264" y="164" width="104" height="26" rx="2" /><text x="316" y="181"
+                        font-size="8" class="tt" text-anchor="middle">CUSTOMER MOD</text>
+                    <rect class="box ok" x="378" y="164" width="104" height="26" rx="2" /><text x="430" y="181"
+                        font-size="8" class="tt" text-anchor="middle">PAYMENT MOD</text>
+                    <text x="36" y="218" class="t3" font-size="7.5">clear responsibility · data ownership · internal
+                        interfaces · no cross-module DB access</text>
+                    <rect class="fr" x="36" y="232" width="448" height="66" />
+                    <text x="52" y="250" font-size="8.5" class="ta">10 REASONS MODULAR MONOLITH MAY BE BETTER:</text>
+                    <text x="52" y="266" font-size="7.5" class="t3">small/medium team · simple deployment · transaction
+                        support · lower cost</text>
+                    <text x="52" y="280" font-size="7.5" class="t3">easier debugging · early-stage · tight operations ·
+                        faster development</text>
+                    <text x="52" y="294" font-size="7.5" class="t3">limited DevOps · closely connected business
+                        logic</text>
+                    <rect class="fr" x="36" y="310" width="448" height="46" />
+                    <text x="52" y="330" font-size="9" class="t1">THE KEY QUESTION: WHAT PROBLEM IS MICROSERVICES
+                        ACTUALLY SOLVING?</text>
+                    <text x="52" y="346" font-size="8" class="t3">if you cannot answer clearly · modular monolith is
+                        your answer</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#q1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M3 7h18M3 12h18M3 17h9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg><span><span class="p-nm">The Problem</span><span class="p-tg">WHY TEAMS SKIP THE
+                        MIDDLE</span></span></a>
+            <a class="pstrip" href="#q3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M3 9h18M9 21V9" stroke="currentColor" stroke-width="1.4" />
+                </svg><span><span class="p-nm">Comparison</span><span class="p-tg">SIDE BY SIDE TABLE</span></span></a>
+            <a class="pstrip" href="#q6" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">How to Build</span><span class="p-tg">MODULES IN
+                        PRACTICE</span></span></a>
+            <a class="pstrip" href="#q12" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path
+                        d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8"
+                        stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Mistakes</span><span class="p-tg">10 COMMON ERRORS</span></span></a>
+            <a class="pstrip" href="#q15" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M9 5H5v14a2 2 0 002 2h14v-4M9 5l10 0M9 5v14" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Interview</span><span class="p-tg">20 ARCHITECT
+                        QUESTIONS</span></span></a>
+        </div>
+    </section>
+
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#q1" data-spy="q1"><span>01</span> Start with the problem</a>
+            <a class="tn" href="#q2" data-spy="q2"><span>02</span> The three options</a>
+            <a class="tn" href="#q3" data-spy="q3"><span>03</span> Side-by-side comparison</a>
+            <a class="tn" href="#q4" data-spy="q4"><span>04</span> Business example</a>
+            <a class="tn" href="#q5" data-spy="q5"><span>05</span> Why modular monolith wins</a>
+            <a class="tn" href="#q6" data-spy="q6"><span>06</span> How to build it</a>
+            <a class="tn" href="#q7" data-spy="q7"><span>07</span> Module boundaries</a>
+            <a class="tn" href="#q8" data-spy="q8"><span>08</span> Shared database</a>
+            <a class="tn" href="#q9" data-spy="q9"><span>09</span> Module communication</a>
+            <a class="tn" href="#q10" data-spy="q10"><span>10</span> Migration path</a>
+            <a class="tn" href="#q11" data-spy="q11"><span>11</span> When to extract</a>
+            <a class="tn" href="#q12" data-spy="q12"><span>12</span> Common mistakes</a>
+            <a class="tn" href="#q13" data-spy="q13"><span>13</span> Decision scorecard</a>
+            <a class="tn" href="#q14" data-spy="q14"><span>14</span> 12 scenarios</a>
+            <a class="tn" href="#q15" data-spy="q15"><span>15</span> Interview questions</a>
+            <a class="tn" href="#q16" data-spy="q16"><span>16</span> Architecture exercise</a>
+            <a class="tn" href="#q17" data-spy="q17"><span>17</span> 20-min challenge</a>
+            <a class="tn" href="#summary19" data-spy="summary19"><span>★</span> 10 rules &amp; close</a>
+        </aside>
+        <main class="doc">
+
+            <!-- Q1 -->
+            <section class="sec" id="q1">
+                <div class="sec-kicker">PART 1 — THE MISSING STEP</div>
+                <h2 class="sec-title rv">Why Companies Jump Straight to Microservices</h2>
+                <p class="sec-lead rv">The most common architecture anti-pattern: a monolith starts showing problems,
+                    and the immediate response is to split it into 15–20 microservices. The step in between — the
+                    modular monolith — is almost always skipped.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Problem a monolith creates</b><span>As a monolith grows without discipline, it
+                            becomes a "big ball of mud" — everything is connected to everything, no clear boundaries, no
+                            clear ownership. One change breaks three other things. Developers are afraid to touch old
+                            code.</span></div>
+                    <div class="topic"><b>Problem a modular monolith solves</b><span>Clear boundaries and clear
+                            ownership — inside the same application. The mud becomes organised sections. Developers know
+                            who owns what. Changes in one module do not break another. Deployment stays simple.</span>
+                    </div>
+                    <div class="topic"><b>Problem microservices solve</b><span>True independence — separate deployment,
+                            separate scaling, separate failure domains. This is only needed when the monolith (or
+                            modular monolith) cannot provide these at the scale the business requires.</span></div>
+                    <div class="topic"><b>Why architecture should follow business needs</b><span>Microservices are the
+                            right answer to a specific set of problems at a specific scale. Not having those problems,
+                            and choosing microservices anyway, means paying the cost without receiving the
+                            benefit.</span></div>
+                </div>
+                <h3>A simple real-world example</h3>
+                <p class="rv">A logistics company has a growing order management system. The monolith is becoming slow
+                    to release — teams interfere with each other's code. Management proposes splitting into
+                    microservices. But on investigation, the actual problem is: <b>there are no module boundaries</b>.
+                    The Order module directly changes the Inventory database table. The Notification module reads from
+                    the Payment database. Everything is entangled.</p>
+                <p class="rv">The solution is not 15 microservices. The solution is to add module boundaries to the
+                    existing application. Three months later, each team works independently in their module, releases
+                    are faster, and the system is more stable — without a single service split.</p>
+                <div class="callout co-ok rv"><span class="co-label">THE LESSON</span>
+                    <p>The problem was <b>bad architecture inside the monolith</b>, not "not enough services".
+                        Microservices would have moved the problem from the monolith to the inter-service layer — and
+                        made it harder to fix. The modular monolith addressed the root cause.</p>
+                </div>
+            </section>
+
+            <!-- Q2 -->
+            <section class="sec" id="q2">
+                <div class="sec-kicker">PART 2 — THE THREE OPTIONS</div>
+                <h2 class="sec-title rv">Traditional Monolith, Modular Monolith, and Microservices</h2>
+
+                <h3>Option 1: Traditional Monolith</h3>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 540 100" fill="none">
+                        <rect class="s-box hot" x="20" y="14" width="500" height="60" rx="4" />
+                        <text x="270" y="40" class="s-lab" text-anchor="middle" style="fill:var(--accent)">MONOLITH —
+                            EVERYTHING IN ONE APPLICATION</text>
+                        <text x="270" y="56" class="s-sub" text-anchor="middle">order · payment · inventory ·
+                            notification · reporting — all shared, all entangled</text>
+                        <text x="270" y="70" class="s-sub" text-anchor="middle">one codebase · one database · one
+                            deployment · no clear boundaries</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.1 — MONOLITH: SIMPLE TO START, HARDER TO MAINTAIN AS IT GROWS</div>
+                </div>
+                <ul class="nlist rv">
+                    <li><b>Advantages:</b> Fast to start, simple deployment, full ACID transactions, easy debugging,
+                        cheap to operate.</li>
+                    <li><b>Disadvantages:</b> As it grows without discipline, becomes hard to maintain. All teams
+                        release together. One bug can affect everything. Hard to scale one part independently.</li>
+                    <li><b>Best use cases:</b> New products, small teams, systems with strongly coupled business logic,
+                        internal tools.</li>
+                    <li><b>Warning signs it is becoming a problem:</b> Releases take hours because many teams must
+                        coordinate. A change in one area frequently breaks another. No one knows who owns which code.
+                    </li>
+                </ul>
+
+                <h3>Option 2: Modular Monolith</h3>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 540 120" fill="none">
+                        <rect class="s-box" x="20" y="10" width="500" height="98" rx="4" />
+                        <text x="270" y="30" class="s-lab" text-anchor="middle">MODULAR MONOLITH — ONE DEPLOYMENT, CLEAR
+                            INTERNAL STRUCTURE</text>
+                        <rect class="s-box ok" x="36" y="44" width="95" height="46" rx="3" />
+                        <text x="83" y="62" font-size="8" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">ORDER</text><text x="83" y="76" font-size="7.5" class="s-sub"
+                            text-anchor="middle">own schema</text>
+                        <rect class="s-box ok" x="141" y="44" width="95" height="46" rx="3" />
+                        <text x="188" y="62" font-size="8" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">INVENTORY</text><text x="188" y="76" font-size="7.5" class="s-sub"
+                            text-anchor="middle">own schema</text>
+                        <rect class="s-box ok" x="246" y="44" width="95" height="46" rx="3" />
+                        <text x="293" y="62" font-size="8" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">PAYMENT</text><text x="293" y="76" font-size="7.5" class="s-sub"
+                            text-anchor="middle">own schema</text>
+                        <rect class="s-box ok" x="351" y="44" width="95" height="46" rx="3" />
+                        <text x="398" y="62" font-size="8" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">NOTIFY</text><text x="398" y="76" font-size="7.5" class="s-sub"
+                            text-anchor="middle">own schema</text>
+                        <rect class="s-box ok" x="456" y="44" width="52" height="46" rx="3" />
+                        <text x="482" y="65" font-size="8" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">REPORT</text>
+                        <text x="270" y="106" class="s-sub" text-anchor="middle">MODULES COMMUNICATE VIA INTERFACES ·
+                            ONE DATABASE, SCHEMA-SEPARATED · ONE BUILD &amp; DEPLOY</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.2 — MODULAR MONOLITH: INTERNAL STRUCTURE MIMICS SERVICE BOUNDARIES
+                        WITHOUT DISTRIBUTION</div>
+                </div>
+                <ul class="nlist rv">
+                    <li><b>What it is:</b> One application, one deployment, but code deliberately organised into modules
+                        with clear ownership and defined interfaces.</li>
+                    <li><b>How modules communicate:</b> Via internal method calls or events — fast, typed, no network.
+                        One module calls another module's public API, not its internal database.</li>
+                    <li><b>Data ownership:</b> Each module owns its database schema. Other modules cannot directly
+                        access another module's tables.</li>
+                    <li><b>Why it can be easier to operate:</b> One deployment, one log, one monitoring setup, one
+                        rollback. Incidents are investigated in one place.</li>
+                    <li><b>Why it still has good architecture:</b> Clear boundaries, clear ownership, testable modules,
+                        and a well-defined migration path to services when genuinely needed.</li>
+                </ul>
+
+                <h3>Option 3: Microservices</h3>
+                <ul class="nlist rv">
+                    <li><b>What it is:</b> Independent services, each deployed separately, each with its own database
+                        and codebase.</li>
+                    <li><b>Independent deployment:</b> Each team deploys their service without coordinating with others.
+                    </li>
+                    <li><b>Independent scaling:</b> Scale only the services that need it.</li>
+                    <li><b>Separate ownership:</b> One team owns one service end to end.</li>
+                    <li><b>Communication:</b> Over the network — HTTP, gRPC, or message queues. Slower and less reliable
+                        than a method call.</li>
+                    <li><b>Operational complexity:</b> Multiple deployments, multiple monitoring setups, distributed
+                        tracing, service discovery, API versioning, inter-service authentication.</li>
+                </ul>
+            </section>
+
+            <!-- Q3 -->
+            <section class="sec" id="q3">
+                <div class="sec-kicker">PART 3 — THE FULL COMPARISON</div>
+                <h2 class="sec-title rv">Side-by-Side: Monolith · Modular Monolith · Microservices</h2>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:780px">
+                        <thead>
+                            <tr>
+                                <th>AREA</th>
+                                <th>MONOLITH</th>
+                                <th>MODULAR MONOLITH</th>
+                                <th>MICROSERVICES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Development</b></td>
+                                <td>One team, one codebase, fast start</td>
+                                <td>Module teams work independently in shared codebase</td>
+                                <td>Fully independent teams per service, different stacks</td>
+                            </tr>
+                            <tr>
+                                <td><b>Deployment</b></td>
+                                <td>One artifact, one deploy</td>
+                                <td>One artifact, one deploy</td>
+                                <td>Many artifacts, many independent deploys</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling</b></td>
+                                <td>Scale the whole application</td>
+                                <td>Scale the whole application</td>
+                                <td>Scale each service independently</td>
+                            </tr>
+                            <tr>
+                                <td><b>Performance</b></td>
+                                <td>Fast internal calls, single process</td>
+                                <td>Fast internal calls, single process</td>
+                                <td>Network calls between services — slower, more failure points</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database</b></td>
+                                <td>One shared database, any module accesses any table</td>
+                                <td>One database, schema ownership per module</td>
+                                <td>Separate database per service, no sharing</td>
+                            </tr>
+                            <tr>
+                                <td><b>Testing</b></td>
+                                <td>Integration tests are easy — one application</td>
+                                <td>Module tests easy; integration still in one application</td>
+                                <td>Each service tested in isolation + contract tests between services</td>
+                            </tr>
+                            <tr>
+                                <td><b>Debugging</b></td>
+                                <td>One log, one trace, one place to look</td>
+                                <td>One log, one trace, organised by module</td>
+                                <td>Distributed tracing required, logs in multiple systems</td>
+                            </tr>
+                            <tr>
+                                <td><b>Monitoring</b></td>
+                                <td>One monitoring setup</td>
+                                <td>One monitoring setup with module context</td>
+                                <td>Separate monitoring per service + aggregated view</td>
+                            </tr>
+                            <tr>
+                                <td><b>Failure handling</b></td>
+                                <td>One failure point — but contained in one process</td>
+                                <td>Same as monolith, modules can fail independently in logic</td>
+                                <td>Services fail independently — but require explicit fallback design</td>
+                            </tr>
+                            <tr>
+                                <td><b>Team ownership</b></td>
+                                <td>One team owns everything — or nobody does</td>
+                                <td>Teams own modules, clear but shared deployment</td>
+                                <td>Full end-to-end ownership per team per service</td>
+                            </tr>
+                            <tr>
+                                <td><b>Deployment independence</b></td>
+                                <td>None — everything releases together</td>
+                                <td>None — everything releases together (but modules are ready)</td>
+                                <td>Full — each service deploys independently</td>
+                            </tr>
+                            <tr>
+                                <td><b>Infrastructure</b></td>
+                                <td>One server or cluster</td>
+                                <td>One server or cluster</td>
+                                <td>Multiple servers, databases, load balancers, pipelines</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td><span class="pros">Low</span></td>
+                                <td><span class="pros">Low</span></td>
+                                <td><span class="cons">High — multiplies with service count</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Security</b></td>
+                                <td>One security boundary, one authentication layer</td>
+                                <td>Same as monolith, module-level access control</td>
+                                <td>Per-service authentication, multiple trust boundaries</td>
+                            </tr>
+                            <tr>
+                                <td><b>Data consistency</b></td>
+                                <td>Strong — ACID across all modules</td>
+                                <td>Strong — ACID across all modules in one transaction</td>
+                                <td>Eventual — distributed transactions require saga patterns</td>
+                            </tr>
+                            <tr>
+                                <td><b>Development speed</b></td>
+                                <td><span class="pros">Fastest initially</span></td>
+                                <td>Fast — module clarity speeds up feature development</td>
+                                <td><span class="cons">Slower — cross-service coordination, contract changes</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Operational complexity</b></td>
+                                <td><span class="pros">Low</span></td>
+                                <td><span class="pros">Low</span></td>
+                                <td><span class="cons">High — each service needs ops attention</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Maintenance</b></td>
+                                <td>Becomes harder as size grows without discipline</td>
+                                <td>Sustainable — boundaries prevent degradation</td>
+                                <td>Manageable per service, but high in aggregate</td>
+                            </tr>
+                            <tr>
+                                <td><b>Technology flexibility</b></td>
+                                <td>One technology stack</td>
+                                <td>One technology stack</td>
+                                <td>Different stack per service if needed</td>
+                            </tr>
+                            <tr>
+                                <td><b>Future migration</b></td>
+                                <td>Hard to extract — no defined boundaries</td>
+                                <td>Easy to extract — modules are already well-defined</td>
+                                <td>Already extracted</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>The 5 most important differences</h3>
+                <ol class="nlist rv">
+                    <li><b>Deployment independence:</b> Only microservices offer truly independent deployment. This is
+                        the most often cited benefit — and the one that requires the most operational investment to
+                        realise.</li>
+                    <li><b>Data consistency:</b> Monolith and modular monolith support full ACID transactions.
+                        Microservices require eventual consistency and distributed transaction patterns for
+                        cross-service operations.</li>
+                    <li><b>Cost:</b> Infrastructure cost scales with service count in microservices. A modular monolith
+                        with 10 modules costs the same infrastructure as a monolith with 2 modules.</li>
+                    <li><b>Operational complexity:</b> Microservices require observability infrastructure (distributed
+                        tracing, log aggregation) from day one. Without it, incidents become undebuggable.</li>
+                    <li><b>Migration path:</b> A modular monolith with clean boundaries is easy to extract services from
+                        when genuinely needed. A traditional monolith is not.</li>
+                </ol>
+            </section>
+
+            <!-- Q4 -->
+            <section class="sec" id="q4">
+                <div class="sec-kicker">PART 4 — THE EXAMPLE</div>
+                <h2 class="sec-title rv">Multi-Company Inventory and Order Management System</h2>
+                <p class="sec-lead rv">Same system — three designs. 10,000 companies, 1 million users, heavy dashboards
+                    and reporting, frequent order creation, limited DevOps team, small initial development teams.</p>
+
+                <h3>Design A: Traditional Monolith</h3>
+                <p class="rv">All 11 areas (Auth, Company, Customer, Product, Sales Order, Purchase, Inventory, Payment,
+                    Notification, Reporting, Audit) in one application, one database, no clear boundaries. Works well at
+                    start. Problems begin when: the Reporting module's complex queries slow down order creation, teams
+                    step on each other's database tables, and nobody can safely change the Inventory logic without
+                    checking 5 other modules.</p>
+                <p class="rv"><b>The correct assessment:</b> This design is appropriate for the first 12–18 months, with
+                    a small team (5–10 developers). The moment boundary problems start appearing, move to Design B — not
+                    Design C.</p>
+
+                <h3>Design B: Modular Monolith</h3>
+                <p class="rv">The 11 areas are grouped into coherent modules: Identity (Auth + Company), Catalog
+                    (Product + Customer), Commerce (Order + Purchase), Inventory, Payment, Notification, Reporting,
+                    Audit. Each module owns its database schema. Modules communicate via defined interfaces. One
+                    deployment, one database server (with schema separation).</p>
+                <p class="rv"><b>The correct assessment:</b> This is the right architecture for 10,000 companies with a
+                    limited DevOps team. It allows teams to work independently within their modules, prevents reporting
+                    from affecting transactions (reporting module uses read-only replicas internally), and keeps
+                    operational cost low. When reporting or notification genuinely need independent scaling — extract
+                    those first.</p>
+
+                <h3>Design C: Microservices</h3>
+                <p class="rv">Order Service, Inventory Service, Payment Service, Notification Service, Reporting
+                    Service, Identity Service — each independent. Each with its own database, its own deployment
+                    pipeline, its own monitoring. Communication via HTTP and message queues.</p>
+                <p class="rv"><b>The correct assessment:</b> This design is appropriate when the modular monolith can no
+                    longer meet the scaling or deployment independence requirements — when the Notification Service
+                    genuinely needs to scale to millions of messages per minute independent of orders, or when teams
+                    truly cannot coordinate releases even within a modular structure. For a limited DevOps team and a
+                    growing but not yet massive system, this introduces more operational risk than it solves.</p>
+
+                <div class="callout rv"><span class="co-label">THE RECOMMENDATION</span>
+                    <p>Start with Design B (Modular Monolith). Measure real problems. Extract specific services
+                        (probably Reporting first, then Notification) only when a specific benefit is proven. Never
+                        extract all 11 areas simultaneously.</p>
+                </div>
+            </section>
+
+            <!-- Q5 -->
+            <section class="sec" id="q5">
+                <div class="sec-kicker">PART 5 — THE ARGUMENT</div>
+                <h2 class="sec-title rv">10 Reasons a Modular Monolith May Be Better Than Microservices</h2>
+
+                <div class="sc-card rv">
+                    <h4>REASON 1 — SMALL OR MEDIUM TEAM</h4>
+                    <p><b>Situation:</b> 5–20 developers building the system.</p>
+                    <p><b>Why modular monolith helps:</b> One codebase, clear module ownership, fast development, no
+                        service coordination overhead.</p>
+                    <p><b>Why microservices may be excessive:</b> Each service needs its own ops attention. A 10-person
+                        team managing 12 services spends more time on infrastructure than features.</p>
+                    <p><b>When to revisit:</b> When the team grows past 25–30 people and module teams genuinely cannot
+                        coordinate releases even within one application.</p>
+                </div>
+
+                <div class="sc-card blue rv">
+                    <h4>REASON 2 — LIMITED DEVOPS MATURITY</h4>
+                    <p><b>Situation:</b> One or two DevOps engineers, basic CI/CD, no distributed tracing.</p>
+                    <p><b>Why modular monolith helps:</b> One deployment pipeline, one monitoring setup, one place to
+                        look when things break.</p>
+                    <p><b>Why microservices may be excessive:</b> Each service needs its own pipeline, monitoring, and
+                        on-call runbook. With two DevOps engineers, this is unmanageable.</p>
+                    <p><b>When to revisit:</b> When a dedicated platform team exists with distributed tracing, log
+                        aggregation, and automated deployment working end-to-end.</p>
+                </div>
+
+                <div class="sc-card ok rv">
+                    <h4>REASON 3 — SIMPLE DEPLOYMENT NEEDS</h4>
+                    <p><b>Situation:</b> The business is happy with weekly or biweekly releases. There is no urgent need
+                        for independent deployment.</p>
+                    <p><b>Why modular monolith helps:</b> One artifact, one deployment, one rollback. Simpler release
+                        planning, simpler hotfixes.</p>
+                    <p><b>Why microservices may be excessive:</b> Coordinating releases across 12 services for a
+                        biweekly cycle creates unnecessary complexity. Microservices benefit is wasted.</p>
+                    <p><b>When to revisit:</b> When specific teams genuinely need to deploy multiple times per day,
+                        independently, and cannot do so within the current structure.</p>
+                </div>
+
+                <div class="sc-card warn rv">
+                    <h4>REASON 4 — STRONG NEED FOR TRANSACTIONS</h4>
+                    <p><b>Situation:</b> Business operations require multiple data changes to succeed or fail together.
+                    </p>
+                    <p><b>Why modular monolith helps:</b> A database transaction spans all modules. Order creation,
+                        inventory reservation, and payment initiation can succeed or fail together in one database
+                        transaction.</p>
+                    <p><b>Why microservices may be excessive:</b> You replace one line of SQL with a saga pattern
+                        involving 6 network calls, compensating transactions, and retry logic. The business requirement
+                        is the same — the complexity is not.</p>
+                    <p><b>When to revisit:</b> When you can genuinely redesign business operations to be eventually
+                        consistent — which is a business decision, not just a technical one.</p>
+                </div>
+
+                <div class="sc-card gold rv">
+                    <h4>REASON 5 — CLOSELY CONNECTED BUSINESS OPERATIONS</h4>
+                    <p><b>Situation:</b> Many business operations naturally span multiple modules.</p>
+                    <p><b>Why modular monolith helps:</b> Cross-module operations are method calls, not HTTP calls.
+                        Fast, reliable, transactional.</p>
+                    <p><b>Why microservices may be excessive:</b> If an order creation must call Order, Inventory, and
+                        Payment services simultaneously, you have introduced 3 failure points and 3 timeout scenarios
+                        into what was one reliable operation.</p>
+                    <p><b>When to revisit:</b> When operations can be redesigned with clear, event-driven decoupling
+                        that does not require synchronous cross-service calls.</p>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>REASON 6 — LOWER OPERATIONAL COST</h4>
+                    <p><b>Situation:</b> Infrastructure budget is constrained.</p>
+                    <p><b>Why modular monolith helps:</b> One application server, one database server. Cost is
+                        predictable and low.</p>
+                    <p><b>Why microservices may be excessive:</b> 12 services × (compute + database + monitoring +
+                        pipeline) = 5–10× the infrastructure cost.</p>
+                    <p><b>When to revisit:</b> When the business case shows that independent scaling savings outweigh
+                        the infrastructure cost. This usually happens at significant scale.</p>
+                </div>
+
+                <div class="sc-card blue rv">
+                    <h4>REASON 7 — EASIER DEBUGGING</h4>
+                    <p><b>Situation:</b> A production issue must be diagnosed quickly.</p>
+                    <p><b>Why modular monolith helps:</b> One log, one trace, one place to look. Stack traces span the
+                        whole operation in one view.</p>
+                    <p><b>Why microservices may be excessive:</b> Debugging a request that touches 6 services requires:
+                        distributed tracing infrastructure, correlation IDs, log aggregation, and cross-team
+                        communication to understand what each service did.</p>
+                    <p><b>When to revisit:</b> When distributed tracing infrastructure is in place and the team is
+                        experienced in reading cross-service traces.</p>
+                </div>
+
+                <div class="sc-card ok rv">
+                    <h4>REASON 8 — FASTER DEVELOPMENT</h4>
+                    <p><b>Situation:</b> Feature velocity is the business priority.</p>
+                    <p><b>Why modular monolith helps:</b> Developers can add a feature that touches multiple modules in
+                        one pull request, one test run, one deployment.</p>
+                    <p><b>Why microservices may be excessive:</b> A feature spanning 3 services requires: 3
+                        repositories, 3 pull requests, 3 deployments, and contract negotiation between teams. What takes
+                        hours in a modular monolith takes days in microservices.</p>
+                    <p><b>When to revisit:</b> When teams have stable enough service contracts that cross-service
+                        features are genuinely rare.</p>
+                </div>
+
+                <div class="sc-card warn rv">
+                    <h4>REASON 9 — EARLY-STAGE PRODUCT</h4>
+                    <p><b>Situation:</b> The product is new and requirements are changing frequently.</p>
+                    <p><b>Why modular monolith helps:</b> Changing module boundaries is a refactoring session. Moving
+                        code between modules is cheap.</p>
+                    <p><b>Why microservices may be excessive:</b> Changing service boundaries requires updating APIs,
+                        databases, deployment pipelines, and possibly migrating data. Wrong boundaries are very
+                        expensive to fix in microservices.</p>
+                    <p><b>When to revisit:</b> When the product has found product-market fit, requirements are stable,
+                        and boundaries are well understood.</p>
+                </div>
+
+                <div class="sc-card gold rv">
+                    <h4>REASON 10 — LOWER INFRASTRUCTURE COMPLEXITY</h4>
+                    <p><b>Situation:</b> The team has no service discovery, no API gateway, no distributed tracing in
+                        place.</p>
+                    <p><b>Why modular monolith helps:</b> None of those are needed. One application, one database,
+                        standard web infrastructure.</p>
+                    <p><b>Why microservices may be excessive:</b> You must build and operate service discovery, API
+                        gateway, distributed tracing, centralised log aggregation, and per-service authentication before
+                        the first microservice is useful. This is months of infrastructure work before a single business
+                        feature.</p>
+                    <p><b>When to revisit:</b> When that infrastructure is built, tested, and operated reliably.</p>
+                </div>
+            </section>
+
+            <!-- Q6 -->
+            <section class="sec" id="q6">
+                <div class="sec-kicker">PART 6 — BUILDING IT WELL</div>
+                <h2 class="sec-title rv">How to Build a Good Modular Monolith</h2>
+                <p class="sec-lead rv">A modular monolith is not an excuse for spaghetti code with folders. It requires
+                    deliberate design.</p>
+                <h3>The golden rule</h3>
+                <p class="rv">No module may directly access another module's database tables. All cross-module data
+                    access goes through the module's public interface (a service class or an event). This is the line
+                    that separates a "real" modular monolith from a regular monolith with nice folder names.</p>
+                <div class="callout co-warn rv"><span class="co-label">HOW A FAKE MODULAR MONOLITH LOOKS</span>
+                    <p>The Order module reaches into the Inventory database table to check stock. The Reporting module
+                        reads directly from the Payment database. Every module shares the same database context with no
+                        ownership rules. This is a monolith with deceptive folder names — not a modular monolith.</p>
+                </div>
+
+                <div class="mod-module rv">
+                    <h4>ORDER MODULE</h4>
+                    <p class="owns">OWNS: orders table · order_lines table · order_status table</p>
+                    <p class="not">MUST NOT ACCESS: inventory tables · payment tables · notification tables</p>
+                    <p class="talks">COMMUNICATES WITH: Inventory module (via IInventoryService interface) · Payment
+                        module (via IPaymentService interface) · raises OrderCreated event for Notification module</p>
+                    <p><b>Responsibility:</b> Order lifecycle management — creation, status updates, order history,
+                        order line management. Knows what was ordered and when. Does not know about stock levels or
+                        payment method details.</p>
+                </div>
+
+                <div class="mod-module rv">
+                    <h4>INVENTORY MODULE</h4>
+                    <p class="owns">OWNS: products_stock table · warehouse_locations table · stock_movements table ·
+                        reservations table</p>
+                    <p class="not">MUST NOT ACCESS: orders tables · customer tables · payment tables</p>
+                    <p class="talks">COMMUNICATES WITH: Order module (responds to reservation requests) · Purchase
+                        module (receives stock-in events). Publishes StockLevelChanged events.</p>
+                    <p><b>Responsibility:</b> Know what stock exists, where it is, and what is reserved. Does not know
+                        why an order was placed or how it was paid for.</p>
+                </div>
+
+                <div class="mod-module rv">
+                    <h4>PAYMENT MODULE</h4>
+                    <p class="owns">OWNS: payment_transactions table · payment_methods table · payment_status table</p>
+                    <p class="not">MUST NOT ACCESS: orders tables directly · inventory tables · customer profile beyond
+                        a customer ID reference</p>
+                    <p class="talks">COMMUNICATES WITH: Order module (receives payment initiation requests) · external
+                        payment gateway. Publishes PaymentCompleted or PaymentFailed events.</p>
+                    <p><b>Responsibility:</b> Know what money was processed, when, and with what result. Does not know
+                        what was ordered or how much stock remains.</p>
+                </div>
+
+                <div class="mod-module rv">
+                    <h4>NOTIFICATION MODULE</h4>
+                    <p class="owns">OWNS: notification_log table · notification_templates table · delivery_preferences
+                        table</p>
+                    <p class="not">MUST NOT ACCESS: order tables · payment tables · inventory tables — it receives only
+                        what it needs via events</p>
+                    <p class="talks">CONSUMES: OrderCreated event (gets order reference and customer contact) ·
+                        PaymentCompleted event · ShipmentDispatched event. Calls email/SMS providers.</p>
+                    <p><b>Responsibility:</b> Send communications to customers. Does not own the business data — it only
+                        receives notifications about business events.</p>
+                </div>
+
+                <div class="mod-module rv">
+                    <h4>REPORTING MODULE</h4>
+                    <p class="owns">OWNS: reporting_snapshots table · aggregated_sales views (read-only, derived)</p>
+                    <p class="not">MUST NOT ACCESS: live transactional tables for complex queries (use read replicas or
+                        snapshots instead)</p>
+                    <p class="talks">CONSUMES: Domain events from all modules to maintain reporting snapshots. Reads
+                        from a dedicated read replica or reporting schema.</p>
+                    <p><b>Responsibility:</b> Provide business intelligence without impacting transaction performance.
+                        Read-only. Updated asynchronously from domain events.</p>
+                </div>
+            </section>
+
+            <!-- Q7 -->
+            <section class="sec" id="q7">
+                <div class="sec-kicker">PART 7 — THE BOUNDARY QUESTIONS</div>
+                <h2 class="sec-title rv">How to Identify a Good Module Boundary</h2>
+                <p class="sec-lead rv">Eight questions. Ask them for every proposed module boundary. If you cannot
+                    answer yes to most of them, the boundary is wrong.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:720px">
+                        <thead>
+                            <tr>
+                                <th>QUESTION</th>
+                                <th>GOOD ANSWER</th>
+                                <th>BAD ANSWER — RECONSIDER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Does this area have a clear, single responsibility?</b></td>
+                                <td>Yes — "this module manages all stock levels and movements"</td>
+                                <td>"It manages stock and also handles some order logic and customer preferences"</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Does it have its own business rules?</b></td>
+                                <td>Yes — "this module decides reservation logic and stock validation"</td>
+                                <td>"Its rules are defined by what the Order module tells it to do"</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Does it own specific data?</b></td>
+                                <td>Yes — specific database tables only this module writes to</td>
+                                <td>"Multiple modules write to the same table"</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Does it change independently?</b></td>
+                                <td>"Changes to inventory logic rarely require changes to order logic"</td>
+                                <td>"Every inventory change requires corresponding order module changes"</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Is it used by many other areas?</b></td>
+                                <td>If yes — it is a high-value module. Design its interface carefully.</td>
+                                <td>If every module calls it for everything — it may be doing too much (god module).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Does it require different scaling?</b></td>
+                                <td>"Notification has burst traffic. Order is steady."</td>
+                                <td>"All modules scale equally — no individual scaling need."</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Does it have a different team owner?</b></td>
+                                <td>"The Inventory team owns this module fully"</td>
+                                <td>"Three teams touch this module regularly"</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Can it be tested independently?</b></td>
+                                <td>"We can test Inventory module logic without running Order or Payment modules"</td>
+                                <td>"Our tests always need to start 4 modules to work"</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>What happens when boundaries are badly designed</h3>
+                <ul class="nlist rv">
+                    <li><b>Modules become tightly coupled:</b> A change in one module silently breaks another. Teams
+                        blame each other. Code becomes hard to change.</li>
+                    <li><b>The God Module problem:</b> One module knows everything and is called by everything. It
+                        becomes a bottleneck and a single point of failure in logic.</li>
+                    <li><b>Database coupling:</b> Modules share tables, making it impossible to extract any module into
+                        a service later without splitting the database — the hardest migration task.</li>
+                    <li><b>Test avalanche:</b> Changing one module's logic requires running the entire test suite
+                        because boundaries are too interconnected.</li>
+                </ul>
+            </section>
+
+            <!-- Q8 -->
+            <section class="sec" id="q8">
+                <div class="sec-kicker">PART 8 — THE DATABASE QUESTION</div>
+                <h2 class="sec-title rv">Shared Database: The Three Approaches</h2>
+                <p class="sec-lead rv">The database decision is the most consequential in any modular or distributed
+                    system design. Get it wrong and you will not be able to migrate later.</p>
+                <div class="three-col rv">
+                    <div class="arch-card">
+                        <h4>Approach A</h4>
+                        <span class="tag mono">SHARED, NO OWNERSHIP</span>
+                        <ul>
+                            <li>One database, all modules share all tables</li>
+                            <li>No enforced ownership</li>
+                            <li>Fast to start</li>
+                            <li>Becomes chaos as it grows</li>
+                            <li>Schema changes break other modules</li>
+                            <li>Cannot migrate to services later</li>
+                        </ul>
+                    </div>
+                    <div class="arch-card">
+                        <h4>Approach B</h4>
+                        <span class="tag mod">ONE DB, SCHEMA OWNERSHIP</span>
+                        <ul>
+                            <li>One database, schemas per module</li>
+                            <li>Only the owning module writes its schema</li>
+                            <li>Transactions still work across schemas</li>
+                            <li>Good balance of simplicity and clarity</li>
+                            <li>Easier to migrate one schema to a separate DB later</li>
+                            <li>Best starting point for modular monolith</li>
+                        </ul>
+                    </div>
+                    <div class="arch-card">
+                        <h4>Approach C</h4>
+                        <span class="tag micro">SEPARATE DB PER SERVICE</span>
+                        <ul>
+                            <li>Each service has its own database</li>
+                            <li>True independence</li>
+                            <li>No shared transactions</li>
+                            <li>Saga/event patterns required</li>
+                            <li>Higher cost and operational complexity</li>
+                            <li>Required for true microservices</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE RECOMMENDATION</span>
+                    <p>Start with <b>Approach B</b> in a modular monolith. One database, clear schema ownership by
+                        module, enforced through code (no cross-module table access). This gives you architectural
+                        clarity without operational overhead. When you extract a module to a service, you promote its
+                        schema to a separate database — a well-defined operation rather than a painful split.</p>
+                </div>
+                <p class="rv"><b>Do NOT claim every microservice must immediately have its own database</b> — during
+                    migration, a service may share a database with the remaining monolith temporarily. But this must be
+                    a stepping stone with a clear plan, not a permanent design.</p>
+            </section>
+
+            <!-- Q9 -->
+            <section class="sec" id="q9">
+                <div class="sec-kicker">PART 9 — HOW MODULES TALK</div>
+                <h2 class="sec-title rv">Communication Between Modules</h2>
+                <p class="sec-lead rv">How modules communicate inside a modular monolith determines how well-separated
+                    they actually are.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:720px">
+                        <thead>
+                            <tr>
+                                <th>METHOD</th>
+                                <th>HOW IT WORKS</th>
+                                <th>COUPLING LEVEL</th>
+                                <th>BEST FOR</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Direct method calls (public service class)</b></td>
+                                <td>Order module calls <code>IInventoryService.ReserveStock(orderId, items)</code> — a
+                                    defined interface, not an internal class.</td>
+                                <td><span class="badge b">LOW</span> — Interface can change implementation without
+                                    breaking callers</td>
+                                <td>Synchronous operations where Order needs an immediate answer from Inventory</td>
+                            </tr>
+                            <tr>
+                                <td><b>Internal application events</b></td>
+                                <td>Order module raises <code>OrderCreated</code> event. Notification module subscribes
+                                    and sends an email. No direct knowledge of each other.</td>
+                                <td><span class="badge g">LOWEST</span> — Publisher does not know who is listening</td>
+                                <td>Side effects (notifications, audit, reporting updates) that do not need to be
+                                    synchronous</td>
+                            </tr>
+                            <tr>
+                                <td><b>Shared database access</b></td>
+                                <td>Order module reads from Inventory tables directly via SQL.</td>
+                                <td><span class="badge r">VERY HIGH</span> — Schema changes break callers immediately
+                                </td>
+                                <td>Should be avoided. If used at all, read-only from the same module's own replica</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>Order → Inventory example</h3>
+                <p class="rv">Order creation needs to reserve stock. This is synchronous — the order cannot proceed
+                    without knowing if stock is available. The correct approach:
+                    <code>Order module calls IInventoryService.TryReserveStock()</code>. The interface defines the
+                    contract. The Inventory module implements it. Neither knows the other's internal database structure.
+                </p>
+                <h3>Order → Notification example</h3>
+                <p class="rv">When an order is created, a confirmation email must be sent. This does not need to be
+                    synchronous — the customer can receive the email a few seconds later. The correct approach: Order
+                    module raises an <code>OrderConfirmed</code> event (internally, via an in-process event bus).
+                    Notification module subscribes to this event and sends the email. Order module never references
+                    Notification module's code.</p>
+                <div class="callout co-ok rv"><span class="co-label">THE RULE</span>
+                    <p>Use <b>interfaces for synchronous operations</b> where the caller needs an answer. Use <b>events
+                            for side effects</b> where the caller does not need to wait. Never use <b>direct database
+                            access</b> across module boundaries.</p>
+                </div>
+            </section>
+
+            <!-- Q10 -->
+            <section class="sec" id="q10">
+                <div class="sec-kicker">PART 10 — THE SAFER PATH</div>
+                <h2 class="sec-title rv">The Migration Path</h2>
+                <p class="sec-lead rv">The most dangerous migration is "monolith to 20 microservices in one quarter".
+                    The safest migration is gradual and measurement-driven.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 560 80" fill="none">
+                        <rect class="s-box" x="10" y="20" width="92" height="36" rx="3" /><text x="56" y="37"
+                            font-size="9" class="s-lab" text-anchor="middle">TRADITIONAL</text><text x="56" y="50"
+                            font-size="7.5" class="s-sub" text-anchor="middle">MONOLITH</text>
+                        <path class="s-line" d="M102 38 H128" />
+                        <path d="M124 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="128" y="20" width="96" height="36" rx="3" /><text x="176" y="37"
+                            font-size="9" class="s-lab" text-anchor="middle"
+                            style="fill:var(--teal)">MODULAR</text><text x="176" y="50" font-size="7.5" class="s-sub"
+                            text-anchor="middle">MONOLITH</text>
+                        <path class="s-line" d="M224 38 H250" />
+                        <path d="M246 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="250" y="20" width="100" height="36" rx="3" /><text x="300" y="37"
+                            font-size="9" class="s-lab" text-anchor="middle">IDENTIFY</text><text x="300" y="50"
+                            font-size="7.5" class="s-sub" text-anchor="middle">PROBLEM AREAS</text>
+                        <path class="s-line" d="M350 38 H376" />
+                        <path d="M372 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="376" y="20" width="92" height="36" rx="3" /><text x="422" y="37"
+                            font-size="9" class="s-lab" text-anchor="middle" style="fill:var(--accent)">EXTRACT
+                            1</text><text x="422" y="50" font-size="7.5" class="s-sub"
+                            text-anchor="middle">SERVICE</text>
+                        <path class="s-line" d="M468 38 H494" />
+                        <path d="M490 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="494" y="20" width="56" height="36" rx="3" /><text x="522" y="37"
+                            font-size="8.5" class="s-lab" text-anchor="middle">MEASURE</text><text x="522" y="50"
+                            font-size="7.5" class="s-sub" text-anchor="middle">→ DECIDE</text>
+                    </svg>
+                    <div class="figcap">FIG. 19.3 — THE SAFE MIGRATION PATH: GRADUAL, MEASURED, ONE SERVICE AT A TIME
+                    </div>
+                </div>
+                <p class="rv">Why this gradual approach is safer than "monolith → 20 services":</p>
+                <ul class="nlist rv">
+                    <li>Each step is reversible. An extracted service that creates problems can be re-incorporated.</li>
+                    <li>The team builds operational capability (tracing, pipelines, monitoring) incrementally, not all
+                        at once.</li>
+                    <li>Each extraction must prove its value before the next one begins.</li>
+                    <li>The remaining modular monolith continues to function and deliver business value throughout.</li>
+                </ul>
+                <h3>Which module to extract first?</h3>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:720px">
+                        <thead>
+                            <tr>
+                                <th>CANDIDATE</th>
+                                <th>WHY GOOD FIRST</th>
+                                <th>WHY NOT FIRST</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Reporting</b></td>
+                                <td><span class="pros">Low risk — read-only. Solves a real problem (performance
+                                        isolation). Can tolerate eventual consistency.</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td><b>Notification</b></td>
+                                <td><span class="pros">Genuinely async. Failure does not block orders. Clear boundary.
+                                        Different scaling profile.</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td><b>Search</b></td>
+                                <td><span class="pros">Different technology (search index), different scaling, read-only
+                                        business impact.</span></td>
+                                <td>—</td>
+                            </tr>
+                            <tr>
+                                <td><b>Inventory</b></td>
+                                <td>Clear domain, well-bounded.</td>
+                                <td><span class="cons">Synchronous coupling to Order. Extraction requires
+                                        saga/compensation design — significant complexity.</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Payment</b></td>
+                                <td>Good security boundary.</td>
+                                <td><span class="cons">High business risk. Distributed transaction with Order is
+                                        complex. Do this only after proving the pattern with lower-risk services.</span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Order</b></td>
+                                <td>—</td>
+                                <td><span class="cons">Almost certainly too tightly coupled to too many other modules to
+                                        extract safely early.</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Q11 -->
+            <section class="sec" id="q11">
+                <div class="sec-kicker">PART 11 — EXTRACTION SIGNALS</div>
+                <h2 class="sec-title rv">10 Signals That a Module Should Become a Service</h2>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:720px">
+                        <thead>
+                            <tr>
+                                <th>SIGNAL</th>
+                                <th>EXAMPLE</th>
+                                <th>WHY IT MATTERS</th>
+                                <th>CHECK BEFORE EXTRACTING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Independent scaling needed</b></td>
+                                <td>Notification sends 10M emails during a sale. Order processing stays steady at
+                                    500/min.</td>
+                                <td>Different scaling profiles require independent infrastructure.</td>
+                                <td>Can horizontal scaling of the monolith solve it cheaper? Usually yes at first.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Independent deployments needed</b></td>
+                                <td>The Notification team wants to ship template changes 5× per day. The rest of the
+                                    system ships weekly.</td>
+                                <td>Deployment coupling slows the faster team.</td>
+                                <td>Is this actually happening or anticipated? Evidence of real friction?</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Different release frequency</b></td>
+                                <td>Search index is updated every 15 minutes. Orders are deployed weekly.</td>
+                                <td>Different cadences in one application create risk for the slower team.</td>
+                                <td>How much does coordinated deployment actually cost?</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Different team ownership</b></td>
+                                <td>A dedicated Analytics team wants to own Reporting end-to-end, including the
+                                    technology stack.</td>
+                                <td>Team autonomy is one of the key microservices benefits.</td>
+                                <td>Is the team large enough to own and operate the service independently?</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Failure isolation required</b></td>
+                                <td>If Reporting crashes, it must not affect Order creation.</td>
+                                <td>Business impact of failure in one area is disproportionate.</td>
+                                <td>Can you isolate Reporting within the modular monolith through async processing?</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Technology needs are different</b></td>
+                                <td>Search requires Elasticsearch. The monolith uses SQL Server.</td>
+                                <td>A module with fundamentally different data infrastructure cannot stay in the same
+                                    deployment.</td>
+                                <td>Is the technology difference genuinely necessary or just preferred?</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Heavy processing</b></td>
+                                <td>File processing, PDF generation, or data transformation that would time out in the
+                                    main application.</td>
+                                <td>Long-running work should not block application threads.</td>
+                                <td>Can background jobs within the monolith solve this first?</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. External integration boundary</b></td>
+                                <td>Payment gateway integration with PCI requirements that demand isolation.</td>
+                                <td>Regulatory or security requirements force a separate process.</td>
+                                <td>Does the regulation actually require process isolation, or just data isolation?</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Security boundary</b></td>
+                                <td>Authentication service must be independently audited and protected.</td>
+                                <td>Separation limits the blast radius of a security incident.</td>
+                                <td>Can security isolation be achieved within the monolith with proper access controls?
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Independently managed business area</b></td>
+                                <td>A newly acquired company brings its own Order module that must integrate but not
+                                    merge.</td>
+                                <td>Business boundaries become technology boundaries.</td>
+                                <td>Is integration the long-term goal, or is this a stepping stone toward one unified
+                                    system?</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Q12 -->
+            <section class="sec" id="q12">
+                <div class="sec-kicker">PART 12 — AVOID THESE</div>
+                <h2 class="sec-title rv">10 Common Architecture Mistakes</h2>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:720px">
+                        <thead>
+                            <tr>
+                                <th>MISTAKE</th>
+                                <th>WHY IT IS BAD</th>
+                                <th>BETTER APPROACH</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Creating services based on database tables</b></td>
+                                <td>You get 40 services with no business meaning. Every business operation calls 8
+                                    services.</td>
+                                <td>Define services by business capability — what the module <em>does</em>, not what
+                                    data it stores.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Making every module a separate service on day one</b></td>
+                                <td>Operational cost and complexity immediately exceeds the team's capacity.</td>
+                                <td>Start with modular monolith. Extract only what has a proven case for extraction.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Sharing database tables between services</b></td>
+                                <td>Independent deployment becomes impossible. Schema changes require cross-service
+                                    coordination.</td>
+                                <td>Each service owns its tables. Cross-service data is shared via APIs or events.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Splitting too early</b></td>
+                                <td>You lock in wrong boundaries before the domain is understood. Changing boundaries
+                                    later is very expensive.</td>
+                                <td>Learn the domain in a monolith first. Extract after boundaries are proven.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Splitting too late</b></td>
+                                <td>A monolith with 100 developers and 5M users becomes an uncuttable knot.</td>
+                                <td>Add module boundaries early. Extract services before the monolith becomes
+                                    unmaintainable.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Using microservices because competitors do</b></td>
+                                <td>Your problems are not your competitor's problems. Their solutions may not match your
+                                    constraints.</td>
+                                <td>Define your specific problem first. Choose the architecture that solves it.</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Ignoring operational cost</b></td>
+                                <td>Infrastructure and maintenance costs multiply with service count. Budget surprises
+                                    derail the project.</td>
+                                <td>Model the full cost of each architecture before committing. Include operations, not
+                                    just development.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Ignoring team maturity</b></td>
+                                <td>Microservices require distributed tracing, independent deployment, and on-call per
+                                    service. Teams without this experience cannot operate them safely.</td>
+                                <td>Build operational capability before adopting microservices. Test with one service
+                                    before committing to twelve.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Ignoring distributed transactions</b></td>
+                                <td>Business operations that span services require saga patterns. Most teams
+                                    underestimate this complexity until they hit the first cross-service failure in
+                                    production.</td>
+                                <td>Design the transaction strategy before designing the service. If it requires too
+                                    many sagas — reconsider the boundaries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Ignoring monitoring and troubleshooting</b></td>
+                                <td>Without distributed tracing and centralised logging, incidents in a microservices
+                                    architecture take 10× longer to diagnose.</td>
+                                <td>Observability infrastructure must be in place before the first service is extracted.
+                                    It is not optional.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Q13 -->
+            <section class="sec" id="q13">
+                <div class="sec-kicker">PART 13 — THE SCORECARD</div>
+                <h2 class="sec-title rv">Decision Scorecard</h2>
+                <p class="sec-lead rv">Score each factor 1 (strongly favours this choice) to 3. Add the scores. The
+                    highest total is your starting recommendation — not your final answer.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th>FACTOR</th>
+                                <th>MONOLITH (score 1–3)</th>
+                                <th>MODULAR MONOLITH (score 1–3)</th>
+                                <th>MICROSERVICES (score 1–3)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Business complexity</b></td>
+                                <td>Simple, few domains (3)</td>
+                                <td>Moderate, clear domains (3)</td>
+                                <td>Complex, many independent domains (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Team size</b></td>
+                                <td>&lt; 10 developers (3)</td>
+                                <td>10–25 developers (3)</td>
+                                <td>25+ in multiple teams (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Traffic and scaling</b></td>
+                                <td>Low, uniform (3)</td>
+                                <td>Medium, mostly uniform (3)</td>
+                                <td>High, clearly different by area (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling differences</b></td>
+                                <td>None needed (3)</td>
+                                <td>Slight, manageable in monolith (3)</td>
+                                <td>Significant, area-specific (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Release independence</b></td>
+                                <td>Not needed (3)</td>
+                                <td>Partially needed (3)</td>
+                                <td>Fully needed per team (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Operational maturity</b></td>
+                                <td>Low (3)</td>
+                                <td>Medium (3)</td>
+                                <td>High — DevOps/platform team (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Budget</b></td>
+                                <td>Tight (3)</td>
+                                <td>Moderate (3)</td>
+                                <td>Well-funded platform investment (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Failure isolation</b></td>
+                                <td>Not critical (3)</td>
+                                <td>Partially important (3)</td>
+                                <td>Critical per area (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Data consistency</b></td>
+                                <td>Strong required (3)</td>
+                                <td>Strong across modules (3)</td>
+                                <td>Eventual acceptable (3)</td>
+                            </tr>
+                            <tr>
+                                <td><b>Team ownership</b></td>
+                                <td>One team (3)</td>
+                                <td>Module owners (3)</td>
+                                <td>Service owners (3)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">THE SCORE IS A GUIDE, NOT A VERDICT</span>
+                    <p>The highest score should not automatically decide the architecture. An architect still needs
+                        judgement. A score of "12 for microservices" does not override the fact that your team has one
+                        DevOps engineer and no distributed tracing. The scorecard surfaces the question — the architect
+                        answers it.</p>
+                </div>
+            </section>
+
+            <!-- Q14 -->
+            <section class="sec" id="q14">
+                <div class="sec-kicker">PART 14 — REAL DECISIONS</div>
+                <h2 class="sec-title rv">12 Real-World Decision Scenarios</h2>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>SITUATION</th>
+                                <th>RECOMMENDED</th>
+                                <th>WHY</th>
+                                <th>MAIN RISK</th>
+                                <th>WHAT CHANGES THE DECISION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>1</td>
+                                <td><b>3-person startup, new SaaS product, 6 months in</b></td>
+                                <td><span class="badge a">MONOLITH</span></td>
+                                <td>3 people cannot build features and operate microservices. Product boundaries are
+                                    unknown.</td>
+                                <td>No boundaries = mud monolith later.</td>
+                                <td>Product succeeds, team grows to 15.</td>
+                            </tr>
+                            <tr>
+                                <td>2</td>
+                                <td><b>15-person SaaS company, product stable, clear domains</b></td>
+                                <td><span class="badge b">MODULAR MONOLITH</span></td>
+                                <td>Team is large enough for module ownership, small enough that microservices
+                                    operational cost is too high.</td>
+                                <td>Developers skip boundary rules under time pressure.</td>
+                                <td>Team grows to 30+ or specific area needs independent deployment.</td>
+                            </tr>
+                            <tr>
+                                <td>3</td>
+                                <td><b>Global e-commerce, 100+ developers, multiple product lines</b></td>
+                                <td><span class="badge g">MICROSERVICES (SELECTIVE)</span></td>
+                                <td>True team independence needed. Different product areas have genuinely different
+                                    scaling and release needs.</td>
+                                <td>Cross-service consistency and distributed transactions.</td>
+                                <td>If teams actually still coordinate heavily — boundaries may be wrong.</td>
+                            </tr>
+                            <tr>
+                                <td>4</td>
+                                <td><b>Internal HR application, 200 employees, 4 developers</b></td>
+                                <td><span class="badge a">MONOLITH OR MODULAR MONOLITH</span></td>
+                                <td>Low traffic, internal users, no scaling pressure. Simple deployment is the priority.
+                                </td>
+                                <td>None significant at this scale.</td>
+                                <td>HR system must integrate 20 external tools with very different update cycles.</td>
+                            </tr>
+                            <tr>
+                                <td>5</td>
+                                <td><b>Banking system, regulated, product teams for each banking product</b></td>
+                                <td><span class="badge g">MICROSERVICES</span></td>
+                                <td>Regulatory boundaries match service boundaries. Failure isolation is critical. Teams
+                                    are large enough.</td>
+                                <td>Distributed transactions across banking products.</td>
+                                <td>If products must frequently share data in real time — boundaries need redesign.</td>
+                            </tr>
+                            <tr>
+                                <td>6</td>
+                                <td><b>Multi-company inventory system, 10K companies, limited DevOps</b></td>
+                                <td><span class="badge b">MODULAR MONOLITH</span></td>
+                                <td>Limited DevOps cannot support microservices. Business operations are tightly
+                                    coupled. Reporting is the main pain point — extract that first.</td>
+                                <td>Reporting still affecting transactions without proper isolation.</td>
+                                <td>DevOps team grows or specific area needs independent deployment with evidence.</td>
+                            </tr>
+                            <tr>
+                                <td>7</td>
+                                <td><b>High-volume notification system, 5M notifications/day</b></td>
+                                <td><span class="badge g">EXTRACT AS SERVICE</span></td>
+                                <td>Clear scaling need, async by nature, failure should not affect orders, different
+                                    technology (email/SMS providers).</td>
+                                <td>Event schema changes between Order and Notification.</td>
+                                <td>Volume is actually manageable in the existing modular monolith.</td>
+                            </tr>
+                            <tr>
+                                <td>8</td>
+                                <td><b>Large reporting platform, complex queries, internal analysts</b></td>
+                                <td><span class="badge g">EXTRACT AS SERVICE</span></td>
+                                <td>Reports should never run on the transactional database. Separate service or data
+                                    warehouse protects transaction performance.</td>
+                                <td>Synchronisation delay makes reports stale.</td>
+                                <td>Real-time reporting is required — changes the design significantly.</td>
+                            </tr>
+                            <tr>
+                                <td>9</td>
+                                <td><b>Legacy monolith, 100 developers, slow deployments, many teams</b></td>
+                                <td><span class="badge b">MODULAR MONOLITH FIRST</span></td>
+                                <td>The problem is internal coupling, not service count. Add boundaries first. Extract
+                                    only after boundaries are clean.</td>
+                                <td>Management expects microservices. Architectural education required.</td>
+                                <td>After 12 months of modular monolith, if specific areas still need independence.</td>
+                            </tr>
+                            <tr>
+                                <td>10</td>
+                                <td><b>Product expected to grow 10× in 12 months</b></td>
+                                <td><span class="badge b">MODULAR MONOLITH</span></td>
+                                <td>Speculative scale does not justify current complexity. Design with clean modules
+                                    that can be extracted when growth arrives.</td>
+                                <td>Growth arrives before extraction is ready.</td>
+                                <td>Growth pattern is proven and specific areas are clearly the bottleneck.</td>
+                            </tr>
+                            <tr>
+                                <td>11</td>
+                                <td><b>Company with weak DevOps team, management wants microservices</b></td>
+                                <td><span class="badge b">MODULAR MONOLITH + DEVOPS INVESTMENT</span></td>
+                                <td>Microservices without DevOps capability creates undebuggable incidents. Build
+                                    capability first, then consider extraction.</td>
+                                <td>Management pressure to skip the learning phase.</td>
+                                <td>DevOps team grows and demonstrates readiness with successful isolated service
+                                    deployment.</td>
+                            </tr>
+                            <tr>
+                                <td>12</td>
+                                <td><b>Company with many independent engineering teams, proven boundaries</b></td>
+                                <td><span class="badge g">MICROSERVICES</span></td>
+                                <td>Teams, boundaries, and operational maturity all align. The conditions for
+                                    microservices success are met.</td>
+                                <td>Distributed transaction complexity. Monitoring at scale.</td>
+                                <td>If teams frequently deploy together — boundaries are wrong, not the architecture.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Q15 -->
+            <section class="sec" id="q15">
+                <div class="sec-kicker">PART 15 — THE INTERVIEW</div>
+                <h2 class="sec-title rv">20 Interview Questions: Modular Monolith vs Microservices</h2>
+                <ol class="qlist rv">
+                    <li>Why would you choose a modular monolith over microservices?<span
+                            class="qt warm">CORE</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Whether you can justify the simpler choice.<br><b>SIMPLE:</b>
+                            "When the team is small or operational maturity is limited."<br><b>STRONG:</b> "I choose a
+                            modular monolith when: the team size does not support one team per service, the business
+                            logic requires frequent cross-module transactions, operational maturity (distributed
+                            tracing, independent pipelines) is not yet in place, and the specific benefits of
+                            microservices (independent deployment, independent scaling) are not yet genuine business
+                            requirements. A modular monolith delivers most of the architectural clarity at a fraction of
+                            the operational cost."<br><b>COMMON MISTAKE:</b> "I always prefer microservices."</span>
+                    </li>
+                    <li>Why not use microservices for every system?<span class="qt">DECISION</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Cost
+                            awareness.<br><b>SIMPLE:</b> "They are expensive to operate."<br><b>STRONG:</b>
+                            "Microservices introduce distributed system complexity: network failures, distributed
+                            transactions, eventual consistency, per-service monitoring, service discovery, and API
+                            versioning. These costs are justified only when the specific benefits — deployment
+                            independence, scaling isolation, team autonomy — are genuine requirements at meaningful
+                            scale. For most systems, especially early-stage or small-team systems, these costs outweigh
+                            the benefits."<br><b>COMMON MISTAKE:</b> No concrete reasoning.</span></li>
+                    <li>How do you define a module boundary?<span class="qt deep">DESIGN</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Domain thinking.<br><b>SIMPLE:</b> "By
+                            business responsibility."<br><b>STRONG:</b> "I define a module boundary by asking: does this
+                            area have a clear, single business responsibility? Does it own specific data? Does it have
+                            its own business rules? Can it change independently? Can it be tested independently? If yes
+                            to most of these, it is a good candidate for its own module. The boundary should be
+                            describable in one business sentence."<br><b>COMMON MISTAKE:</b> "By technical function —
+                            controllers, services, repositories."</span></li>
+                    <li>How do modules communicate in a modular monolith?<span class="qt">DESIGN</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Communication patterns
+                            in context.<br><b>SIMPLE:</b> "Through defined interfaces."<br><b>STRONG:</b> "Modules
+                            communicate through two patterns. For synchronous operations (Order needs an inventory
+                            check) — through a defined interface (IInventoryService) that the module implements. For
+                            side effects (Order notifying Notification of a new order) — through internal domain events
+                            published and consumed within the application. Neither module accesses the other's database
+                            directly."<br><b>COMMON MISTAKE:</b> "They share the database — it is fine since it is one
+                            application."</span></li>
+                    <li>Should every module have a separate database?<span class="qt">DESIGN</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Database ownership
+                            nuance.<br><b>SIMPLE:</b> "No — one database with schema ownership per
+                            module."<br><b>STRONG:</b> "In a modular monolith, one database with clear schema ownership
+                            per module is the right balance. Each module owns its tables — other modules cannot access
+                            them directly. This preserves transaction support and operational simplicity, while ensuring
+                            that when a module needs to become a service, its schema is already isolated. Moving from
+                            schema isolation to a separate database is straightforward. Moving from shared tables is
+                            not."<br><b>COMMON MISTAKE:</b> "Each module must have its own database or it is not a real
+                            module."</span></li>
+                    <li>How do you prevent modules from becoming tightly coupled?<span
+                            class="qt deep">DESIGN</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Practical discipline.<br><b>SIMPLE:</b> "Strict rules about
+                            cross-module database access."<br><b>STRONG:</b> "The primary rule: no module may access
+                            another module's database tables. All cross-module access goes through defined interfaces or
+                            events. This rule must be enforced technically — linting rules, code review standards,
+                            architecture tests. Without enforcement, developers under time pressure will break
+                            boundaries 'just this once' and the modular structure degrades quickly."<br><b>COMMON
+                                MISTAKE:</b> "Rely on developers to follow the rules voluntarily."</span></li>
+                    <li>How do you migrate a modular monolith to microservices?<span
+                            class="qt warm">STRATEGY</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Migration thinking.<br><b>SIMPLE:</b> "Extract one module at a
+                            time."<br><b>STRONG:</b> "The clean module boundaries make extraction straightforward.
+                            Choose the module with the strongest case for extraction (usually Reporting or
+                            Notification). Promote its schema to a separate database. Create an independent deployment
+                            pipeline. Shift traffic using the Strangler Fig pattern. Run the service alongside the
+                            monolith. Measure that the extraction solved the stated problem. Only then consider the next
+                            extraction."<br><b>COMMON MISTAKE:</b> "Extract all modules simultaneously."</span></li>
+                    <li>Which module would you extract first?<span class="qt warm">DESIGN</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Risk and sequencing
+                            judgement.<br><b>SIMPLE:</b> "Reporting or Notification."<br><b>STRONG:</b> "I would start
+                            with Reporting — it is read-only (low risk if it fails), it solves a real problem
+                            (performance isolation from transactions), it can tolerate eventual consistency, and it has
+                            a clear, well-understood boundary. Notification is a close second — it is genuinely async
+                            and failure-safe. I would not start with Order or Payment — these are the highest-risk
+                            extractions and should come last after the team has operational experience."<br><b>COMMON
+                                MISTAKE:</b> "Start with the Order Service — it is the core of the business." It is
+                            precisely because it is the core that it should be last.</span></li>
+                    <li>When is a modular monolith not enough?<span class="qt deep">DECISION</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Knowing the
+                            limits.<br><b>SIMPLE:</b> "When independent deployment or scaling is genuinely
+                            needed."<br><b>STRONG:</b> "A modular monolith is not enough when: teams genuinely cannot
+                            coordinate releases (not just prefer not to), when a specific area has dramatically
+                            different scaling requirements that cannot be met by horizontal scaling of the whole
+                            application, when a regulatory boundary requires process-level isolation, or when a
+                            technology boundary prevents the module from existing in the same process. These are the
+                            genuine signals."<br><b>COMMON MISTAKE:</b> "When the application becomes large." Size alone
+                            is not the trigger.</span></li>
+                    <li>How do you explain the modular monolith decision to management?<span
+                            class="qt">BUSINESS</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Business communication.<br><b>SIMPLE:</b> "Lower cost and risk
+                            for the same architectural benefit."<br><b>STRONG:</b> "I frame it as delivering the
+                            organisational benefits of microservices — team ownership, clear responsibilities,
+                            independent development — without the infrastructure cost and operational overhead. I show
+                            the specific problems it solves (deployment coupling, reporting performance) and the
+                            problems it does not introduce (distributed transactions, complex monitoring). I explain the
+                            migration path: when microservices are genuinely needed, the clean module structure makes
+                            extraction safe and planned, not a crisis."<br><b>COMMON MISTAKE:</b> "We are not ready for
+                            microservices." Sounds defensive. Lead with what it does, not what it avoids.</span></li>
+                    <li>Can a modular monolith scale?<span class="qt warm">CAPACITY</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>TESTING:</b> Scaling understanding.<br><b>SIMPLE:</b> "Yes
+                            — horizontally, like any application."<br><b>STRONG:</b> "A modular monolith scales
+                            horizontally behind a load balancer, exactly like any stateless application. Multiple
+                            instances of the same application run in parallel. The database scales with read replicas,
+                            caching, and partitioning. This satisfies the majority of scaling requirements. The only
+                            scaling it cannot provide is independent scaling of one module (e.g., scaling Notification
+                            at 100× while Order stays at 1×). That specific need is the signal to extract Notification
+                            as a service."<br><b>COMMON MISTAKE:</b> "A monolith cannot scale." This is false and shows
+                            misunderstanding.</span></li>
+                    <li>What is a "fake" modular monolith?<span class="qt deep">DESIGN</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>TESTING:</b> Anti-pattern awareness.<br><b>SIMPLE:</b> "A
+                            monolith with folders but no real boundaries."<br><b>STRONG:</b> "A fake modular monolith is
+                            one that has the appearance of modules — separate folders, separate classes — but no
+                            enforced boundaries. Modules access each other's database tables directly. Any module can
+                            call any other module's internal methods. There is no real separation — just organisation.
+                            The test is simple: can any developer change one module without understanding what it does
+                            to another? If not, the boundaries are fake."<br><b>COMMON MISTAKE:</b> Thinking namespace
+                            organisation alone constitutes a modular monolith.</span></li>
+                    <li>What is Conway's Law, and how does it apply?<span class="qt">CONTEXT</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b>
+                            Organisation-architecture connection.<br><b>SIMPLE:</b> "The architecture mirrors the team
+                            structure."<br><b>STRONG:</b> "Conway's Law states that a system's design reflects the
+                            communication structure of the organisation that built it. In practice: a single team tends
+                            to build a monolith. Module teams in one codebase tend to build a modular monolith.
+                            Separate, independent teams tend to build microservices. This means the right architecture
+                            also depends on the organisation design, not just the technical requirements. Forcing
+                            microservices on a team without the structure to support them will result in poorly designed
+                            service boundaries."<br><b>COMMON MISTAKE:</b> Treating Conway's Law as optional context
+                            rather than a design constraint.</span></li>
+                    <li>Should you re-architect from scratch or evolve?<span class="qt warm">STRATEGY</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Risk
+                            preference.<br><b>SIMPLE:</b> "Evolve — always."<br><b>STRONG:</b> "Rebuilding from scratch
+                            ('the second system effect') is almost always more expensive and riskier than it appears.
+                            The existing system has knowledge encoded in it — business rules discovered through years of
+                            operation — that is invisible in the code and easily lost in a rewrite. I prefer evolution:
+                            add module boundaries to the existing system, gradually extract services when justified, and
+                            keep the system running and delivering value throughout."<br><b>COMMON MISTAKE:</b> "Rewrite
+                            as microservices — the codebase is not worth saving." It usually is.</span></li>
+                    <li>What metrics would you monitor to know if the modular monolith is working?<span
+                            class="qt deep">MONITORING</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Measurement thinking.<br><b>SIMPLE:</b> "Deployment frequency,
+                            incident rates, and feature velocity."<br><b>STRONG:</b> "I track: (1) Deployment frequency
+                            — are teams deploying faster after adding module boundaries? (2) Deployment coordination
+                            cost — how often do releases require cross-module coordination? (3) Incident containment —
+                            do issues in one module still affect others? (4) Developer productivity — how long does it
+                            take to find and fix a bug? (5) Architecture drift — are teams violating module boundaries?
+                            These tell me whether the modular structure is delivering its intended
+                            benefits."<br><b>COMMON MISTAKE:</b> "We will know if something breaks."</span></li>
+                    <li>How do you test a modular monolith?<span class="qt">TESTING</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>TESTING:</b> Quality thinking.<br><b>SIMPLE:</b> "Unit
+                            tests per module, integration tests for the whole application."<br><b>STRONG:</b> "Each
+                            module has its own unit test suite that tests only that module's logic using stubs for other
+                            module interfaces. Cross-module integration tests test specific inter-module contracts.
+                            End-to-end tests validate the complete application. Because everything runs in one process,
+                            integration tests are much faster and simpler than in a microservices architecture — no
+                            service mocking or contract tests required."<br><b>COMMON MISTAKE:</b> "We test the whole
+                            application together always." That is testing a monolith, not a modular monolith.</span>
+                    </li>
+                    <li>What is the strangler fig pattern?<span class="qt">PATTERN</span><span class="qh-btn">▸ SHOW
+                            ANSWERS</span><span class="qh"><b>TESTING:</b> Migration knowledge.<br><b>SIMPLE:</b>
+                            "Gradually replace monolith functionality with new services."<br><b>STRONG:</b> "The
+                            Strangler Fig pattern allows gradual migration without downtime. A new service is built
+                            alongside the monolith. An API gateway or proxy routes specific requests to the new service
+                            and others to the monolith. As the service grows, more traffic is shifted to it. Eventually,
+                            the monolith 'shrinks' as its functionality is taken over. This approach allows continuous
+                            delivery throughout the migration — no big bang cutover."<br><b>COMMON MISTAKE:</b> "We
+                            freeze features, rewrite everything, then switch over."</span></li>
+                    <li>How would you handle a reporting module that is slowing down order processing?<span
+                            class="qt warm">SCENARIO</span><span class="qh-btn">▸ SHOW ANSWERS</span><span
+                            class="qh"><b>TESTING:</b> Practical problem solving.<br><b>SIMPLE:</b> "Move reporting to a
+                            read replica."<br><b>STRONG:</b> "First, within the modular monolith: route all reporting
+                            queries to a read-only database replica. This is cheap, immediate, and often solves the
+                            problem. If the reporting module's queries are still complex enough to cause issues, extract
+                            it as a dedicated Reporting Service with its own database populated asynchronously from
+                            domain events. The key: solve it at the lowest complexity level first. A read replica is far
+                            simpler than a separate service."<br><b>COMMON MISTAKE:</b> "Extract all modules into
+                            microservices." — Solves a problem with a sledgehammer.</span></li>
+                    <li>How does module structure affect future migration?<span class="qt">DESIGN</span><span
+                            class="qh-btn">▸ SHOW ANSWERS</span><span class="qh"><b>TESTING:</b>
+                            Foresight.<br><b>SIMPLE:</b> "Clean modules make extraction easy."<br><b>STRONG:</b> "A
+                            modular monolith with clean schema ownership is future-ready by design. When a module needs
+                            to become a service, the work is: promote the module's schema to a separate database, create
+                            a deployment pipeline, expose the module's internal interface as an API, and shift traffic.
+                            Two to four weeks of structured work. A monolith without boundaries requires first creating
+                            those boundaries (months of refactoring), then doing the extraction. The modular monolith
+                            amortises the future cost into present discipline."<br><b>COMMON MISTAKE:</b> "We will
+                            refactor before we extract." — It is much harder than it sounds.</span></li>
+                    <li>What is the right size for a module?<span class="qt deep">DESIGN</span><span class="qh-btn">▸
+                            SHOW ANSWERS</span><span class="qh"><b>TESTING:</b> Boundary intuition.<br><b>SIMPLE:</b>
+                            "Large enough to be a meaningful business capability."<br><b>STRONG:</b> "A module should be
+                            large enough to contain a meaningful business capability that one team can fully own —
+                            including its data, its business rules, and its interfaces. Too small and you have the same
+                            problem as nano-microservices — excessive inter-module calls for every operation. Too large
+                            and no team can own it effectively. The right size is where: one business sentence describes
+                            it, one team owns it, and it rarely needs to change because another module
+                            changed."<br><b>COMMON MISTAKE:</b> "One module per class" or "one module per table."</span>
+                    </li>
+                </ol>
+            </section>
+
+            <!-- Q16 -->
+            <section class="sec" id="q16">
+                <div class="sec-kicker">PART 16 — THE EXERCISE</div>
+                <h2 class="sec-title rv">Architecture Exercise</h2>
+                <div class="panel rv">
+                    <h4>THE SCENARIO</h4>
+                    <p style="font-size:15.5px;color:var(--ink)"><b>A company has a .NET application with Customer,
+                            Product, Order, Inventory, Payment, Notification, and Reporting. Management is asking for
+                            microservices.</b></p>
+                    <div style="margin-top:10px;font-size:14.5px;color:var(--ink2)"><b>Current situation:</b> 20
+                        developers · 500,000 users · 50,000 orders/day · Reporting affects transaction performance ·
+                        Teams want faster releases · DevOps team is small · Business expects 5× growth · Management is
+                        asking for microservices</div>
+                    <p style="font-size:15px;color:var(--ink2);margin-top:12px"><b>Your task — answer all 10 questions
+                            before reading the solution:</b></p>
+                    <ol style="margin:8px 0 0 20px;font-size:15px;color:var(--ink2)">
+                        <li>Challenge the requirement — what problem is management actually trying to solve?</li>
+                        <li>Identify the real problems in the current system.</li>
+                        <li>Decide: Monolith, Modular Monolith, or Microservices?</li>
+                        <li>Design the recommended architecture with module boundaries.</li>
+                        <li>Define data ownership for each module.</li>
+                        <li>Explain how modules communicate.</li>
+                        <li>Identify what should possibly become a service later.</li>
+                        <li>Explain risks of the recommended architecture.</li>
+                        <li>Explain risks of the rejected architecture (microservices).</li>
+                        <li>Describe the migration strategy.</li>
+                    </ol>
+                </div>
+                <div class="reveal-block rv">
+                    <button class="reveal-btn"
+                        onclick="this.nextElementSibling.classList.toggle('shown');this.textContent=this.nextElementSibling.classList.contains('shown')?'▾ HIDE SUGGESTED SOLUTION':'▸ REVEAL SUGGESTED ARCHITECT SOLUTION'">▸
+                        REVEAL SUGGESTED ARCHITECT SOLUTION</button>
+                    <div class="reveal-content">
+                        <p><b>1. Challenging the requirement:</b> "Management wants microservices" is not a problem
+                            statement. Ask: are teams blocked from releasing because of each other? Is specific business
+                            area performance creating user impact? These are the real problems to solve — not the
+                            architecture style.</p>
+                        <p><b>2. Real problems:</b> (a) Reporting affecting transaction performance — a read isolation
+                            problem. (b) Teams wanting faster releases — a deployment coupling problem. Both are
+                            solvable without full microservices.</p>
+                        <p><b>3. Recommendation: Modular Monolith.</b> 20 developers and a small DevOps team cannot
+                            operate 7+ microservices safely. The specific problems do not require that solution.</p>
+                        <p><b>4. Module design:</b> Identity (Auth + Customer), Catalog (Product), Commerce (Order),
+                            Inventory, Payment, Notification, Reporting. 7 modules, one application, one deployment.</p>
+                        <p><b>5. Data ownership:</b> Each module owns its database schema. No cross-module direct table
+                            access. Reporting module uses read-only replica or read from snapshots built from domain
+                            events.</p>
+                        <p><b>6. Communication:</b> Commerce → Inventory via IInventoryService interface (synchronous
+                            reservation). Commerce raises OrderCreated event, consumed by Notification (async).
+                            Reporting consumes all domain events to build read models.</p>
+                        <p><b>7. Future service candidates:</b> Reporting (read isolation), Notification (async
+                            scaling). Not Order, Inventory, or Payment until the team has proven operational capability
+                            with the first two.</p>
+                        <p><b>8. Risks of recommended:</b> Developers skip boundary rules under pressure. Read isolation
+                            for Reporting must be actively enforced. Module teams must be defined and respected.</p>
+                        <p><b>9. Risks of microservices (rejected):</b> Small DevOps team cannot support 7 independent
+                            deployment pipelines. Distributed transactions required for Order+Inventory+Payment
+                            operations. Infrastructure cost multiplies. Debugging cross-service failures without
+                            distributed tracing is nearly impossible.</p>
+                        <p><b>10. Migration strategy:</b> Phase 1 (Month 1–3): Add module boundaries to existing
+                            codebase, route Reporting to read replica. Phase 2 (Month 4–6): Extract Reporting as a
+                            service, prove the pattern. Phase 3 (Month 7+): Evaluate based on what is measured — only
+                            extract if benefit is proven.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Q17 -->
+            <section class="sec" id="q17">
+                <div class="sec-kicker">PART 17 — THE CHALLENGE</div>
+                <h2 class="sec-title rv">20-Minute Architect Challenge</h2>
+                <div class="panel rv">
+                    <h4>THE CHALLENGE</h4>
+                    <p style="font-size:15.5px;color:var(--ink)"><b>"A successful monolithic application is becoming
+                            difficult to scale and maintain. Management wants to convert the complete system into
+                            microservices."</b></p>
+                    <div style="margin-top:10px;font-size:14.5px;color:var(--ink2)">
+                        <b>Business context:</b> 300,000 users · 80,000 orders/day · 15 developers in 3 teams · 2 DevOps
+                        engineers · £15,000/month infrastructure budget · Weekly releases, often delayed due to
+                        coordination · Reporting slows the main database 4 hours daily · Application is 4 years old,
+                        relatively clean codebase · Domain is well-understood
+                    </div>
+                    <p style="font-size:15px;color:var(--ink2);margin-top:12px"><b>Your task — decide and justify:</b>
+                    </p>
+                    <ol style="margin:8px 0 0 20px;font-size:15px;color:var(--ink2)">
+                        <li>Are microservices actually required?</li>
+                        <li>Is Modular Monolith better at this stage?</li>
+                        <li>Which problems must be solved first?</li>
+                        <li>Which modules should remain together?</li>
+                        <li>Which module could be extracted?</li>
+                        <li>What is the migration plan?</li>
+                        <li>How will success be measured?</li>
+                    </ol>
+                    <p style="font-size:13px;color:var(--accent);font-family:var(--mono);margin-top:10px">THINK THROUGH
+                        YOUR ANSWER BEFORE READING THE MODEL RESPONSE</p>
+                </div>
+                <div class="reveal-block rv">
+                    <button class="reveal-btn"
+                        onclick="this.nextElementSibling.classList.toggle('shown');this.textContent=this.nextElementSibling.classList.contains('shown')?'▾ HIDE MODEL ANSWER':'▸ REVEAL MODEL ARCHITECT ANSWER'">▸
+                        REVEAL MODEL ARCHITECT ANSWER</button>
+                    <div class="reveal-content">
+                        <p><b>1. Are microservices required?</b> Not yet. The real problems — reporting performance and
+                            release coordination — are solvable without full microservices. The team of 15 and 2 DevOps
+                            engineers is the limiting factor.</p>
+                        <p><b>2. Is Modular Monolith better?</b> Yes, at this stage. The codebase is clean and 4 years
+                            old — the domain is well-understood, making module boundaries clear and reliable. This is
+                            the ideal starting point for a modular monolith.</p>
+                        <p><b>3. Problems to solve first:</b> (a) Reporting slowing the database — immediate: route to a
+                            read replica. Medium term: extract as a service. (b) Release coordination — add module
+                            ownership boundaries so teams can release within their domain confidently.</p>
+                        <p><b>4. Modules remaining together:</b> Order, Inventory, Payment — tightly transactional.
+                            Customer, Catalog — closely related reads. These stay in the modular monolith.</p>
+                        <p><b>5. Module to extract first:</b> Reporting. Read-only, solves the immediate database
+                            performance problem, tolerates eventual consistency, well-bounded, lowest risk. Second
+                            candidate: Notification.</p>
+                        <p><b>6. Migration plan:</b> Month 1: Define module boundaries in code, assign team ownership.
+                            Month 2: Route all reports to a read replica. Month 3–4: Extract Reporting as an independent
+                            service. Month 5: Measure impact on release velocity and database performance. Month 6+:
+                            Decide on next extraction based on measurement.</p>
+                        <p><b>7. Success metrics:</b> Database CPU during reporting window (target: below 30%). Release
+                            frequency per team (target: teams release independently within their module without waiting
+                            for others). Incident rate (should not increase). Developer satisfaction with code
+                            ownership. Only if all metrics improve do we continue extractions.</p>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <section class="mindset" id="summary19">
+        <div class="mindset-in">
+            <div class="sec-kicker">DAY 19 — CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">10 Rules for Choosing Between Monolith, Modular
+                Monolith, and Microservices</h2>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Architecture solves problems, not trends.</h3>
+                    <p>Choose the architecture that solves the specific problem you have — not the one your competitor
+                        uses or the conference speaker recommended.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>The modular monolith is the missing middle.</h3>
+                    <p>Most systems should be here, not in a traditional monolith and not in microservices. Learn it.
+                        Use it. Defend it.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Module boundaries are enforced, not documented.</h3>
+                    <p>A boundary that relies on developers remembering the rules will be broken. It must be enforced
+                        through code organisation, architectural tests, and code review standards.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>No module accesses another module's database.</h3>
+                    <p>This is the single most important rule in a modular monolith. Violate it once and the modular
+                        structure starts collapsing.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Extract the service that solves a real problem.</h3>
+                    <p>The first extraction must fix something — a performance problem, a deployment independence
+                        problem. If it does not fix anything, it is over-engineering.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">06</div>
+                <div>
+                    <h3>Start with Reporting or Notification, not Order or Payment.</h3>
+                    <p>Low-risk extractions first. Build operational capability. Then consider the high-risk, high-value
+                        services.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">07</div>
+                <div>
+                    <h3>One extraction at a time, with measurement.</h3>
+                    <p>Every extraction must prove its value before the next begins. "Measure, then decide" is not slow
+                        — it is responsible.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">08</div>
+                <div>
+                    <h3>Team size and DevOps maturity set the architecture ceiling.</h3>
+                    <p>The most important non-technical factors. A team of 6 cannot operate microservices sustainably.
+                        An organisation with no DevOps team cannot either.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">09</div>
+                <div>
+                    <h3>Clean module boundaries now make extraction cheap later.</h3>
+                    <p>A well-designed modular monolith is future-ready. The same boundaries that make it easy to work
+                        with today make it easy to split tomorrow.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">10</div>
+                <div>
+                    <h3>The score is a guide. The architect makes the call.</h3>
+                    <p>Frameworks and scorecards surface the question. Architectural judgement — shaped by context,
+                        experience, and honesty about constraints — answers it.</p>
+                </div>
+            </div>
+
+            <div class="callout co-key rv" style="margin-top:40px"><span class="co-label">ONE-MINUTE INTERVIEW ANSWER —
+                    WHY MODULAR MONOLITH OVER MICROSERVICES?</span>
+                <p>"I choose a modular monolith when the team is not large enough to support one fully independent team
+                    per service, when operational maturity is not yet in place for distributed tracing and independent
+                    deployment pipelines, when the business logic requires frequent cross-module transactions, and when
+                    the specific benefits of microservices — deployment independence, independent scaling, failure
+                    isolation — are not yet genuine business requirements. A well-designed modular monolith delivers
+                    most of the architectural clarity that microservices offer, at a fraction of the operational cost
+                    and risk, and with the added benefit of being extractable into services when those requirements
+                    genuinely arrive."</p>
+            </div>
+            <div class="callout co-tip rv"><span class="co-label">ONE POWERFUL ARCHITECT STATEMENT</span>
+                <p><em>"Architecture is not about what looks sophisticated on a diagram. It is about what the business
+                        can operate, what the team can maintain, and what the system genuinely needs — today, not in a
+                        hypothetical future. A modular monolith that is actually working is worth more than a
+                        microservices architecture that is actually failing."</em></p>
+            </div>
+            <p class="mind-close rv">The best architects build the simplest system that works, not the most impressive
+                system that could work. The difference between those two is usually a modular monolith.</p>
+        </div>
+    </section>
+
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 19 / 30 — MODULAR MONOLITH vs MICROSERVICES</div>
+            <div class="f-r">WEEK 3 · <b>DAY 20 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () {
+            function $a(s) { return [].slice.call(document.querySelectorAll(s)); }
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop');
+            var spyIds = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'q9', 'q10', 'q11', 'q12', 'q13', 'q14', 'q15', 'q16', 'q17', 'summary19'];
+            var tocLinks = $a('.tn[data-spy]'), ticking = false;
+            function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); }
+            window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll();
+            toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+            var rvs = $a('.rv');
+            if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); }
+            else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); }
+            var themeBtn = document.getElementById('themeBtn');
+            function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } }
+            var st = null; try { st = localStorage.getItem('arch-day19-theme'); } catch (e) { } applyTheme(st === 'dark');
+            themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day19-theme', d ? 'dark' : 'light'); } catch (e) { } });
+            var toc = document.getElementById('toc'), scrim = document.getElementById('scrim');
+            function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); }
+            document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); });
+            scrim.addEventListener('click', closeToc);
+            toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); });
+            document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+            $a('.qlist li').forEach(function (li) { li.addEventListener('click', function () { li.classList.toggle('qopen'); }); });
+            $a('.reveal-btn').forEach(function (btn) { btn.addEventListener('click', function () { var c = btn.nextElementSibling; c.classList.toggle('shown'); btn.textContent = c.classList.contains('shown') ? '▾ HIDE ANSWER' : '▸ REVEAL ANSWER'; }); });
+        });
+    </script>
+</body>
+
+</html>

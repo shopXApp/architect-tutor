@@ -1,0 +1,3043 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 16 of the 30-Day Technical Architect Track: Read vs Write Design — when to separate, when to keep together, architectural decisions, and CQRS thinking without jargon." />
+    <title>Day 16 — Read vs Write Design · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.w {
+            fill: rgba(140, 47, 57, .08);
+            stroke: var(--red)
+        }
+
+        .sketch .box.r {
+            fill: rgba(44, 93, 119, .08);
+            stroke: var(--blue)
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .tb {
+            fill: var(--blue)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-box.w {
+            fill: rgba(140, 47, 57, .08);
+            stroke: var(--red)
+        }
+
+        .s-box.r {
+            fill: rgba(44, 93, 119, .08);
+            stroke: var(--blue)
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .dash-sync {
+            stroke: var(--accent);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.3
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .panel p {
+            margin: 8px 0
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .sc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 24px;
+            margin: 16px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--blue)
+        }
+
+        .sc-card h4 {
+            font-family: var(--disp);
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--ink)
+        }
+
+        .sc-card .sc-row {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 12px;
+            padding: 6px 0;
+            font-size: 14.5px;
+            color: var(--ink2);
+            border-bottom: 1px dashed var(--line)
+        }
+
+        .sc-card .sc-row:last-child {
+            border-bottom: 0
+        }
+
+        .sc-card .sc-row b {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            color: var(--blue);
+            padding-top: 3px
+        }
+
+        .trad-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 16px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--gold);
+            cursor: pointer;
+            transition: border-color .22s
+        }
+
+        .trad-card:hover {
+            border-color: var(--accent)
+        }
+
+        .trad-card.open {
+            border-top-color: var(--accent)
+        }
+
+        .trad-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--ink)
+        }
+
+        .trad-card .trad-row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 12px;
+            padding: 6px 0;
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .trad-card .trad-row b {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            color: var(--gold);
+            padding-top: 3px
+        }
+
+        .trad-card .trad-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .12em;
+            color: var(--ink3);
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--line2)
+        }
+
+        .trad-card .trad-answer {
+            display: none;
+            margin-top: 16px;
+            padding: 14px 18px;
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            border-radius: 0 4px 4px 0;
+            font-size: 14.5px;
+            color: var(--ink)
+        }
+
+        .trad-card.open .trad-answer {
+            display: block
+        }
+
+        .trad-card.open .trad-hint {
+            display: none
+        }
+
+        .chain {
+            display: flex;
+            margin: 26px 0;
+            max-width: 860px;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            overflow: hidden;
+            background: var(--card)
+        }
+
+        .chain div {
+            flex: 1;
+            padding: 16px 18px;
+            border-left: 1px solid var(--line)
+        }
+
+        .chain div:first-child {
+            border-left: 0
+        }
+
+        .chain b {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .18em;
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .chain span {
+            font-size: 14px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .chain .c1 b {
+            color: var(--red)
+        }
+
+        .chain .c2 b {
+            color: var(--blue)
+        }
+
+        .chain .c3 b {
+            color: var(--teal)
+        }
+
+        .devlist {
+            list-style: none;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .devlist li {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s
+        }
+
+        .devlist li:hover {
+            border-color: var(--accent)
+        }
+
+        .devlist li b {
+            color: var(--ink)
+        }
+
+        .devlist li .cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 3px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .devlist li.checked .cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .devlist li.checked .cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .devlist li.checked {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+
+            .chain {
+                flex-direction: column
+            }
+
+            .chain div {
+                border-left: 0;
+                border-top: 1px solid var(--line)
+            }
+
+            .chain div:first-child {
+                border-top: 0
+            }
+
+            .sc-card .sc-row,
+            .trad-card .trad-row {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge">DAY 16 / 30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 16 / 30 · READ vs WRITE DESIGN</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Reading and writing</span></span>
+                    <span class="mask"><span class="line d2">are not the same</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s"><em>job.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 16 teaches a single architect decision: <b>do reads and writes travel the same
+                        path, or different ones?</b> The answer shapes performance, consistency, cost and complexity.
+                    You will learn when one database is enough, when to split the <i>logic</i>, when to split the
+                    <i>storage</i>, and — most importantly — <b>how to defend that choice</b> in an interview without
+                    using jargon.</p>
+                <div class="hero-meta"><span class="chip hot">ONE DB vs TWO</span><span class="chip">CQRS
+                        THINKING</span><span class="chip">EVENTUAL CONSISTENCY</span><span class="chip">REPORTING
+                        LOAD</span><span class="chip">15 INTERVIEW Qs</span></div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS DAY</h4>
+                    <ol>
+                        <li><b>01</b> Read Parts 1–3 slowly — the basic concepts and the three options compared.</li>
+                        <li><b>02</b> Read Parts 4–5 — the architecture diagrams and the twelve architect decisions.
+                        </li>
+                        <li><b>03</b> Work Parts 6–10 — scenarios, interview questions, trade-offs and two case studies.
+                        </li>
+                        <li><b>04</b> Close with the ten rules and the one-line interview answer.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">10 PARTS · 3 DESIGN OPTIONS · 8 SCENARIOS · 15 INTERVIEW Qs · 5 TRADE-OFF
+                    EXERCISES · 2 CASE STUDIES</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 16 → ONE PATH OR TWO?</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 16.0 — THE SPLIT</text>
+                    <rect class="box" x="210" y="58" width="100" height="28" /><text x="260" y="76" font-size="9"
+                        class="t1" text-anchor="middle">CLIENT / USER</text>
+                    <path class="thin" d="M260 86 V100" />
+                    <rect class="box hot" x="190" y="104" width="140" height="28" /><text x="260" y="122" font-size="9"
+                        class="ta" text-anchor="middle">API · THE DECISION POINT</text>
+                    <path class="thin" d="M220 132 L130 162 M300 132 L390 162" />
+                    <rect class="box w" x="36" y="164" width="180" height="48" /><text x="126" y="184" font-size="9"
+                        class="tr" text-anchor="middle">WRITE SIDE</text><text x="126" y="198" font-size="7.5"
+                        class="t3" text-anchor="middle">must be correct · must be fast</text>
+                    <rect class="box r" x="304" y="164" width="180" height="48" /><text x="394" y="184" font-size="9"
+                        class="tb" text-anchor="middle">READ SIDE</text><text x="394" y="198" font-size="7.5" class="t3"
+                        text-anchor="middle">must be fast · can be slightly old</text>
+                    <path class="dash-sync" d="M216 188 H304" />
+                    <path d="M298 184 l6 4 -6 4 z" fill="var(--accent)" />
+                    <text x="260" y="182" font-size="7" class="ta" text-anchor="middle">SYNC</text>
+                    <path class="thin" d="M126 212 V236 M394 212 V236" />
+                    <rect class="box w" x="36" y="236" width="180" height="36" /><text x="126" y="252" font-size="8.5"
+                        class="tr" text-anchor="middle">WRITE DATABASE</text><text x="126" y="264" font-size="7"
+                        class="t3" text-anchor="middle">the source of truth</text>
+                    <rect class="box r" x="304" y="236" width="180" height="36" /><text x="394" y="252" font-size="8.5"
+                        class="tb" text-anchor="middle">READ MODEL</text><text x="394" y="264" font-size="7" class="t3"
+                        text-anchor="middle">shaped for fast reading</text>
+                    <path class="thin" d="M330 272 V290 M370 272 V290 M420 272 V290 M460 272 V290" />
+                    <rect class="box" x="310" y="290" width="40" height="22" /><text x="330" y="304" font-size="7"
+                        class="t1" text-anchor="middle">CACHE</text>
+                    <rect class="box" x="355" y="290" width="60" height="22" /><text x="385" y="304" font-size="7"
+                        class="t1" text-anchor="middle">DASHBOARD</text>
+                    <rect class="box" x="420" y="290" width="60" height="22" /><text x="450" y="304" font-size="7"
+                        class="t1" text-anchor="middle">REPORTS</text>
+                    <text x="36" y="340" class="st2 t1">THE WRITE SIDE CANNOT WAIT. THE READ SIDE CAN.</text>
+                    <text x="36" y="354" class="st2 t3">that single sentence drives every decision on this page.</text>
+                    <rect class="fr" x="36" y="364" width="448" height="22" />
+                    <text x="52" y="379" font-size="8" class="ta">ONE DB IS SIMPLE → TWO MODELS ARE FASTER → TWO
+                        DATABASES SCALE FURTHER — BUT COST MORE</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M12 3 3 8l9 5 9-5-9-5ZM3 13l9 5 9-5" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Part 1 · Basics</span><span class="p-tg">WHAT · WHY ·
+                        WHEN</span></span></a>
+            <a class="pstrip" href="#s3" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="4" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="13" y="4" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="4" y="13" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
+                    <rect x="13" y="13" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.6" />
+                </svg><span><span class="p-nm">Part 3 · Three Options</span><span class="p-tg">COMPARE &amp;
+                        CHOOSE</span></span></a>
+            <a class="pstrip" href="#s4" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 12h6l2-6 2 12 2-6h4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Part 4 · Architecture</span><span class="p-tg">WRITE PATH · READ
+                        PATH</span></span></a>
+            <a class="pstrip" href="#s7" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 8v4l2.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Part 7 · Interview</span><span class="p-tg">15
+                        QUESTIONS</span></span></a>
+            <a class="pstrip" href="#s10" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M6 3h9l4 4v14H6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                    <path d="M9 12h7M9 16h7M9 8h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Part 10 · Challenge</span><span class="p-tg">20-MIN
+                        INTERVIEW</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> Basic understanding</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> The order system</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> Three design options</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> Practical architecture</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Architect decisions</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> Eight scenarios</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> Interview questions</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Trade-off exercises</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Mini case study</a>
+            <a class="tn" href="#s10" data-spy="s10"><span>10</span> Final challenge</a>
+            <a class="tn" href="#s11" data-spy="s11"><span>11</span> Ten rules + close</a>
+        </aside>
+        <main class="doc">
+
+            <section class="sec" id="s1">
+                <div class="sec-kicker">PART 1 · THE FOUNDATION</div>
+                <h2 class="sec-title rv">Reading and Writing Are Different Jobs</h2>
+                <p class="sec-lead rv">Before any technical word, let's agree on one thing: <b>a customer placing an
+                        order and a manager reading a report are doing two different things</b>. Treating them the same
+                    is where most systems start to break.</p>
+
+                <h3>1 · What is a read operation?</h3>
+                <p class="rv">A read is when someone <b>looks at data</b>. The system gives them information and does
+                    not change anything. Examples: a customer browsing products, a manager opening a sales dashboard, a
+                    report showing last month's orders. Nothing in the database changes because of a read.</p>
+
+                <h3>2 · What is a write operation?</h3>
+                <p class="rv">A write is when someone <b>changes data</b>. The system must record something new or
+                    update something that exists. Examples: a customer placing an order, a clerk updating stock, a
+                    payment being marked as paid. After a write, the world is different from before.</p>
+
+                <h3>3 · Why are they sometimes handled differently?</h3>
+                <p class="rv">Because they have different rules:</p>
+                <div class="chain rv">
+                    <div class="c1"><b>WRITES MUST BE CORRECT</b><span>If an order is placed, the database must record
+                            it exactly. You cannot "almost" save an order. You cannot "lose" half of a payment.</span>
+                    </div>
+                    <div class="c2"><b>READS MUST BE FAST</b><span>When 10,000 users open a dashboard at 9 a.m., each
+                            one wants their page in less than a second. The shape of the data for reading is not the
+                            same as the shape for writing.</span></div>
+                    <div class="c3"><b>READS CAN BE SLIGHTLY OLD</b><span>A dashboard from 10 seconds ago is usually
+                            fine. An order from 10 seconds ago, saved incorrectly, is never fine.</span></div>
+                </div>
+                <p class="rv">Think of a restaurant. The <b>waiter taking an order</b> (write) must write it down
+                    correctly — no mistakes allowed. The <b>menu on the wall</b> (read) is a display, designed to be
+                    easy to read, and does not change when a customer orders. Two different objects, two different jobs.
+                </p>
+
+                <h3>4 · What problems appear when both use the same design?</h3>
+                <ul class="nlist">
+                    <li><b>Slow reads.</b> The database is shaped for saving orders (rows, foreign keys, rules). A
+                        dashboard that wants "sales per region per month" has to do heavy work every time someone looks
+                        at it.</li>
+                    <li><b>Blocked writes.</b> While a big report is running, the database is busy. New orders may slow
+                        down or wait in line.</li>
+                    <li><b>Scaling pain.</b> You cannot add more "read power" without also adding more "write power" —
+                        because they share one machine.</li>
+                    <li><b>Risky changes.</b> Adding an index to speed up the dashboard may slow down order creation.
+                        One change affects both sides.</li>
+                </ul>
+
+                <h3>5 · What does "separating read and write" actually mean?</h3>
+                <p class="rv">It means the system decides: <b>the place I write to and the place I read from may not be
+                        the same thing</b>. At its simplest, it may be a different code path inside the same
+                    application. At its most advanced, it may be two completely different databases, with data flowing
+                    from one to the other.</p>
+
+                <h3>6 · When is separation useful?</h3>
+                <ul class="nlist">
+                    <li>When <b>many more people read than write</b> (10 reads for every 1 write is common).</li>
+                    <li>When <b>readers and writers have different needs</b> (a dashboard wants a summary; an order
+                        wants exact data).</li>
+                    <li>When <b>heavy reports slow down the main system</b>.</li>
+                    <li>When the system must <b>grow a lot</b> in the future.</li>
+                </ul>
+
+                <h3>7 · When is separation unnecessary?</h3>
+                <ul class="nlist">
+                    <li>Small systems with a few users and no heavy reports. Separation adds complexity — do not pay
+                        that price if the problem is small.</li>
+                    <li>Systems where <b>every read must be perfectly up-to-date</b> (for example, a banking balance
+                        check). Separation usually means a short delay — not acceptable here.</li>
+                    <li>When writes are the bottleneck, not reads. Separation helps reads, not writes.</li>
+                </ul>
+
+                <h3>8 · What extra complexity does separation introduce?</h3>
+                <ul class="nlist">
+                    <li><b>Two things to keep in sync.</b> If you have a write database and a read database, data must
+                        flow from one to the other. That flow can break, lag, or lose information.</li>
+                    <li><b>Two places to monitor.</b> You watch both sides now — twice the dashboards, twice the alerts.
+                    </li>
+                    <li><b>Two places to understand.</b> A new developer must learn both shapes of the data.</li>
+                    <li><b>Eventual consistency.</b> "The dashboard will catch up" is a real phrase — and it means the
+                        user may see something old for a moment. You must decide if that is acceptable.</li>
+                </ul>
+
+                <div class="callout co-key rv"><span class="co-label">THE ONE SENTENCE TO REMEMBER</span>
+                    <p><b>Writes must be correct. Reads must be fast. They can be slightly old.</b> If you remember
+                        this, every decision in this tutorial follows naturally.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">PART 2 · THE EXAMPLE WE WILL USE</div>
+                <h2 class="sec-title rv">The Enterprise Order Management System</h2>
+                <p class="sec-lead rv">Let's work with one example all day. An e-commerce platform that sells products,
+                    takes orders, processes payments, ships goods, and reports on everything. The system has:</p>
+                <ul class="nlist">
+                    <li><b>Customers</b> who browse products and place orders.</li>
+                    <li><b>Clerks</b> who update inventory and manage shipping.</li>
+                    <li><b>Managers</b> who read dashboards and reports every morning.</li>
+                    <li><b>Reports</b> that summarize millions of orders.</li>
+                </ul>
+                <p class="rv">Some things must be instant and correct (an order, a payment). Other things can be
+                    slightly delayed (a dashboard from 10 seconds ago, a report from yesterday).</p>
+
+                <h3>How it works at first — one path for everything</h3>
+                <p class="rv">In the early days, the system is simple. A customer opens the website, the API talks to
+                    one database, and the same database answers both the customer's order and the manager's dashboard.
+                    There is one source of truth, one shape of data, one set of rules.</p>
+
+                <div class="figbox rv">
+                    <svg viewBox="0 0 640 130" fill="none">
+                        <rect class="s-box" x="20" y="20" width="120" height="40" rx="3" /><text x="80" y="40"
+                            font-size="10" class="s-lab" text-anchor="middle">CUSTOMER</text><text x="80" y="53"
+                            font-size="8" class="s-sub" text-anchor="middle">places orders</text>
+                        <rect class="s-box" x="20" y="75" width="120" height="40" rx="3" /><text x="80" y="95"
+                            font-size="10" class="s-lab" text-anchor="middle">MANAGER</text><text x="80" y="108"
+                            font-size="8" class="s-sub" text-anchor="middle">reads dashboards</text>
+                        <path class="s-line" d="M140 40 H200 M140 95 H200" />
+                        <rect class="s-box hot" x="200" y="40" width="160" height="75" rx="3" /><text x="280" y="60"
+                            font-size="11" class="s-lab" text-anchor="middle">API + ONE DATABASE</text><text x="280"
+                            y="78" font-size="8" class="s-sub" text-anchor="middle">same path for writes and
+                            reads</text><text x="280" y="95" font-size="8" class="s-sub" text-anchor="middle">simple ·
+                            one source of truth</text>
+                        <path class="s-line" d="M360 75 H410" />
+                        <rect class="s-box" x="410" y="55" width="200" height="40" rx="3" /><text x="510" y="72"
+                            font-size="10" class="s-lab" text-anchor="middle">EVERYONE GETS THE SAME SHAPE</text><text
+                            x="510" y="86" font-size="8" class="s-sub" text-anchor="middle">order rows · dashboard rows
+                            · same table</text>
+                    </svg>
+                    <div class="figcap">FIG. 16.1 · STAGE ONE — ONE PATH FOR EVERYTHING</div>
+                </div>
+
+                <h3>What goes wrong as the system grows</h3>
+                <p class="rv">Day one, this works fine. Year three, problems appear:</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Reports slow down orders</b><span>Every morning the manager runs a big sales
+                            report. The database works hard for ten minutes. During those ten minutes, a customer's
+                            order takes 8 seconds instead of 0.3 seconds. The customer leaves.</span></div>
+                    <div class="topic"><b>Dashboard shape fights order shape</b><span>An order is stored as rows of
+                            products, customers, prices. A dashboard wants one row: "sales by region last month". The
+                            database must rebuild that answer every time the manager opens the page — slow.</span></div>
+                    <div class="topic"><b>More users, one machine</b><span>Ten thousand managers open their dashboards
+                            at 9 a.m. All those reads hit the same database that is also saving orders. The machine
+                            cannot do both at full speed.</span></div>
+                    <div class="topic"><b>Changes break both sides</b><span>Adding an index to speed up the dashboard
+                            slows down order creation. Adding a rule to orders slows down reports. Every improvement has
+                            a cost on the other side.</span></div>
+                </div>
+                <p class="rv">This is where the architect steps in. The question is no longer "does it work?" but
+                    <b>"can it keep working when ten times more people use it?"</b></p>
+
+                <div class="callout co-warn rv"><span class="co-label">THE MOMENT TO ACT</span>
+                    <p>The architect does not wait for the system to fail. The moment a report takes more than a few
+                        seconds, or a dashboard is sluggish at peak time, that is the signal: <b>reads and writes are
+                            starting to fight each other</b>. The fix is to stop treating them as the same job.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">PART 3 · THE THREE OPTIONS</div>
+                <h2 class="sec-title rv">Three Ways to Handle Reads and Writes</h2>
+                <p class="sec-lead rv">There are three levels of separation, each more complex but more powerful. None
+                    is always right — the choice depends on scale, consistency needs, and team capacity.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Option 1 · One database, one model</b><span><b>How it works.</b> The
+                            application writes and reads from the same tables. No special handling. <b>When to use.</b>
+                            Small systems, low traffic, simple requirements. <b>When not.</b> When reports slow down
+                            orders, or when reads outnumber writes by a lot.</span></div>
+                    <div class="topic"><b>Option 2 · One database, separate logic</b><span><b>How it works.</b> Same
+                            database, but the <i>code</i> that writes and the <i>code</i> that reads are written
+                            separately — different classes, different methods, sometimes different teams. <b>When to
+                                use.</b> Medium systems, where shape matters but one database is still enough. <b>When
+                                not.</b> When the database itself is the bottleneck.</span></div>
+                    <div class="topic" style="border-top:1px solid var(--line)"><b>Option 3 · Separate read and write
+                            models, synced</b><span><b>How it works.</b> Two stores. The write side saves data
+                            correctly. A process copies (syncs) it to a read side shaped for fast reading — different
+                            tables, different database, maybe even different technology. <b>When to use.</b> Large
+                            scale, heavy reporting, heavy dashboards. <b>When not.</b> When you cannot accept even a
+                            small delay between write and read.</span></div>
+                    <div class="topic" style="border-top:1px solid var(--line)"><b>Complexity grows with each
+                            step</b><span>Option 1 is a beginner's design. Option 2 is the professional middle ground.
+                            Option 3 is what large platforms use — at a price. The architect's job is to know
+                            <b>when</b> to step up, not to start at step three.</span></div>
+                </div>
+
+                <h3>Side-by-side comparison</h3>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th>FACTOR</th>
+                                <th>OPTION 1 · ONE DB, ONE MODEL</th>
+                                <th>OPTION 2 · ONE DB, SEPARATE LOGIC</th>
+                                <th>OPTION 3 · SEPARATE MODELS + SYNC</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>How it works</b></td>
+                                <td>Same tables, same code paths for reads and writes</td>
+                                <td>Same tables, but read code and write code are written separately</td>
+                                <td>Two stores: write-side is the source of truth, read-side is shaped for reading; data
+                                    flows between them</td>
+                            </tr>
+                            <tr>
+                                <td><b>Advantages</b></td>
+                                <td>Simple. One source of truth. No sync to worry about.</td>
+                                <td>Still simple. Can optimize reads without touching writes. One database to maintain.
+                                </td>
+                                <td>Reads and writes scale independently. Reports cannot slow down orders. Read side can
+                                    be a different technology (search engine, cache, document store).</td>
+                            </tr>
+                            <tr>
+                                <td><b>Disadvantages</b></td>
+                                <td>Reads fight writes. Reports slow down orders. Hard to scale read-heavy traffic.</td>
+                                <td>The database is still the single bottleneck. Heavy reports still hurt the system.
+                                </td>
+                                <td>Two systems to keep in sync. Data may be briefly old on the read side. More things
+                                    can break.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Complexity</b></td>
+                                <td><span class="pros">Low</span></td>
+                                <td>Medium</td>
+                                <td><span class="cons">High</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td>Low — one database, one team</td>
+                                <td>Low-medium — still one database</td>
+                                <td>High — two stores, sync infrastructure, more monitoring</td>
+                            </tr>
+                            <tr>
+                                <td><b>Performance</b></td>
+                                <td>Good for small scale, poor under heavy read traffic</td>
+                                <td>Better reads, same bottleneck</td>
+                                <td>Best under heavy read traffic; scales horizontally</td>
+                            </tr>
+                            <tr>
+                                <td><b>Data consistency</b></td>
+                                <td><span class="pros">Immediate — everything is always up to date</span></td>
+                                <td><span class="pros">Immediate</span></td>
+                                <td><span class="cons">Eventual — read side may lag by seconds</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>When to use</b></td>
+                                <td>Small systems, few users, simple requirements</td>
+                                <td>Medium systems, reads matter but one database is enough</td>
+                                <td>Large scale, heavy reporting, heavy dashboards, global users</td>
+                            </tr>
+                            <tr>
+                                <td><b>When not</b></td>
+                                <td>When reads outnumber writes, or reports slow orders</td>
+                                <td>When the database itself is the bottleneck</td>
+                                <td>When every read must be instantly correct (banking balance)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="callout rv"><span class="co-label">THE ARCHITECT'S FIRST QUESTION</span>
+                    <p>Before choosing any option, ask: <b>"How important is it that every read sees the very latest
+                            write?"</b> If the answer is "critical" (banking, medical), you stay close to Option 1 or 2.
+                        If the answer is "a few seconds of delay is fine" (dashboards, reports, catalogs), Option 3
+                        becomes the natural choice.</p>
+                </div>
+
+                <div class="callout co-tip rv"><span class="co-label">THE WORD YOU MAY HEAR</span>
+                    <p>Option 3 is often called <b>CQRS</b> — Command Query Responsibility Segregation. That is a big
+                        name for a simple idea: <b>the thing you write to and the thing you read from are different</b>.
+                        The name is less important than the thinking behind it.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">PART 4 · THE ARCHITECTURE</div>
+                <h2 class="sec-title rv">Two Paths, Two Purposes</h2>
+                <p class="sec-lead rv">Let's draw what Option 3 actually looks like. The system splits into two sides —
+                    each optimized for its own job, with data flowing between them.</p>
+
+                <h3>The write path — correctness first</h3>
+                <p class="rv">When a customer places an order, the request travels a short, careful path. The system
+                    must save exactly, confirm, and move on. Speed matters, but <b>correctness matters more</b>.</p>
+
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 160" fill="none">
+                        <rect class="s-box" x="20" y="50" width="110" height="50" rx="3" /><text x="75" y="72"
+                            font-size="10" class="s-lab" text-anchor="middle">CUSTOMER</text><text x="75" y="86"
+                            font-size="8" class="s-sub" text-anchor="middle">"place an order"</text>
+                        <path class="s-line" d="M130 75 H170" />
+                        <path d="M166 71 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="170" y="50" width="120" height="50" rx="3" /><text x="230" y="72"
+                            font-size="10" class="s-lab" text-anchor="middle">WRITE API</text><text x="230" y="86"
+                            font-size="8" class="s-sub" text-anchor="middle">validates · enforces rules</text>
+                        <path class="s-line" d="M290 75 H330" />
+                        <path d="M326 71 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box w" x="330" y="50" width="130" height="50" rx="3" /><text x="395" y="72"
+                            font-size="10" class="tr" text-anchor="middle">WRITE DATABASE</text><text x="395" y="86"
+                            font-size="8" class="s-sub" text-anchor="middle">source of truth</text>
+                        <path class="s-line" d="M460 75 H500" />
+                        <path d="M496 71 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="500" y="50" width="160" height="50" rx="3" /><text x="580" y="68"
+                            font-size="9" class="s-lab" text-anchor="middle">CONFIRMATION</text><text x="580" y="82"
+                            font-size="8" class="s-sub" text-anchor="middle">"order placed"</text><text x="580" y="94"
+                            font-size="8" class="s-sub" text-anchor="middle">customer sees it NOW</text>
+                        <text x="20" y="130" font-size="8" class="s-note">WRITE PATH · fast · correct · small surface ·
+                            strict rules</text>
+                        <text x="20" y="145" font-size="8" class="s-sub">no caching · no shortcuts · the customer's
+                            order must be in the database before we reply</text>
+                    </svg>
+                    <div class="figcap">FIG. 16.2 · THE WRITE PATH — CORRECTNESS FIRST</div>
+                </div>
+
+                <h3>The read path — speed first</h3>
+                <p class="rv">When a manager opens a dashboard, the request takes a different path. It is shaped for
+                    speed. The data may have been prepared ahead of time, in a form that is easy to read. A short delay
+                    — seconds — is usually acceptable.</p>
+
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 200" fill="none">
+                        <rect class="s-box" x="20" y="40" width="110" height="50" rx="3" /><text x="75" y="62"
+                            font-size="10" class="s-lab" text-anchor="middle">MANAGER</text><text x="75" y="76"
+                            font-size="8" class="s-sub" text-anchor="middle">"show dashboard"</text>
+                        <path class="s-line" d="M130 65 H170" />
+                        <path d="M166 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="170" y="40" width="120" height="50" rx="3" /><text x="230" y="62"
+                            font-size="10" class="s-lab" text-anchor="middle">READ API</text><text x="230" y="76"
+                            font-size="8" class="s-sub" text-anchor="middle">shaped for speed</text>
+                        <path class="s-line" d="M290 65 H330" />
+                        <path d="M326 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box r" x="330" y="40" width="130" height="50" rx="3" /><text x="395" y="62"
+                            font-size="10" class="tb" text-anchor="middle">READ MODEL</text><text x="395" y="76"
+                            font-size="8" class="s-sub" text-anchor="middle">pre-shaped for dashboards</text>
+                        <path class="s-line" d="M460 65 H500" />
+                        <path d="M496 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="500" y="40" width="160" height="50" rx="3" /><text x="580" y="58"
+                            font-size="9" class="s-lab" text-anchor="middle">DASHBOARD</text><text x="580" y="72"
+                            font-size="8" class="s-sub" text-anchor="middle">fast · shaped data</text><text x="580"
+                            y="84" font-size="8" class="s-sub" text-anchor="middle">may be seconds old</text>
+                        <path class="dash-sync" d="M395 90 V130" />
+                        <text x="405" y="110" font-size="7.5" class="s-note">SYNC (background)</text>
+                        <rect class="s-box w" x="330" y="130" width="130" height="50" rx="3" /><text x="395" y="152"
+                            font-size="10" class="tr" text-anchor="middle">WRITE DATABASE</text><text x="395" y="166"
+                            font-size="8" class="s-sub" text-anchor="middle">source of truth</text>
+                        <path d="M326 151 l8 4 -8 4 z" fill="var(--accent)" transform="rotate(180 330 155)" />
+                        <path class="dash-sync" d="M326 155 H290" />
+                        <text x="20" y="188" font-size="8" class="s-note">READ PATH · fast · pre-shaped · may be briefly
+                            old</text>
+                    </svg>
+                    <div class="figcap">FIG. 16.3 · THE READ PATH — SPEED FIRST</div>
+                </div>
+
+                <h3>Why the two sides have different needs</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>NEED</th>
+                                <th>WRITE SIDE</th>
+                                <th>READ SIDE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Must be</b></td>
+                                <td>Correct — every order, every payment, exactly right</td>
+                                <td>Fast — 10,000 managers opening dashboards at 9 a.m.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Data shape</b></td>
+                                <td>Normalized — many small tables with rules and links</td>
+                                <td>Denormalized — one big table shaped for the screen</td>
+                            </tr>
+                            <tr>
+                                <td><b>Can be old?</b></td>
+                                <td>No. An order saved incorrectly is a disaster.</td>
+                                <td>Yes, by seconds. A dashboard from 10 seconds ago is fine.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Traffic pattern</b></td>
+                                <td>Steady — orders arrive throughout the day</td>
+                                <td>Spiky — managers all open dashboards at the same time</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scaling direction</b></td>
+                                <td>Vertical or careful horizontal (single writer)</td>
+                                <td>Horizontal (many read replicas, many caches)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h3>Where caching helps</h3>
+                <p class="rv">The read side is where caching pays off. Products rarely change — a cache can serve them
+                    instantly. A manager's dashboard from a minute ago is still valid — a cache can show it until a
+                    newer version arrives. The <b>write side never caches the source of truth</b> — every order goes to
+                    the database before the customer sees confirmation.</p>
+
+                <div class="chain rv">
+                    <div class="c1"><b>CACHE ON THE READ SIDE</b><span>Products, user profiles, dashboard summaries,
+                            reports. Cache hits make the system feel instant.</span></div>
+                    <div class="c2"><b>NO CACHE ON THE WRITE PATH</b><span>Orders, payments, inventory updates. Every
+                            write hits the database. No shortcuts.</span></div>
+                    <div class="c3"><b>CACHE IS A PERFORMANCE TOOL</b><span>It makes reads faster. It does not replace
+                            the read model. It sits in front of it.</span></div>
+                </div>
+
+                <h3>Where background processing comes in</h3>
+                <p class="rv">The "sync" between the write database and the read model is almost always a <b>background
+                        job</b> — not part of the customer's order flow. When an order is saved, the write side records
+                    it and replies. A background worker picks up the change and copies it to the read model. This is why
+                    the dashboard may be a few seconds behind — the copy is not instant.</p>
+
+                <h3>What happens when read data is slightly behind</h3>
+                <p class="rv">This is called <b>eventual consistency</b> — the data will become consistent, but not
+                    immediately. In practice, the delay is usually:</p>
+                <ul class="nlist">
+                    <li><b>Milliseconds to seconds</b> with a good design.</li>
+                    <li><b>Acceptable for most reads</b> — a dashboard from 5 seconds ago is not a problem.</li>
+                    <li><b>Not acceptable for some reads</b> — "did my order go through?" must be answered from the
+                        write side.</li>
+                </ul>
+                <p class="rv">The architect's job is to <b>know which reads can wait and which cannot</b>. A customer's
+                    order confirmation reads from the write side. A manager's dashboard reads from the read side. Same
+                    system, two different answers.</p>
+
+                <div class="callout co-ok rv"><span class="co-label">THE DESIGN AT A GLANCE</span>
+                    <p><b>Write path:</b> short, strict, correct. <b>Read path:</b> fast, shaped, slightly delayed.
+                        <b>Sync:</b> background work, never in the customer's way. <b>Cache:</b> sits in front of the
+                        read side, never in front of writes.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">PART 5 · THE TWELVE DECISIONS</div>
+                <h2 class="sec-title rv">Questions Every Architect Must Answer</h2>
+                <p class="sec-lead rv">Before choosing an option, the architect works through these twelve questions.
+                    Each one reveals something important about the system.</p>
+
+                <ol class="framework rv">
+                    <li><b>Why not use one database for everything?</b><span>Because one database must serve two
+                            masters. The shape that is best for saving orders (rows, rules, foreign keys) is not the
+                            shape that is best for reading a dashboard (summaries, aggregates). When both sides fight
+                            for the same machine, both lose.</span><span class="fr-hint">SIMPLE ANSWER: ONE DB IS EASY
+                            UNTIL IT BECOMES A BOTTLENECK</span></li>
+                    <li><b>Why not always separate reads and writes?</b><span>Because separation costs complexity. Two
+                            stores, sync between them, eventual consistency to explain to users. If the system is small,
+                            one database is the right answer. Do not pay for a feature you do not need.</span><span
+                            class="fr-hint">SIMPLE ANSWER: COMPLEXITY IS A TAX — PAY IT ONLY WHEN YOU NEED TO</span>
+                    </li>
+                    <li><b>When is separate read processing useful?</b><span>When reads outnumber writes by a large
+                            margin (10:1 or more). When readers need a different data shape than writers. When reports
+                            or dashboards must not slow down the transaction side.</span><span class="fr-hint">SIMPLE
+                            ANSWER: WHEN READ TRAFFIC IS HEAVY AND DIFFERENT</span></li>
+                    <li><b>When is immediate consistency required?</b><span>When the business cannot tolerate even a
+                            brief delay. Banking balances. Stock levels during a sale. Medical records. In these cases,
+                            the read must come from the same place as the write — or the user sees the wrong
+                            number.</span><span class="fr-hint">SIMPLE ANSWER: WHEN "SLIGHTLY OLD" IS
+                            UNACCEPTABLE</span></li>
+                    <li><b>When is slightly delayed data acceptable?</b><span>When the user will not act on the data in
+                            the next few seconds. Dashboards. Reports. Catalogs. Recommendations. A product list from 10
+                            seconds ago is the same list the user sees — and is served much faster from the read
+                            side.</span><span class="fr-hint">SIMPLE ANSWER: WHEN THE USER WON'T NOTICE</span></li>
+                    <li><b>How does reporting affect the main database?</b><span>Heavy reports scan millions of rows.
+                            They consume CPU, memory, and I/O. If they run on the write database, new orders slow down.
+                            Reports should run on a read replica or a dedicated analytics store.</span><span
+                            class="fr-hint">SIMPLE ANSWER: REPORTS ON THE WRITE DB SLOW EVERYTHING DOWN</span></li>
+                    <li><b>How can dashboards be made faster?</b><span>By pre-building the answers. Instead of asking
+                            the database to sum a million rows every time a manager opens the page, a background job
+                            prepares the summary and stores it. The dashboard reads the prepared answer in
+                            milliseconds.</span><span class="fr-hint">SIMPLE ANSWER: PRE-SHAPE THE DATA BEFORE IT IS
+                            READ</span></li>
+                    <li><b>How does read-heavy traffic affect architecture?</b><span>It pushes you toward separation.
+                            One database cannot serve a million reads per hour and keep writes fast. The answer is
+                            usually: read replicas, a separate read model, and a cache in front.</span><span
+                            class="fr-hint">SIMPLE ANSWER: READ-HEAVY = TIME TO SEPARATE</span></li>
+                    <li><b>What happens if the read database is unavailable?</b><span>The dashboards and reports stop
+                            working. The write side keeps taking orders. This is an important property: <b>the core
+                                business keeps running</b>. A broken dashboard is bad; a broken order system is a
+                            disaster.</span><span class="fr-hint">SIMPLE ANSWER: READ-SIDE FAILURES ARE USUALLY
+                            TOLERABLE</span></li>
+                    <li><b>What happens if synchronization fails?</b><span>The read side stops receiving updates.
+                            Dashboards show old data. This is visible to users (the numbers look stale) but does not
+                            lose any orders. The sync must alert when it fails, and retry or skip bad
+                            records.</span><span class="fr-hint">SIMPLE ANSWER: THE READ SIDE GETS OLD — BUT THE WRITE
+                            SIDE KEEPS WORKING</span></li>
+                    <li><b>How do you recover missing read data?</b><span>By re-running the sync from the write
+                            database. Because the write database is the source of truth, the read side can always be
+                            rebuilt. This is why separation is safe: the truth is never in the read side.</span><span
+                            class="fr-hint">SIMPLE ANSWER: REBUILD FROM THE WRITE DB — IT HOLDS THE TRUTH</span></li>
+                    <li><b>How does this design affect cost and maintenance?</b><span>Two stores cost more than one.
+                            Sync infrastructure adds operational work. Monitoring must cover both sides. The team must
+                            understand the design. The payoff is scale and performance — if the business needs it. If it
+                            does not, the simpler design wins.</span><span class="fr-hint">SIMPLE ANSWER: MORE POWERFUL
+                            · MORE EXPENSIVE · WORTH IT ONLY WHEN NEEDED</span></li>
+                </ol>
+
+                <div class="callout co-key rv"><span class="co-label">THE DECISION IN ONE PARAGRAPH</span>
+                    <p>Start with one database. Watch the system. When reports start slowing orders, or dashboards are
+                        sluggish at peak, separate the <i>code</i> first (Option 2). If the database itself becomes the
+                        bottleneck, separate the <i>stores</i> (Option 3). Each step is a response to a measured problem
+                        — not a guess about the future.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s6">
+                <div class="sec-kicker">PART 6 · EIGHT SCENARIOS</div>
+                <h2 class="sec-title rv">Real Situations, Real Decisions</h2>
+                <p class="sec-lead rv">Eight systems, eight decisions. For each, we ask: should reads and writes be
+                    handled the same way, or separated?</p>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 1 · Banking Transaction System</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Customers transfer money. Every balance check must show
+                            the exact current amount. A transfer must be recorded correctly.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Keep reads and writes together.</b> Option 1 or 2 at
+                            most.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>A balance shown to a customer must be the true balance. Eventual
+                            consistency is not acceptable — showing 100 when the account has 50 causes real harm.</span>
+                    </div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Use one database with strong consistency. Read
+                            replicas only for reports (internal, not customer-facing). Never show a stale balance on the
+                            customer screen.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 2 · Social Media Feed</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Millions of users scroll a feed. Each user posts a few
+                            times a day but reads thousands of times. A feed from 2 seconds ago is fine.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Separate read and write models.</b> Option 3.</span>
+                    </div>
+                    <div class="sc-row"><b>WHY</b><span>Read traffic is enormous (100 reads per 1 write). A post can be
+                            pre-built and cached. The feed does not need to be exactly up to date.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Write side stores posts. Read side builds each
+                            user's feed in the background. A cache sits in front. Millions of reads do not touch the
+                            write database.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 3 · Product Catalog</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Customers browse millions of products. Products change
+                            rarely. Search and filtering must be fast.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Separate read and write stores.</b> Option 3, with a
+                            search engine.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>Product data rarely changes — a few seconds of staleness is
+                            invisible. A search engine (Elasticsearch, Solr) is far better at product search than a
+                            transactional database.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Write side: product database (transactional). Read
+                            side: search index, synced in background. Cache in front for popular products.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 4 · Hospital Appointment System</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Patients book appointments. Doctors see their schedule. A
+                            double-booked appointment is a real problem.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Keep reads and writes together for booking.</b> Option 1
+                            or 2.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>When two patients try to book the same slot, the system must see
+                            the real-time state. A stale read would allow a double booking. Booking is the write path
+                            and must read from the same place it writes.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Booking: one database, strong consistency.
+                            Analytics and reports: can use a read replica. Schedule views for doctors: may use a read
+                            model with a short delay, but must reconcile.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 5 · E-commerce Dashboard</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>10,000 merchants open their sales dashboard every morning.
+                            Each dashboard summarizes millions of orders.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Separate read and write models.</b> Option 3.</span>
+                    </div>
+                    <div class="sc-row"><b>WHY</b><span>Summing millions of orders every time a dashboard opens is too
+                            slow. The summaries can be pre-built in the background. A dashboard from 30 seconds ago is
+                            acceptable.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Write side: orders database. Background job: builds
+                            summaries per merchant. Read side: pre-built summaries. Cache: merchant's own
+                            dashboard.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 6 · Inventory System</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Stock levels must be accurate during a sale. If 100 items
+                            are in stock, the system cannot sell 101.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Keep reads and writes together for the sale moment.</b>
+                            Option 1 or 2.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>When a customer clicks "buy", the system must check the real
+                            stock level. A stale read causes overselling. The inventory write must be strongly
+                            consistent.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Sale path: one database, atomic checks. Catalog
+                            views: can use a read model with a small delay. Analytics: read replica.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 7 · Reporting System</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Executives run heavy reports that scan years of data.
+                            Reports take minutes to run.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Separate reporting from the transaction database.</b>
+                            Option 3, with a dedicated reporting store.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>Heavy reports must never slow down orders. The reporting system
+                            can use a technology built for analytics (column-store, data warehouse). Data is a few
+                            minutes old — acceptable for reports.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Write side: transactional database. Sync:
+                            background ETL. Read side: data warehouse or column-store. Reports run only on the read
+                            side.</span></div>
+                </div>
+
+                <div class="sc-card rv">
+                    <h4>Scenario 8 · Audit System</h4>
+                    <div class="sc-row"><b>SITUATION</b><span>Every action in the system is recorded for compliance.
+                            Audits are run occasionally. Audit data is never modified.</span></div>
+                    <div class="sc-row"><b>DECISION</b><span><b>Append-only write side; separate read model for
+                                search.</b> Option 3.</span></div>
+                    <div class="sc-row"><b>WHY</b><span>Audit writes are fast (just append). Audit reads are rare but
+                            may scan large ranges. A separate read-optimized store (search engine or document store)
+                            makes audits fast without slowing down writes.</span></div>
+                    <div class="sc-row"><b>ARCHITECT THINKS</b><span>Write side: append-only log (immutable). Sync:
+                            stream to read side. Read side: indexed for search. Compliance: read side can be rebuilt
+                            from the write side if ever questioned.</span></div>
+                </div>
+
+                <div class="callout co-tip rv"><span class="co-label">THE PATTERN</span>
+                    <p>Whenever a read <b>must be exactly current</b> (banking balance, inventory at checkout,
+                        appointment availability), keep reads and writes together. Whenever a read <b>can be slightly
+                            old</b> (dashboard, feed, report, search), separation is worth the cost. The architect's job
+                        is to put each read on the right side.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">PART 7 · INTERVIEW QUESTIONS</div>
+                <h2 class="sec-title rv">Fifteen Questions an Architect Must Answer</h2>
+                <p class="sec-lead rv">These are not definitions. They are decisions. For each question, we show four
+                    layers: what the interviewer is checking, a simple answer, a strong architect answer, and a common
+                    wrong answer.</p>
+
+                <ol class="qlist rv">
+                    <li>When would you separate read and write handling?<span class="qt warm">DECISION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you know when separation is justified —
+                            not just that it exists.<br><b>SIMPLE ANSWER</b>When reads outnumber writes by a lot, or
+                            when reports slow down orders.<br><b>STRONG ARCHITECT ANSWER</b>When the read pattern is
+                            fundamentally different from the write pattern — different shape, different frequency,
+                            different consistency needs — and the single database cannot serve both well. I'd measure
+                            first: if read traffic is 10× writes, or if heavy reports slow orders, separation pays
+                            off.<br><b>COMMON WRONG ANSWER</b>"I always separate reads and writes." That's complexity
+                            for no reason. Separation is a response to a measured problem, not a default design.</div>
+                    </li>
+
+                    <li>Would you use separate databases for every application?<span class="qt">DECISION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you understand when complexity is
+                            justified.<br><b>SIMPLE ANSWER</b>No. Small applications do not need it.<br><b>STRONG
+                                ARCHITECT ANSWER</b>Only when the scale, consistency, or traffic pattern demands it. A
+                            small internal tool stays on one database. A large e-commerce platform with millions of
+                            dashboard views may need separation. The decision is driven by numbers, not
+                            fashion.<br><b>COMMON WRONG ANSWER</b>"Yes, every application should have separate databases
+                            for reads and writes." That ignores cost, complexity, and team capacity.</div>
+                    </li>
+
+                    <li>What problem are you actually solving when you separate reads and writes?<span
+                            class="qt deep">THINKING</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you understand the real goal — not just
+                            "separation" as a buzzword.<br><b>SIMPLE ANSWER</b>Making the system faster and more
+                            scalable.<br><b>STRONG ARCHITECT ANSWER</b>I'm solving one of three problems: (1) reads are
+                            so heavy that they slow down writes, (2) reports are so heavy that they slow down orders, or
+                            (3) the shape of data for reading is fundamentally different from the shape for writing.
+                            Each problem has a different answer.<br><b>COMMON WRONG ANSWER</b>"I'm separating reads and
+                            writes because that's what modern systems do." That's not a reason — it's a trend.</div>
+                    </li>
+
+                    <li>What happens to consistency when you separate read and write models?<span
+                            class="qt deep">TRADE-OFF</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you understand eventual consistency and
+                            can explain it to non-technical people.<br><b>SIMPLE ANSWER</b>The read side may be slightly
+                            behind the write side.<br><b>STRONG ARCHITECT ANSWER</b>The read side is eventually
+                            consistent — it catches up, but not instantly. The delay is usually milliseconds to seconds.
+                            This is acceptable for dashboards and reports, but not for banking balances or inventory at
+                            checkout. The architect's job is to put each read on the right side.<br><b>COMMON WRONG
+                                ANSWER</b>"Consistency is lost." It's not lost — it's delayed. And it's a deliberate
+                            trade-off, not a failure.</div>
+                    </li>
+
+                    <li>What is the downside of separating reads and writes?<span class="qt">TRADE-OFF</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you see the full picture — not just the
+                            benefits.<br><b>SIMPLE ANSWER</b>It's more complex and costs more.<br><b>STRONG ARCHITECT
+                                ANSWER</b>Three downsides: (1) Two systems to keep in sync — sync can fail or lag. (2)
+                            Two places to monitor and understand. (3) Eventual consistency — some reads will be briefly
+                            old. The complexity is worth it only when the problem is big enough.<br><b>COMMON WRONG
+                                ANSWER</b>"There's no downside — separation is always better." Every architectural
+                            choice has a cost.</div>
+                    </li>
+
+                    <li>How would you explain this architecture to a business stakeholder?<span
+                            class="qt curve">COMMUNICATION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you can translate technical decisions into
+                            business language.<br><b>SIMPLE ANSWER</b>We have two systems: one for taking orders, one
+                            for showing reports. They talk to each other.<br><b>STRONG ARCHITECT ANSWER</b>"Think of it
+                            like a restaurant. The kitchen takes orders (write side) — it must be correct. The menu on
+                            the wall shows what's available (read side) — it must be easy to read. They're two different
+                            things, and they don't interfere with each other. When the kitchen is busy, the menu doesn't
+                            slow down. When many people read the menu, the kitchen doesn't slow down."<br><b>COMMON
+                                WRONG ANSWER</b>Technical jargon: "CQRS with eventual consistency and a message broker."
+                            Stakeholders don't care about the mechanism — they care about the outcome.</div>
+                    </li>
+
+                    <li>When is eventual consistency acceptable?<span class="qt deep">DECISION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you can judge when a short delay is
+                            safe.<br><b>SIMPLE ANSWER</b>When the user won't notice or act on the delay.<br><b>STRONG
+                                ARCHITECT ANSWER</b>When the read is informational, not actionable in the next few
+                            seconds. A dashboard from 10 seconds ago is fine. A report from 5 minutes ago is fine. A
+                            product catalog from 30 seconds ago is fine. A banking balance from 10 seconds ago is not
+                            fine — the user might act on it.<br><b>COMMON WRONG ANSWER</b>"Eventual consistency is
+                            always acceptable." It's not. Banking, inventory at checkout, and appointment availability
+                            cannot tolerate it.</div>
+                    </li>
+
+                    <li>How do you decide between Option 1, Option 2, and Option 3?<span class="qt">DECISION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you have a clear decision
+                            framework.<br><b>SIMPLE ANSWER</b>Start simple, add complexity only when
+                            needed.<br><b>STRONG ARCHITECT ANSWER</b>Option 1 (one database, one model) for small
+                            systems. Option 2 (one database, separate logic) when reads are heavy but one database is
+                            still enough. Option 3 (separate models and stores) when the database itself is the
+                            bottleneck or when read traffic is enormous. Each step is a response to a measured
+                            problem.<br><b>COMMON WRONG ANSWER</b>"I always use Option 3 because it's the most
+                            scalable." That ignores cost, complexity, and team capacity.</div>
+                    </li>
+
+                    <li>What happens if synchronization between the write and read sides fails?<span
+                            class="qt warm">FAILURE</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you think about failure
+                            modes.<br><b>SIMPLE ANSWER</b>The read side stops getting updates. Dashboards show old
+                            data.<br><b>STRONG ARCHITECT ANSWER</b>The write side keeps working — orders are still
+                            taken. The read side becomes stale. The sync system must alert when it fails. Users may
+                            notice that dashboards are "old." The fix is to repair the sync and let it catch up. Because
+                            the write database is the source of truth, no data is lost.<br><b>COMMON WRONG
+                                ANSWER</b>"The system stops working." It doesn't — the write side keeps working. Only
+                            the read side is affected.</div>
+                    </li>
+
+                    <li>How do you handle read-heavy traffic?<span class="qt">DESIGN</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you know the standard
+                            patterns.<br><b>SIMPLE ANSWER</b>Add read replicas and a cache.<br><b>STRONG ARCHITECT
+                                ANSWER</b>Three layers: (1) Cache in front of the read side — popular items served
+                            instantly. (2) Read replicas — multiple copies of the read data. (3) A separate read model
+                            shaped for the access pattern — pre-built summaries, search indexes, etc. The choice depends
+                            on the traffic pattern and consistency needs.<br><b>COMMON WRONG ANSWER</b>"Add more
+                            servers." Horizontal scaling alone doesn't solve the shape problem — you need the right data
+                            shape too.</div>
+                    </li>
+
+                    <li>When should you NOT separate reads and writes?<span class="qt deep">DECISION</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you know when to keep things
+                            simple.<br><b>SIMPLE ANSWER</b>When the system is small or when every read must be exactly
+                            current.<br><b>STRONG ARCHITECT ANSWER</b>When the system has low traffic, when the team is
+                            small, or when reads must be strongly consistent (banking balances, inventory at checkout).
+                            Separation adds complexity — pay for it only when the problem justifies it.<br><b>COMMON
+                                WRONG ANSWER</b>"Never — separation is always good." That ignores cost and complexity.
+                        </div>
+                    </li>
+
+                    <li>How does separating reads and writes affect cost?<span class="qt">TRADE-OFF</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you consider the business impact of your
+                            design.<br><b>SIMPLE ANSWER</b>It costs more.<br><b>STRONG ARCHITECT ANSWER</b>Two stores
+                            cost more than one. Sync infrastructure adds operational cost. Monitoring must cover both
+                            sides. The team needs to understand the design. The payoff is performance and scale — but
+                            only if the business needs it. For small systems, the simpler design is cheaper and
+                            sufficient.<br><b>COMMON WRONG ANSWER</b>"It costs the same." It doesn't — two systems are
+                            always more expensive than one.</div>
+                    </li>
+
+                    <li>How do you test a system with separate read and write models?<span
+                            class="qt deep">TESTING</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you think about testing the new failure
+                            modes.<br><b>SIMPLE ANSWER</b>Test both sides and the sync between them.<br><b>STRONG
+                                ARCHITECT ANSWER</b>Three layers of testing: (1) Write side — does it save correctly?
+                            (2) Read side — does it return the right data? (3) Sync — does data flow correctly, and how
+                            long does it take? Also test failure modes: what happens when sync is slow or
+                            broken?<br><b>COMMON WRONG ANSWER</b>"Test it the same way as a normal system." The sync and
+                            eventual consistency are new things to test.</div>
+                    </li>
+
+                    <li>What's the difference between a read replica and a separate read model?<span
+                            class="qt deep">THINKING</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you understand the difference between
+                            replication and projection.<br><b>SIMPLE ANSWER</b>A replica is a copy of the same data. A
+                            read model is a different shape of the data.<br><b>STRONG ARCHITECT ANSWER</b>A read replica
+                            is a copy of the write database — same tables, same shape. It helps with read scale but
+                            doesn't change the data shape. A read model is a different representation — pre-built
+                            summaries, search indexes, denormalized views. A replica helps with scale; a read model
+                            helps with speed and shape.<br><b>COMMON WRONG ANSWER</b>"They're the same thing." They're
+                            not — a replica is a copy, a read model is a transformation.</div>
+                    </li>
+
+                    <li>How do you monitor a system with separate read and write sides?<span class="qt">DESIGN</span>
+                        <span class="qh-btn">▸ FOUR-LAYER ANSWER</span>
+                        <div class="qh"><b>WHAT INTERVIEWER CHECKS</b>Whether you think about operational
+                            visibility.<br><b>SIMPLE ANSWER</b>Monitor both sides and the sync between
+                            them.<br><b>STRONG ARCHITECT ANSWER</b>Three things to monitor: (1) Write side — is it
+                            saving correctly? (2) Read side — is it serving correctly? (3) Sync — is it keeping up? The
+                            key metric is sync lag: how far behind the read side is. If lag grows, alert. Also monitor
+                            read-side errors, write-side errors, and sync failures.<br><b>COMMON WRONG
+                                ANSWER</b>"Monitor the same way as a normal system." The sync is a new failure point
+                            that needs its own monitoring.</div>
+                    </li>
+                </ol>
+
+                <div class="callout co-tip rv"><span class="co-label">WHAT THE INTERVIEWER SCORES</span>
+                    <p>Not whether you know the terms. Whether you <b>understand the trade-offs</b>, <b>can explain to
+                            non-technical people</b>, <b>know when NOT to use it</b>, and <b>think about failure
+                            modes</b>. A strong architect says "it depends" — and then explains what it depends on.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">PART 8 · TRADE-OFF EXERCISES</div>
+                <h2 class="sec-title rv">Five Situations — You Decide</h2>
+                <p class="sec-lead rv">For each situation, decide: <b>A. Keep together</b>, <b>B. Separate logic</b>, or
+                    <b>C. Separate stores</b>. Click the card to see the suggested answer.</p>
+
+                <div class="trad-card rv">
+                    <h4>Situation 1 · Small Internal Tool</h4>
+                    <div class="trad-row"><b>BUSINESS</b><span>Internal project management tool for 200 employees</span>
+                    </div>
+                    <div class="trad-row"><b>USERS</b><span>200 registered, 150 daily active</span></div>
+                    <div class="trad-row"><b>READ/WRITE</b><span>70% reads, 30% writes</span></div>
+                    <div class="trad-row"><b>PERFORMANCE</b><span>Pages load in under 1 second</span></div>
+                    <div class="trad-row"><b>CONSISTENCY</b><span>Standard — no real-time requirements</span></div>
+                    <div class="trad-row"><b>COST</b><span>Low budget, small team</span></div>
+                    <div class="trad-hint">CLICK TO SEE SUGGESTED ANSWER</div>
+                    <div class="trad-answer"><b>SUGGESTED: A — Keep together (Option 1).</b> The system is small. 150
+                        daily users is trivial traffic. 70/30 read/write is balanced. One database is simpler, cheaper,
+                        and sufficient. Separation would add complexity for no benefit. The architect's job here is to
+                        keep it simple.</div>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>Situation 2 · Medium SaaS with Heavy Dashboards</h4>
+                    <div class="trad-row"><b>BUSINESS</b><span>B2B analytics platform for 500 companies</span></div>
+                    <div class="trad-row"><b>USERS</b><span>50,000 registered, 10,000 daily active</span></div>
+                    <div class="trad-row"><b>READ/WRITE</b><span>85% reads, 15% writes</span></div>
+                    <div class="trad-row"><b>PERFORMANCE</b><span>Dashboards must load in under 2 seconds</span></div>
+                    <div class="trad-row"><b>CONSISTENCY</b><span>Dashboards can be 30 seconds old</span></div>
+                    <div class="trad-row"><b>COST</b><span>Medium budget, growing team</span></div>
+                    <div class="trad-hint">CLICK TO SEE SUGGESTED ANSWER</div>
+                    <div class="trad-answer"><b>SUGGESTED: B or C — Separate logic, possibly separate stores.</b> 85/15
+                        read/write is heavy read traffic. 10,000 daily users opening dashboards at the same time creates
+                        spikes. Start with Option 2 (separate logic, one database) — if the database becomes the
+                        bottleneck, move to Option 3. The key is that dashboards can be 30 seconds old, so eventual
+                        consistency is acceptable.</div>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>Situation 3 · Banking Transaction System</h4>
+                    <div class="trad-row"><b>BUSINESS</b><span>Online banking for 1 million customers</span></div>
+                    <div class="trad-row"><b>USERS</b><span>1,000,000 registered, 200,000 daily active</span></div>
+                    <div class="trad-row"><b>READ/WRITE</b><span>60% reads, 40% writes</span></div>
+                    <div class="trad-row"><b>PERFORMANCE</b><span>Transfers must complete in under 3 seconds</span>
+                    </div>
+                    <div class="trad-row"><b>CONSISTENCY</b><span>Balance checks must be exact — no delay allowed</span>
+                    </div>
+                    <div class="trad-row"><b>COST</b><span>High budget, large team, strict compliance</span></div>
+                    <div class="trad-hint">CLICK TO SEE SUGGESTED ANSWER</div>
+                    <div class="trad-answer"><b>SUGGESTED: A or B — Keep together, possibly with separate logic.</b>
+                        Balance checks must be exact. A customer seeing a stale balance could overdraw their account.
+                        The read path for balance checks must hit the same database as the write path. Reports and
+                        analytics can use a read replica (Option 2), but customer-facing reads must be strongly
+                        consistent.</div>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>Situation 4 · Social Media Feed</h4>
+                    <div class="trad-row"><b>BUSINESS</b><span>Social network with 10 million users</span></div>
+                    <div class="trad-row"><b>USERS</b><span>10,000,000 registered, 2,000,000 daily active</span></div>
+                    <div class="trad-row"><b>READ/WRITE</b><span>95% reads, 5% writes</span></div>
+                    <div class="trad-row"><b>PERFORMANCE</b><span>Feed must load in under 500ms</span></div>
+                    <div class="trad-row"><b>CONSISTENCY</b><span>Feed can be 2 seconds old</span></div>
+                    <div class="trad-row"><b>COST</b><span>High budget, large engineering team</span></div>
+                    <div class="trad-hint">CLICK TO SEE SUGGESTED ANSWER</div>
+                    <div class="trad-answer"><b>SUGGESTED: C — Separate stores (Option 3).</b> 95/5 read/write is
+                        extreme. 2 million daily users scrolling feeds creates enormous read traffic. The feed can be 2
+                        seconds old, so eventual consistency is fine. The write side stores posts. The read side
+                        pre-builds each user's feed in the background. A cache sits in front. This is a textbook case
+                        for separation.</div>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>Situation 5 · E-commerce with Heavy Reports</h4>
+                    <div class="trad-row"><b>BUSINESS</b><span>Multi-tenant e-commerce with 10,000 merchants</span>
+                    </div>
+                    <div class="trad-row"><b>USERS</b><span>1,000,000 customers, 100,000 daily active</span></div>
+                    <div class="trad-row"><b>READ/WRITE</b><span>80% reads, 20% writes</span></div>
+                    <div class="trad-row"><b>PERFORMANCE</b><span>Orders must complete in under 2 seconds; reports can
+                            take minutes</span></div>
+                    <div class="trad-row"><b>CONSISTENCY</b><span>Orders must be exact; reports can be 5 minutes
+                            old</span></div>
+                    <div class="trad-row"><b>COST</b><span>High budget, dedicated infrastructure team</span></div>
+                    <div class="trad-hint">CLICK TO SEE SUGGESTED ANSWER</div>
+                    <div class="trad-answer"><b>SUGGESTED: C — Separate stores (Option 3).</b> 80/20 read/write is heavy
+                        read traffic. Reports that take minutes would slow down orders if they ran on the same database.
+                        The write side handles orders (strongly consistent). The read side handles reports (eventually
+                        consistent, 5-minute delay is fine). A dedicated reporting store (data warehouse or
+                        column-store) handles the heavy queries without affecting orders.</div>
+                </div>
+
+                <div class="callout rv"><span class="co-label">THE PATTERN</span>
+                    <p>Small systems: Option 1. Medium systems with heavy reads: Option 2 or 3. Systems where every read
+                        must be exact: Option 1 or 2. Systems with enormous read traffic and acceptable delay: Option 3.
+                        The decision is never "always separate" or "never separate" — it's "what does this system need?"
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">PART 9 · MINI CASE STUDY</div>
+                <h2 class="sec-title rv">The 500,000-User E-commerce Problem</h2>
+                <p class="sec-lead rv">Here is a real scenario. Read it, think about it, design a solution — then click
+                    to see a suggested answer.</p>
+
+                <div class="panel rv">
+                    <h4>THE PROBLEM</h4>
+                    <p>An e-commerce company has <b>500,000 registered users</b>. Order creation is moderate — about
+                        5,000 orders per day. But <b>product browsing, search, dashboards, and reports generate very
+                            high read traffic</b>. The transaction database is becoming slow. Dashboards take 8 seconds
+                        to load. Reports time out. Product search is sluggish during peak hours.</p>
+                    <p><b>Your task:</b> Design an improved architecture. Explain:</p>
+                    <ul class="nlist">
+                        <li>What stays together</li>
+                        <li>What should be separated</li>
+                        <li>Why</li>
+                        <li>How data moves</li>
+                        <li>How consistency is handled</li>
+                        <li>How failures are handled</li>
+                        <li>How the design scales</li>
+                    </ul>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>CLICK TO SEE SUGGESTED ARCHITECTURE</h4>
+                    <div class="trad-hint">DESIGN YOUR SOLUTION FIRST — THEN CLICK HERE</div>
+                    <div class="trad-answer">
+                        <b>SUGGESTED ARCHITECTURE: Option 3 — Separate read and write stores.</b>
+                        <br><br>
+                        <b>What stays together:</b> The order creation path. Orders must be exact — the write database
+                        handles them. Inventory checks at checkout must be exact — same database.
+                        <br><br>
+                        <b>What separates:</b> Product catalog, search, dashboards, and reports. These are read-heavy
+                        and can tolerate a short delay.
+                        <br><br>
+                        <b>Why:</b> The transaction database is the bottleneck. Read traffic is overwhelming it.
+                        Separation allows reads to scale independently.
+                        <br><br>
+                        <b>How data moves:</b> Orders are written to the transaction database. A background process
+                        syncs order data to a reporting store (data warehouse). Product data is synced to a search index
+                        (Elasticsearch). Dashboards are pre-built from the transaction database and cached.
+                        <br><br>
+                        <b>How consistency is handled:</b> Orders and inventory: strongly consistent (write database).
+                        Product search: eventually consistent (search index, 10-second delay). Dashboards: eventually
+                        consistent (pre-built, 30-second delay). Reports: eventually consistent (data warehouse,
+                        5-minute delay).
+                        <br><br>
+                        <b>How failures are handled:</b> Write side keeps working even if read side fails. Sync failures
+                        alert the team. Read side can be rebuilt from the write side. Cache failures fall back to the
+                        read model.
+                        <br><br>
+                        <b>How the design scales:</b> Write side: vertical scaling or careful horizontal (single
+                        writer). Read side: horizontal scaling (many search nodes, many cache instances, many read
+                        replicas). Each side scales independently.
+                    </div>
+                </div>
+
+                <div class="callout co-ok rv"><span class="co-label">THE KEY INSIGHT</span>
+                    <p>The transaction database was doing two jobs: saving orders (write) and serving searches,
+                        dashboards, and reports (read). By separating the read side, each side can be optimized for its
+                        own job. The write side stays fast for orders. The read side scales for searches and reports.
+                        The system grows without one side hurting the other.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s10">
+                <div class="sec-kicker">PART 10 · THE 20-MINUTE CHALLENGE</div>
+                <h2 class="sec-title rv">Final Interview Challenge</h2>
+                <p class="sec-lead rv">This is a full system design question. Take 20 minutes. Design the architecture,
+                    make the decisions, and defend them. Click the card below only after you have written your answer.
+                </p>
+
+                <div class="panel rv">
+                    <h4>THE CHALLENGE</h4>
+                    <p><b>Design the read and write architecture for a multi-company Inventory and Order Management
+                            System.</b></p>
+                    <div class="tblwrap" style="margin:16px 0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Companies</b></td>
+                                    <td>10,000</td>
+                                    <td><b>Users</b></td>
+                                    <td>1,000,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Dashboard usage</b></td>
+                                    <td>Heavy — merchants check daily</td>
+                                    <td><b>Reporting</b></td>
+                                    <td>Heavy — weekly and monthly reports</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Order creation</b></td>
+                                    <td>Frequent, all day</td>
+                                    <td><b>Peak load</b></td>
+                                    <td>High during business hours (9 a.m.–5 p.m.)</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Order data</b></td>
+                                    <td>Must be accurate — no mistakes</td>
+                                    <td><b>Dashboard data</b></td>
+                                    <td>Can tolerate a small delay</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Future growth</b></td>
+                                    <td colspan="3">System must scale — expect 10× growth in 3 years</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p><b>Your task:</b> Make the architecture decision and defend it. Explain:</p>
+                    <ul class="nlist">
+                        <li>Which option (1, 2, or 3) do you choose?</li>
+                        <li>What stays on the write side? What moves to the read side?</li>
+                        <li>How do you handle consistency?</li>
+                        <li>How do you handle failures?</li>
+                        <li>How does the design scale in 3 years?</li>
+                    </ul>
+                    <p style="font-size:15px;color:var(--ink2)"><b>Time yourself. 20 minutes. Write it down. Then click
+                            to see the expected answer.</b></p>
+                </div>
+
+                <div class="trad-card rv">
+                    <h4>CLICK TO SEE THE EXPECTED ANSWER</h4>
+                    <div class="trad-hint">COMPLETE YOUR 20-MINUTE DESIGN FIRST — THEN CLICK HERE</div>
+                    <div class="trad-answer">
+                        <b>EXPECTED ANSWER: Option 3 — Separate read and write stores.</b>
+                        <br><br>
+                        <b>Write side (strongly consistent):</b>
+                        <ul style="margin:6px 0 6px 20px">
+                            <li>Orders — must be exact, every time</li>
+                            <li>Inventory — stock levels at checkout must be exact</li>
+                            <li>Payments — must be recorded correctly</li>
+                            <li>Shipping updates — must be accurate</li>
+                        </ul>
+                        <b>Read side (eventually consistent):</b>
+                        <ul style="margin:6px 0 6px 20px">
+                            <li>Merchant dashboards — pre-built summaries, 30-second delay acceptable</li>
+                            <li>Reports — data warehouse, 5-minute delay acceptable</li>
+                            <li>Product catalog — search index, 10-second delay acceptable</li>
+                            <li>Analytics — separate analytics store</li>
+                        </ul>
+                        <b>Consistency handling:</b>
+                        <ul style="margin:6px 0 6px 20px">
+                            <li>Customer-facing reads (order confirmation, inventory at checkout) hit the write database
+                            </li>
+                            <li>Merchant-facing reads (dashboards, reports) hit the read side</li>
+                            <li>Sync is background work — never blocks the customer's order</li>
+                        </ul>
+                        <b>Failure handling:</b>
+                        <ul style="margin:6px 0 6px 20px">
+                            <li>Read-side failure: merchants see old dashboards; customers can still place orders</li>
+                            <li>Write-side failure: serious — the system stops taking orders (alert immediately)</li>
+                            <li>Sync failure: read side becomes stale; alert, repair, let it catch up</li>
+                            <li>Read side can always be rebuilt from the write side (source of truth)</li>
+                        </ul>
+                        <b>Scaling over 3 years:</b>
+                        <ul style="margin:6px 0 6px 20px">
+                            <li>Write side: vertical scaling first; if needed, careful sharding by company</li>
+                            <li>Read side: horizontal scaling — more cache nodes, more search nodes, more read replicas
+                            </li>
+                            <li>Each side scales independently — read traffic does not affect write performance</li>
+                            <li>Background sync scales by adding more workers</li>
+                        </ul>
+                        <b>Defense of the decision:</b>
+                        "I chose Option 3 because the read traffic (dashboards + reports + catalog search) is heavy and
+                        will only grow. The write side handles critical operations (orders, inventory, payments) that
+                        must be exact. Separating them allows each side to scale independently. The dashboard can be 30
+                        seconds old — that's acceptable. The order cannot be wrong — that's not acceptable. The design
+                        handles both constraints."
+                    </div>
+                </div>
+
+                <div class="callout rv"><span class="co-label">WHAT THE INTERVIEWER LISTENS FOR</span>
+                    <p>Not whether you chose Option 3 — many architectures can work. The interviewer listens for: (1)
+                        clear reasoning about <b>which reads must be exact and which can be delayed</b>, (2)
+                        understanding of <b>failure modes</b> (what happens if sync fails?), (3) a <b>scaling plan</b>
+                        (how does this grow?), and (4) the ability to <b>defend the decision</b> against alternatives.
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s11">
+                <div class="sec-kicker">PART 11 · THE CLOSE</div>
+                <h2 class="sec-title rv">Ten Rules for the Technical Architect</h2>
+                <p class="sec-lead rv">If you remember nothing else from today, remember these ten rules. They are
+                    simple, practical, and they will guide every decision you make about read vs write design.</p>
+
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Rule 1</b><span><b>Writes must be correct. Reads must be fast. Reads can be
+                                slightly old.</b> This single sentence drives the whole decision. If you remember
+                            nothing else, remember this.</span></div>
+                    <div class="topic"><b>Rule 2</b><span><b>Start simple.</b> Option 1 (one database) is the right
+                            answer until you have a measured reason to change. Complexity is a tax — pay it only when
+                            the problem justifies it.</span></div>
+                    <div class="topic"><b>Rule 3</b><span><b>Measure before you separate.</b> Do not separate reads and
+                            writes because "it's modern." Separate them because reports slow down orders, or dashboards
+                            are sluggish at peak. The numbers tell the story.</span></div>
+                    <div class="topic"><b>Rule 4</b><span><b>Know which reads cannot wait.</b> Banking balances,
+                            inventory at checkout, appointment availability — these must be exact. They live on the
+                            write side, always. A stale read here causes real harm.</span></div>
+                    <div class="topic"><b>Rule 5</b><span><b>Know which reads can wait.</b> Dashboards, reports,
+                            catalogs, feeds — these can be seconds or minutes old. They are candidates for the read
+                            side. Eventual consistency is a feature, not a bug, here.</span></div>
+                    <div class="topic"><b>Rule 6</b><span><b>Reports never run on the write database.</b> Heavy reports
+                            slow down orders. Reports belong on a read replica or a dedicated reporting store. This is
+                            non-negotiable at scale.</span></div>
+                    <div class="topic"><b>Rule 7</b><span><b>The write side is the source of truth.</b> If the read side
+                            breaks, it can be rebuilt from the write side. If the write side breaks, the business stops.
+                            Protect the write side at all costs.</span></div>
+                    <div class="topic"><b>Rule 8</b><span><b>Sync is background work.</b> Never put sync in the
+                            customer's order flow. When an order is saved, reply to the customer. Then, in the
+                            background, sync to the read side. This is why eventual consistency works.</span></div>
+                    <div class="topic"><b>Rule 9</b><span><b>Monitor the sync.</b> Sync lag is the key metric. If the
+                            read side is 30 seconds behind, that's fine. If it's 30 minutes behind, alert. Monitor sync
+                            health like you monitor the database itself.</span></div>
+                    <div class="topic"><b>Rule 10</b><span><b>Explain it simply.</b> The restaurant analogy works: the
+                            kitchen (write) must be correct, the menu (read) must be easy to read. They are two
+                            different jobs. Stakeholders understand this. Use it.</span></div>
+                </div>
+
+                <h3>The one-line interview answer</h3>
+                <div class="callout co-ok rv">
+                    <p style="font-size:17px;line-height:1.5;margin:0"><b>"I separate reads and writes when the read
+                            pattern is fundamentally different from the write pattern — when reads are heavy, when they
+                            need a different shape, and when a short delay is acceptable. I keep them together when
+                            every read must be exactly current, or when the system is small enough that one database
+                            serves both well."</b></p>
+                </div>
+
+                <p class="rv">Memorize that sentence. It covers the whole day. In an interview, say it — then fill in
+                    the details with the specifics of the system you are discussing.</p>
+            </section>
+
+        </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">DAY 16 — CLOSE</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">The Architect Who Decides</h2>
+            <p class="sec-lead rv">Five rules from today. If you remember nothing else, these carry you through any read
+                vs write conversation.</p>
+
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Correctness before speed.</h3>
+                    <p>A customer's order must be exact. A dashboard can wait. If you confuse these two, you build a
+                        system that is fast at the wrong things and broken at the right things.</p>
+                </div>
+            </div>
+
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Measure before you separate.</h3>
+                    <p>Do not separate reads and writes because "that's what modern systems do." Separate them because
+                        the numbers say the single database is the bottleneck. The decision comes from data, not from
+                        fashion.</p>
+                </div>
+            </div>
+
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>The write side is the source of truth.</h3>
+                    <p>If the read side breaks, you can rebuild it. If the write side breaks, the business stops.
+                        Protect the write side. Every decision flows from this.</p>
+                </div>
+            </div>
+
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Eventual consistency is a trade-off, not a failure.</h3>
+                    <p>It is a deliberate choice: the read side may be slightly behind, but the system scales. The
+                        architect's job is to decide which reads can tolerate this and which cannot.</p>
+                </div>
+            </div>
+
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Explain it to a stakeholder.</h3>
+                    <p>If you cannot explain the architecture in a restaurant analogy, you do not understand it. "The
+                        kitchen takes orders, the menu shows what's available" — stakeholders understand this. Technical
+                        jargon does not help them.</p>
+                </div>
+            </div>
+
+            <p class="mind-close rv">A technical architect is not the person who knows the most patterns. A technical
+                architect is the person who knows <b>when to use which pattern</b> — and can explain why to someone who
+                has never written a line of code. Read vs write design is the perfect example: the choice is simple, the
+                reasoning is deep, and the explanation must be clear.</p>
+        </div>
+    </section>
+
+    </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 16 / 30 · READ vs WRITE DESIGN</div>
+            <div class="f-r">WEEK 3 · <b>DAY 17 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $(s) { return document.querySelector(s); } function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day16-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day16-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function (e) { li.classList.toggle('qopen'); }); }); $$('.trad-card').forEach(function (tc) { tc.addEventListener('click', function () { tc.classList.toggle('open'); }); }); });
+    </script>
+</body>
+
+</html>
