@@ -1,0 +1,3753 @@
+<!DOCTYPE html>
+<html lang="en" option="B">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 23 of the 30-Day Technical Architect Track: Design an Uber-Like Ride Booking System — a comprehensive architecture and interview-preparation tutorial." />
+    <title>Day 23 — Uber-Like Ride Booking System · 30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 840px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .surprise {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 24px 0
+        }
+
+        .sp {
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--red);
+            background: var(--warnbg);
+            border-radius: 0 5px 5px 0;
+            padding: 16px 18px
+        }
+
+        .sp b {
+            font-size: 15px
+        }
+
+        .sp p {
+            font-size: 14px;
+            color: var(--ink2);
+            margin: 4px 0 0
+        }
+
+        .sp .ask {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--red);
+            display: block;
+            margin-top: 8px
+        }
+
+        .score-row {
+            display: grid;
+            grid-template-columns: 1fr 110px;
+            gap: 14px;
+            align-items: center;
+            border-bottom: 1px dashed var(--line);
+            padding: 12px 0
+        }
+
+        .score-row:last-of-type {
+            border-bottom: 0
+        }
+
+        .score-row label {
+            font-size: 15px;
+            color: var(--ink)
+        }
+
+        .score-row label small {
+            display: block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .12em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .score-row input {
+            width: 100%;
+            font-family: var(--mono);
+            font-size: 15px;
+            padding: 9px 11px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink);
+            text-align: center
+        }
+
+        .score-row input:focus {
+            outline: none;
+            border-color: var(--accent)
+        }
+
+        .score-total {
+            display: flex;
+            align-items: baseline;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+            padding-top: 18px;
+            border-top: 2px solid var(--ink)
+        }
+
+        .score-total .big {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 44px;
+            color: var(--accent);
+            line-height: 1
+        }
+
+        .score-total .band {
+            font-family: var(--mono);
+            font-size: 12px;
+            letter-spacing: .08em;
+            color: var(--ink2);
+            max-width: 480px
+        }
+
+        .band-bar {
+            height: 10px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            overflow: hidden;
+            background: var(--card);
+            margin-top: 12px
+        }
+
+        .band-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .5s ease
+        }
+
+        .devlist {
+            list-style: none;
+            max-width: 840px;
+            margin: 20px 0
+        }
+
+        .devlist li {
+            display: flex;
+            gap: 16px;
+            align-items: flex-start;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 18px;
+            margin-bottom: 9px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s
+        }
+
+        .devlist li:hover {
+            border-color: var(--accent)
+        }
+
+        .devlist li b {
+            color: var(--ink)
+        }
+
+        .devlist li .cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 3px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .devlist li.checked .cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .devlist li.checked .cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .devlist li.checked {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .report .rgrid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-top: 6px
+        }
+
+        .rfield label {
+            display: block;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            margin-bottom: 6px;
+            line-height: 1.5
+        }
+
+        .rfield input,
+        .rfield textarea {
+            width: 100%;
+            font-family: var(--body);
+            font-size: 15px;
+            padding: 10px 12px;
+            border: 1px solid var(--line2);
+            border-radius: 4px;
+            background: var(--paper);
+            color: var(--ink)
+        }
+
+        .rfield textarea {
+            min-height: 68px;
+            resize: vertical
+        }
+
+        .rfield input:focus,
+        .rfield textarea:focus {
+            outline: none;
+            border-color: var(--accent)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+
+            .surprise {
+                grid-template-columns: 1fr
+            }
+
+            .report .rgrid {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+
+            .score-row {
+                grid-template-columns: 1fr 70px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+
+        .asg-progress {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 14px 0 18px
+        }
+
+        .asg-bar {
+            flex: 1;
+            height: 8px;
+            border: 1px solid var(--line2);
+            border-radius: 99px;
+            background: var(--card);
+            overflow: hidden
+        }
+
+        .asg-bar i {
+            display: block;
+            height: 100%;
+            width: 0;
+            background: var(--accent);
+            transition: width .4s ease
+        }
+
+        .asg-count {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .1em;
+            color: var(--ink2)
+        }
+
+        .asg-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 12px 16px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            color: var(--ink2);
+            transition: border-color .22s;
+            max-width: 860px
+        }
+
+        .asg-item:hover {
+            border-color: var(--accent)
+        }
+
+        .asg-item input {
+            display: none
+        }
+
+        .asg-cb {
+            flex: none;
+            width: 20px;
+            height: 20px;
+            border: 1.5px solid var(--line2);
+            border-radius: 4px;
+            margin-top: 2px;
+            position: relative;
+            background: var(--paper);
+            transition: all .2s
+        }
+
+        .asg-item.checked .asg-cb {
+            background: var(--accent);
+            border-color: var(--accent)
+        }
+
+        .asg-item.checked .asg-cb::after {
+            content: "";
+            position: absolute;
+            left: 5px;
+            top: 1.5px;
+            width: 5px;
+            height: 9px;
+            border: solid var(--paper);
+            border-width: 0 2px 2px 0;
+            transform: rotate(43deg)
+        }
+
+        .asg-item.checked .asg-tx {
+            color: var(--ink3);
+            text-decoration: line-through;
+            text-decoration-color: var(--line2)
+        }
+
+        .asg-tx b {
+            color: var(--ink)
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge" onclick="window.location.href='../pages/day0-roadmap.html#roadmap'">DAY 23 /
+                30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 23 / 30 · LARGE-SCALE REAL-TIME
+                    SYSTEM</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Designing a</span></span>
+                    <span class="mask"><span class="line d2">ride-booking <em>platform</em></span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">that feels
+                            <em>real-time.</em></span></span>
+                </h1>
+                <p class="hero-sub">This is not a coding tutorial. It is a <b>Senior Architect's interview prep</b> on
+                    how to design an Uber-like system — millions of users, millions of location updates, real-time
+                    matching, and a payment that must never fail. <b>Simple English, hard problems, honest
+                        trade-offs.</b>
+                </p>
+                <div class="hero-meta"><span class="chip hot">INTERVIEW PREP</span><span class="chip">27
+                        PARTS</span><span class="chip">25 QUESTIONS</span><span class="chip">2 LIVE
+                        MOCKS</span></div>
+                <div class="howto">
+                    <h4>HOW TO USE THIS TUTORIAL</h4>
+                    <ol>
+                        <li><b>01</b> Skim Parts 1–3 to learn the architect thinking (10 min).</li>
+                        <li><b>02</b> Walk Parts 4–23 as the reference architecture (60 min).</li>
+                        <li><b>03</b> Do the 25 questions and the two live mocks (45 min).</li>
+                        <li><b>04</b> Memorize the 15 things to remember and the one-minute answer (5 min).</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">27 PARTS · 25 INTERVIEW QUESTIONS · 2 LIVE MOCKS · 20 PRESSURE QUESTIONS · 15
+                    MUST-REMEMBER POINTS</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 23 — RIDE BOOKING ARCHITECTURE</text>
+                    <rect class="box" x="36" y="62" width="140" height="34" /><text x="106" y="83" font-size="9"
+                        class="t1" text-anchor="middle">50M RIDERS</text>
+                    <rect class="box" x="190" y="62" width="140" height="34" /><text x="260" y="83" font-size="9"
+                        class="t1" text-anchor="middle">5M DRIVERS</text>
+                    <rect class="box" x="344" y="62" width="140" height="34" /><text x="414" y="83" font-size="9"
+                        class="t1" text-anchor="middle">1M PEAK</text>
+                    <rect class="box" x="36" y="104" width="140" height="34" /><text x="106" y="125" font-size="9"
+                        class="t1" text-anchor="middle">MATCHING</text>
+                    <rect class="box hot" x="190" y="104" width="140" height="34" /><text x="260" y="125" font-size="9"
+                        class="ta" text-anchor="middle">REAL-TIME</text>
+                    <rect class="box" x="344" y="104" width="140" height="34" /><text x="414" y="125" font-size="9"
+                        class="t1" text-anchor="middle">PAYMENT</text>
+                    <path class="thin" d="M106 138 V 158 M260 138 V 158 M414 138 V 158" />
+                    <rect class="box hot" x="36" y="160" width="448" height="96" />
+                    <text x="52" y="184" font-size="10" class="ta">THE ONE REAL QUESTION</text>
+                    <text x="52" y="208" font-size="9.5" class="t1">"HOW DO YOU MATCH A RIDER WITH A DRIVER IN</text>
+                    <text x="52" y="226" font-size="9.5" class="t1">SECONDS — WHEN THE WORLD IS MOVING?"</text>
+                    <text x="52" y="246" font-size="8.5" class="t3">not "which database" · not "which queue"</text>
+                    <g>
+                        <rect class="fr" x="36" y="286" width="448" height="76" />
+                        <path class="fr" d="M180 286v76M320 286v76" />
+                        <text x="52" y="308" class="st2 t3">SCALE</text><text x="86" y="344" font-size="22" class="ta"
+                            style="font-family:var(--disp);font-weight:900">50M+</text>
+                        <text x="196" y="308" class="st2 t3">REAL-TIME</text><text x="258" y="330" font-size="9.5"
+                            class="t1">WebSockets</text><text x="258" y="346" font-size="9.5" class="t1">+ events</text>
+                        <text x="336" y="308" class="st2 t3">CONSISTENCY</text><text x="404" y="330" font-size="8.6"
+                            class="tt">strong for</text><text x="404" y="346" font-size="8.6"
+                            class="tt">assignment</text>
+                    </g>
+                    <text x="36" y="388" class="st2 ta">SEPARATE FAST DATA, BUSINESS DATA, AND BACKGROUND WORK. THAT IS
+                        THE
+                        WHOLE GAME.</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#s1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 5h16M4 12h16M4 19h10" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Thinking</span><span class="p-tg">PARTS 1 – 3</span></span></a>
+            <a class="pstrip" href="#s4" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 7h7l2-2h7v14H4z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Architecture</span><span class="p-tg">PARTS 4 – 10</span></span></a>
+            <a class="pstrip" href="#s11" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="8.5" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v5l3 2.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Operations</span><span class="p-tg">PARTS 11 – 20</span></span></a>
+            <a class="pstrip" href="#s22" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M13 3L5 14h5l-1 7 9-12h-5l1-6Z" stroke="currentColor" stroke-width="1.6"
+                        stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Trade-offs</span><span class="p-tg">PARTS 22 – 23</span></span></a>
+            <a class="pstrip" href="#s24" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M5 19V5l7 3 7-3v14" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Interviews</span><span class="p-tg">PARTS 24 – 27</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#s1" data-spy="s1"><span>01</span> Part 1 — Start like an architect</a>
+            <a class="tn" href="#s2" data-spy="s2"><span>02</span> Part 2 — Realistic scale</a>
+            <a class="tn" href="#s3" data-spy="s3"><span>03</span> Part 3 — Business areas</a>
+            <a class="tn" href="#s4" data-spy="s4"><span>04</span> Part 4 — High-level architecture</a>
+            <a class="tn" href="#s5" data-spy="s5"><span>05</span> Part 5 — Booking flow</a>
+            <a class="tn" href="#s6" data-spy="s6"><span>06</span> Part 6 — Location tracking</a>
+            <a class="tn" href="#s7" data-spy="s7"><span>07</span> Part 7 — Nearby drivers</a>
+            <a class="tn" href="#s8" data-spy="s8"><span>08</span> Part 8 — Driver matching</a>
+            <a class="tn" href="#s9" data-spy="s9"><span>09</span> Part 9 — No double booking</a>
+            <a class="tn" href="#s10" data-spy="s10"><span>10</span> Part 10 — Real-time</a>
+            <a class="tn" href="#s11" data-spy="s11"><span>11</span> Part 11 — Ride states</a>
+            <a class="tn" href="#s12" data-spy="s12"><span>12</span> Part 12 — Pricing</a>
+            <a class="tn" href="#s13" data-spy="s13"><span>13</span> Part 13 — Payment</a>
+            <a class="tn" href="#s14" data-spy="s14"><span>14</span> Part 14 — Background work</a>
+            <a class="tn" href="#s15" data-spy="s15"><span>15</span> Part 15 — Data storage</a>
+            <a class="tn" href="#s16" data-spy="s16"><span>16</span> Part 16 — Caching</a>
+            <a class="tn" href="#s17" data-spy="s17"><span>17</span> Part 17 — Scaling</a>
+            <a class="tn" href="#s18" data-spy="s18"><span>18</span> Part 18 — Geographic scaling</a>
+            <a class="tn" href="#s19" data-spy="s19"><span>19</span> Part 19 — Failure scenarios</a>
+            <a class="tn" href="#s20" data-spy="s20"><span>20</span> Part 20 — Consistency</a>
+            <a class="tn" href="#s21" data-spy="s21"><span>21</span> Part 21 — Security</a>
+            <a class="tn" href="#s22" data-spy="s22"><span>22</span> Part 22 — Trade-offs</a>
+            <a class="tn" href="#s23" data-spy="s23"><span>23</span> Part 23 — Cost thinking</a>
+            <a class="tn" href="#s24" data-spy="s24"><span>24</span> Part 24 — Interview Qs</a>
+            <a class="tn" href="#s25" data-spy="s25"><span>25</span> Part 25 — 45-min mock</a>
+            <a class="tn" href="#s26" data-spy="s26"><span>26</span> Part 26 — Defense</a>
+            <a class="tn" href="#s27" data-spy="s27"><span>27</span> Part 27 — Final challenge</a>
+            <a class="tn" href="#mindset" data-spy="mindset"><span>★</span> Final close</a>
+        </aside>
+        <main class="doc">
+            <section class="sec" id="s1">
+                <div class="sec-kicker">PART 1 — START LIKE AN ARCHITECT</div>
+                <h2 class="sec-title rv">Why You Should Not Start Drawing Microservices</h2>
+                <p class="sec-lead rv">Most candidates lose the interview in the first five minutes. They hear "design
+                    an
+                    Uber-like system" and immediately start naming services: Auth Service, Trip Service, Payment
+                    Service.
+                    <b>This is the wrong move.</b> Architecture is the expensive-to-change decisions — not the box
+                    names.
+                </p>
+                <div class="callout co-warn rv"><span class="co-label">THE TRAP</span>
+                    <p>If you start with boxes, you have already assumed: <b>microservices</b> (instead of one modular
+                        app), <b>separate databases</b> (instead of one), and <b>network calls</b> (instead of
+                        function calls). Each assumption costs you later. Senior architects question the assumptions
+                        first.</p>
+                </div>
+                <h3 class="rv">Functional Requirements (what the system must do)</h3>
+                <p class="rv">These are the <b>features</b>. The interview expects you to enumerate them and
+                    prioritize. If you skip one, the interviewer will catch it.</p>
+                <ul class="nlist rv">
+                    <li><b>User registration</b> — rider and driver signup, identity check, document upload for
+                        drivers.</li>
+                    <li><b>Login &amp; authentication</b> — phone, email, social, OTP.</li>
+                    <li><b>Driver registration &amp; onboarding</b> — background checks, vehicle documents, approval
+                        flow.</li>
+                    <li><b>Driver availability</b> — driver going online / offline, accepting or rejecting trips.</li>
+                    <li><b>Driver location updates</b> — frequent GPS pings to the backend.</li>
+                    <li><b>Search for nearby drivers</b> — given a rider location, who is close?</li>
+                    <li><b>Ride request</b> — rider asks for a car to a destination.</li>
+                    <li><b>Driver matching</b> — pick the best driver for the request.</li>
+                    <li><b>Ride acceptance</b> — driver confirms the request.</li>
+                    <li><b>Trip start</b> — driver begins the trip, meter starts.</li>
+                    <li><b>Trip completion</b> — driver ends the trip at destination.</li>
+                    <li><b>Fare calculation</b> — base + distance + time + surge + tax.</li>
+                    <li><b>Payment</b> — charge the rider, pay the driver.</li>
+                    <li><b>Notifications</b> — push, SMS, email at every key moment.</li>
+                    <li><b>Ride history &amp; receipts</b> — past trips, invoices, support.</li>
+                    <li><b>Ratings &amp; reviews</b> — both sides rate each other.</li>
+                    <li><b>Support &amp; safety</b> — emergency button, trip sharing, dispute resolution.</li>
+                </ul>
+                <h3 class="rv">Non-Functional Requirements (how the system must behave)</h3>
+                <p class="rv">These decide the architecture more than features do. Every one of them changes a design
+                    choice.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>SCALE</b><span>How many riders, drivers, rides? Affects every capacity
+                            decision.</span></div>
+                    <div class="topic"><b>CONCURRENCY</b><span>How many rides are happening right now? Affects
+                            matching, payments.</span></div>
+                    <div class="topic"><b>LOCATION FREQUENCY</b><span>How many GPS pings per second? Affects the
+                            location pipeline.</span></div>
+                    <div class="topic"><b>RESPONSE TIME</b><span>How fast must "find a driver" be? Affects matching and
+                            caching.</span></div>
+                    <div class="topic"><b>AVAILABILITY</b><span>99.9% or 99.99%? Affects redundancy, regions, and
+                            cost.</span></div>
+                    <div class="topic"><b>SCALABILITY</b><span>Can we add 10× capacity without rewriting? Affects
+                            partitioning and statelessness.</span></div>
+                    <div class="topic"><b>SECURITY</b><span>Who can see location? Who can charge? Affects auth, audit,
+                            encryption.</span></div>
+                    <div class="topic"><b>ACCURACY</b><span>How exact must location be? How strict must fare be?
+                            Affects data quality and consistency.</span></div>
+                    <div class="topic"><b>RELIABILITY</b><span>What happens when one service dies? Affects retries,
+                            fallbacks, queues.</span></div>
+                    <div class="topic"><b>PRIVACY</b><span>GDPR-style rules on location history? Affects retention
+                            policies and region isolation.</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">WHY EACH MATTERS</span>
+                    <p>If you say "the system must be fast" but cannot say <i>how fast in milliseconds</i>, your design
+                        is a wish. <b>Numbers, or it didn't happen.</b> This is the single most common mistake in
+                        system design interviews.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s2">
+                <div class="sec-kicker">PART 2 — DEFINE REALISTIC SCALE</div>
+                <h2 class="sec-title rv">Turning "Millions" into Real Numbers</h2>
+                <p class="sec-lead rv">Interviewers expect you to do <b>rough back-of-the-envelope math</b>. You do not
+                    need precision. You need the right order of magnitude. Here are the assumptions and the simple
+                    arithmetic.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>ASSUMPTION</th>
+                                <th>NUMBER</th>
+                                <th>REASONING</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Total registered riders</b></td>
+                                <td>50,000,000</td>
+                                <td>Total signups in the platform's history.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Total registered drivers</b></td>
+                                <td>5,000,000</td>
+                                <td>About 10% the size of the rider base.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Daily active riders (DAU)</b></td>
+                                <td>10,000,000</td>
+                                <td>20% of registered come back each day.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Active drivers (peak hour)</b></td>
+                                <td>1,000,000</td>
+                                <td>20% of total drivers are working in the busiest hour.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Concurrent rides at peak</b></td>
+                                <td>~500,000</td>
+                                <td>About half the active drivers are mid-trip at the same time.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Daily ride requests</b></td>
+                                <td>~30,000,000</td>
+                                <td>3 trips per active rider per day on average.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak hour requests</b></td>
+                                <td>~6,000,000</td>
+                                <td>About 20% of daily traffic happens in the busiest hour.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak requests per second</b></td>
+                                <td>~1,700</td>
+                                <td>6,000,000 ÷ 3,600 seconds = ~1,700 RPS.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Location updates per driver</b></td>
+                                <td>~1 / 3 seconds</td>
+                                <td>Background GPS pings while online.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak location updates per second</b></td>
+                                <td>~333,000</td>
+                                <td>1,000,000 drivers × ⅓ update = 333k pings every second.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 class="rv">What the numbers tell you</h3>
+                <ul class="nlist rv">
+                    <li><b>API traffic</b> (~2,000 RPS peak) is high but ordinary — a few hundred application servers
+                        handle it.</li>
+                    <li><b>Location traffic</b> (~333,000 pings/sec) is <b>100× bigger</b> — it cannot use the same
+                        pipeline. It needs a different storage, a different queue, and different scaling rules.</li>
+                    <li><b>Storage</b> for location is huge but mostly short-lived — keep it fast, throw it away
+                        later.</li>
+                    <li><b>Network bandwidth</b> for location is the single biggest cost. A single ping is small, but
+                        millions per second add up.</li>
+                </ul>
+                <div class="callout co-tip rv"><span class="co-label">INTERVIEW TIP</span>
+                    <p>Always show your math. Say "6 million requests in the peak hour, divided by 3,600 seconds, gives
+                        me about 1,700 requests per second, so I plan for 2× that to be safe." Interviewers love seeing
+                        the numbers, even if the assumptions are off by 20%.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s3">
+                <div class="sec-kicker">PART 3 — CORE BUSINESS AREAS</div>
+                <h2 class="sec-title rv">What Parts Should the System Have?</h2>
+                <p class="sec-lead rv">A "business area" is one well-defined job the system does. <b>Do not start with
+                        12 of them.</b> Start with the fewest that could work, then split as you grow. Here is a
+                    mature set, and the rule for when each becomes its own service.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>AREA</th>
+                                <th>MAIN JOB</th>
+                                <th>KEY DATA</th>
+                                <th>NOT ITS JOB</th>
+                                <th>DEPENDS ON</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Authentication</b></td>
+                                <td>Verify who the user is.</td>
+                                <td>User ID, hashed password, OTP, tokens.</td>
+                                <td>Storing user profiles.</td>
+                                <td>Identity provider (in-house or external).</td>
+                            </tr>
+                            <tr>
+                                <td><b>Rider</b></td>
+                                <td>Manage rider profile, history, payment methods.</td>
+                                <td>Rider profile, saved cards, addresses.</td>
+                                <td>Real-time location of rider.</td>
+                                <td>Auth, Payment.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Driver</b></td>
+                                <td>Manage driver profile, onboarding, vehicle, documents.</td>
+                                <td>Driver profile, vehicle info, ratings.</td>
+                                <td>Live location (that's location service).</td>
+                                <td>Auth, Document storage.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Driver Availability</b></td>
+                                <td>Online/offline, ready/not-ready status.</td>
+                                <td>Driver ID, status, current trip ID.</td>
+                                <td>GPS coordinates.</td>
+                                <td>Location, Ride.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Location</b></td>
+                                <td>Ingest, store, query driver positions in real time.</td>
+                                <td>Driver ID, lat/long, timestamp, status.</td>
+                                <td>Trip logic, payment.</td>
+                                <td>High-throughput in-memory store.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Ride</b></td>
+                                <td>Manage a ride from request to completion.</td>
+                                <td>Ride ID, rider ID, driver ID, state, route.</td>
+                                <td>How drivers are matched (that's matching).</td>
+                                <td>Matching, Location, Trip, Pricing.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Matching</b></td>
+                                <td>Find the best driver for a request.</td>
+                                <td>Search index, request parameters.</td>
+                                <td>Storing rides.</td>
+                                <td>Location, Driver Availability.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Trip</b></td>
+                                <td>The actual journey — start, route, end, distance, time.</td>
+                                <td>Trip ID, polyline, distance, duration.</td>
+                                <td>Pricing logic.</td>
+                                <td>Ride, Location.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Pricing</b></td>
+                                <td>Compute fare, apply surge, apply discounts.</td>
+                                <td>Tariff tables, surge rules, promo codes.</td>
+                                <td>Processing the charge.</td>
+                                <td>Trip data.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Payment</b></td>
+                                <td>Charge the rider, pay the driver, refund if needed.</td>
+                                <td>Payment ID, status, amount, references.</td>
+                                <td>Computing the fare.</td>
+                                <td>Pricing, external payment provider.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Notification</b></td>
+                                <td>Send push, SMS, email at the right moment.</td>
+                                <td>User ID, channel, template, status.</td>
+                                <td>Computing the message.</td>
+                                <td>Ride events.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Rating</b></td>
+                                <td>Collect and process ratings after a trip.</td>
+                                <td>Rating ID, score, comment, role.</td>
+                                <td>Trip logic.</td>
+                                <td>Trip data.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Reporting</b></td>
+                                <td>Aggregates, dashboards, exports.</td>
+                                <td>Daily rides, revenue, driver hours.</td>
+                                <td>Real-time queries.</td>
+                                <td>Data warehouse.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3 class="rv">Which areas can start together?</h3>
+                <p class="rv">At small scale, you can have <b>one modular app</b> with all these as code modules inside
+                    one process. As you grow, the areas most likely to break first become their own services:</p>
+                <ul class="nlist rv">
+                    <li><b>Location</b> — because of volume, not logic. It will need its own scaling, its own storage,
+                        and its own network.</li>
+                    <li><b>Matching</b> — because it is on the hot path of every ride. Latency matters here.</li>
+                    <li><b>Payment</b> — because of security, audit, and external dependencies.</li>
+                    <li><b>Notification</b> — because it can absorb spikes and never block the user.</li>
+                </ul>
+                <div class="callout co-ok rv"><span class="co-label">THE RULE</span>
+                    <p>Combine areas that <b>change together</b>. Split areas that <b>scale differently</b> or
+                        <b>fail differently</b>. Location and payment fail for different reasons and scale at
+                        different rates — they should be separated early.
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s4">
+                <div class="sec-kicker">PART 4 — HIGH-LEVEL ARCHITECTURE</div>
+                <h2 class="sec-title rv">A Simple Picture Before a Fancy One</h2>
+                <p class="sec-lead rv">A good architecture diagram has only what the picture needs. Boxes, arrows, and
+                    one label per box. <b>No clever names, no clustering for the sake of clustering.</b></p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 880 460" fill="none">
+                        <rect class="s-box" x="20" y="20" width="160" height="80" rx="6" />
+                        <text x="100" y="50" class="s-lab" text-anchor="middle">RIDER APP</text>
+                        <text x="100" y="68" class="s-sub" text-anchor="middle">mobile · web</text>
+                        <rect class="s-box" x="20" y="120" width="160" height="80" rx="6" />
+                        <text x="100" y="150" class="s-lab" text-anchor="middle">DRIVER APP</text>
+                        <text x="100" y="168" class="s-sub" text-anchor="middle">GPS · status</text>
+                        <rect class="s-box hot" x="220" y="20" width="200" height="60" rx="6" />
+                        <text x="320" y="42" class="s-lab" text-anchor="middle">API LAYER</text>
+                        <text x="320" y="58" class="s-sub" text-anchor="middle">auth · rate limit · routing</text>
+                        <rect class="s-box" x="220" y="100" width="95" height="60" rx="6" />
+                        <text x="267" y="122" class="s-lab" text-anchor="middle">RIDER</text>
+                        <text x="267" y="138" class="s-sub" text-anchor="middle">profile · history</text>
+                        <rect class="s-box" x="325" y="100" width="95" height="60" rx="6" />
+                        <text x="372" y="122" class="s-lab" text-anchor="middle">DRIVER</text>
+                        <text x="372" y="138" class="s-sub" text-anchor="middle">profile · docs</text>
+                        <rect class="s-box hot" x="220" y="180" width="200" height="60" rx="6" />
+                        <text x="320" y="202" class="s-lab" text-anchor="middle">LOCATION</text>
+                        <text x="320" y="218" class="s-sub" text-anchor="middle">in-memory · geo index</text>
+                        <rect class="s-box ok" x="220" y="260" width="95" height="60" rx="6" />
+                        <text x="267" y="282" class="s-lab" text-anchor="middle">MATCHING</text>
+                        <text x="267" y="298" class="s-sub" text-anchor="middle">find driver</text>
+                        <rect class="s-box" x="325" y="260" width="95" height="60" rx="6" />
+                        <text x="372" y="282" class="s-lab" text-anchor="middle">RIDE</text>
+                        <text x="372" y="298" class="s-sub" text-anchor="middle">state · flow</text>
+                        <rect class="s-box" x="220" y="340" width="95" height="60" rx="6" />
+                        <text x="267" y="362" class="s-lab" text-anchor="middle">TRIP</text>
+                        <text x="267" y="378" class="s-sub" text-anchor="middle">distance · time</text>
+                        <rect class="s-box" x="325" y="340" width="95" height="60" rx="6" />
+                        <text x="372" y="362" class="s-lab" text-anchor="middle">PRICING</text>
+                        <text x="372" y="378" class="s-sub" text-anchor="middle">fare · surge</text>
+                        <rect class="s-box hot" x="460" y="180" width="120" height="60" rx="6" />
+                        <text x="520" y="202" class="s-lab" text-anchor="middle">REAL-TIME</text>
+                        <text x="520" y="218" class="s-sub" text-anchor="middle">WebSocket gateway</text>
+                        <rect class="s-box" x="460" y="100" width="120" height="60" rx="6" />
+                        <text x="520" y="122" class="s-lab" text-anchor="middle">NOTIFICATION</text>
+                        <text x="520" y="138" class="s-sub" text-anchor="middle">push · sms · email</text>
+                        <rect class="s-box" x="460" y="260" width="120" height="60" rx="6" />
+                        <text x="520" y="282" class="s-lab" text-anchor="middle">PAYMENT</text>
+                        <text x="520" y="298" class="s-sub" text-anchor="middle">charge · refund</text>
+                        <rect class="s-box" x="460" y="340" width="120" height="60" rx="6" />
+                        <text x="520" y="362" class="s-lab" text-anchor="middle">MESSAGE BROKER</text>
+                        <text x="520" y="378" class="s-sub" text-anchor="middle">async events</text>
+                        <rect class="s-box ok" x="620" y="100" width="100" height="60" rx="6" />
+                        <text x="670" y="122" class="s-lab" text-anchor="middle">CACHE</text>
+                        <text x="670" y="138" class="s-sub" text-anchor="middle">Redis</text>
+                        <rect class="s-box ok" x="620" y="180" width="100" height="60" rx="6" />
+                        <text x="670" y="202" class="s-lab" text-anchor="middle">SQL DB</text>
+                        <text x="670" y="218" class="s-sub" text-anchor="middle">riders · rides</text>
+                        <rect class="s-box" x="620" y="260" width="100" height="60" rx="6" />
+                        <text x="670" y="282" class="s-lab" text-anchor="middle">LOCATION DB</text>
+                        <text x="670" y="298" class="s-sub" text-anchor="middle">short-term store</text>
+                        <rect class="s-box" x="620" y="340" width="100" height="60" rx="6" />
+                        <text x="670" y="362" class="s-lab" text-anchor="middle">ANALYTICS</text>
+                        <text x="670" y="378" class="s-sub" text-anchor="middle">warehouse</text>
+                        <rect class="s-box ext" x="740" y="260" width="120" height="60" rx="6" />
+                        <text x="800" y="282" class="s-lab" text-anchor="middle">EXT PAYMENT</text>
+                        <text x="800" y="298" class="s-sub" text-anchor="middle">provider</text>
+                        <line class="s-line" x1="180" y1="60" x2="220" y2="50" />
+                        <line class="s-line" x1="180" y1="160" x2="220" y2="50" />
+                        <line class="s-line" x1="420" y1="50" x2="460" y2="50" />
+                        <line class="s-line" x1="420" y1="210" x2="460" y2="210" />
+                        <line class="s-line" x1="420" y1="290" x2="460" y2="290" />
+                        <line class="s-line" x1="420" y1="370" x2="460" y2="370" />
+                        <line class="s-line" x1="580" y1="290" x2="620" y2="130" />
+                        <line class="s-line" x1="580" y1="290" x2="620" y2="210" />
+                        <line class="s-line" x1="580" y1="290" x2="620" y2="290" />
+                        <line class="s-line" x1="580" y1="290" x2="620" y2="370" />
+                        <line class="s-line" x1="580" y1="290" x2="740" y2="290" />
+                        <line class="s-line" x1="267" y1="160" x2="267" y2="180" stroke-dasharray="3 3" />
+                        <line class="s-line" x1="372" y1="160" x2="372" y2="180" stroke-dasharray="3 3" />
+                        <text x="770" y="240" class="s-lbl">→ strong need for in-memory fast store</text>
+                        <text x="40" y="430" class="s-lbl">KEY: black=stable · orange=hot path · green=cache/db ·
+                            dashed=internal
+                            flow</text>
+                    </svg>
+                </div>
+                <h3 class="rv">What each major component is for</h3>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>API LAYER</b><span>One front door. Auth, rate limiting, routing, version
+                            handling. Keeps every other service clean.</span></div>
+                    <div class="topic"><b>LOCATION</b><span>The fastest-changing data. Lives in memory, not the main
+                            database. Designed for hundreds of thousands of writes per second.</span></div>
+                    <div class="topic"><b>MATCHING</b><span>The brain of the ride. Sits on the hot path. Must answer in
+                            under a second.</span></div>
+                    <div class="topic"><b>RIDE</b><span>The state machine. From "requested" to "completed". Holds the
+                            truth about who, what, when.</span></div>
+                    <div class="topic"><b>REAL-TIME</b><span>WebSocket gateway that pushes updates to rider and driver
+                            apps. Without it, polling kills your servers.</span></div>
+                    <div class="topic"><b>MESSAGE BROKER</b><span>Async glue between services. Notifications,
+                            receipts, analytics, fraud checks.</span></div>
+                    <div class="topic"><b>CACHE</b><span>Hot reads: session tokens, frequently used driver profiles,
+                            surge configuration, city rules.</span></div>
+                    <div class="topic"><b>SQL DB</b><span>The system of record. Riders, drivers, rides, payments, trips.
+                            ACID matters here.</span></div>
+                    <div class="topic"><b>LOCATION DB</b><span>Short-term store for driver positions and trip
+                            breadcrumbs. Throwaway after the trip ends.</span></div>
+                    <div class="topic"><b>NOTIFICATION</b><span>Workers that send push, SMS, email. Slow and
+                            batch-friendly. Should never block the user.</span></div>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">DESIGN RULE</span>
+                    <p>Don't add a component because it is popular. Add it because removing it would break something.
+                        <b>Every box must justify its existence.</b>
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s5">
+                <div class="sec-kicker">PART 5 — RIDE BOOKING FLOW</div>
+                <h2 class="sec-title rv">The Whole Flow, Step by Step</h2>
+                <p class="sec-lead rv">This is the moment a rider taps "Confirm". Follow the steps. Notice which ones
+                    must be instant and which can wait.</p>
+                <ol class="framework rv">
+                    <li><b>Rider opens the app, requests a ride</b><span>Pickup, drop, payment method. Frontend sends
+                            to the API. Synchronous (sync) — the user is waiting.</span><span
+                            class="fr-hint">SYNC</span>
+                    </li>
+                    <li><b>API validates, asks matching for nearby drivers</b><span>Matching calls Location for
+                            drivers inside a radius. Sync — the rider is staring at a spinner.</span><span
+                            class="fr-hint">SYNC</span></li>
+                    <li><b>Matching picks a driver and sends the request</b><span>Push to the driver's app via the
+                            real-time channel. The driver has 10–15 seconds to accept.</span><span
+                            class="fr-hint">REAL-TIME</span></li>
+                    <li><b>Driver accepts (or rejects, or no response)</b><span>If accepted, ride state moves to
+                            "DriverAssigned". Push to rider. If timeout, retry the next driver.</span><span
+                            class="fr-hint">REAL-TIME</span></li>
+                    <li><b>Driver arrives at pickup</b><span>State moves to "DriverArrived". Rider gets a
+                            notification.</span><span class="fr-hint">REAL-TIME + EVENT</span></li>
+                    <li><b>Trip starts</b><span>Driver taps "Start trip". State moves to "TripStarted". Meter and
+                            pricing engine are now live.</span><span class="fr-hint">SYNC</span></li>
+                    <li><b>Driver and rider move</b><span>GPS pings update Location. Real-time channel shows the car
+                            moving on the map.</span><span class="fr-hint">REAL-TIME</span></li>
+                    <li><b>Trip ends</b><span>Driver taps "End trip". Fare is calculated. State moves to
+                            "Completed".</span><span class="fr-hint">SYNC</span></li>
+                    <li><b>Payment is attempted</b><span>Charge the saved card. Receipt is generated and queued. Driver
+                            payout is recorded.</span><span class="fr-hint">SYNC CORE + ASYNC TAIL</span></li>
+                    <li><b>Ride is closed, ratings and history updated</b><span>Receipt, ratings request, support
+                            records. All happen in the background.</span><span class="fr-hint">ASYNC</span></li>
+                </ol>
+                <div class="callout co-key rv"><span class="co-label">THE RULE OF THREE</span>
+                    <p>Three categories of work. <b>Sync</b> — the user is waiting, you must answer now.
+                        <b>Real-time push</b> — the user needs to know without refreshing.
+                        <b>Async</b> — nobody is waiting; process when you can, but never lose the work. The
+                        architecture must let each category scale and fail on its own.
+                    </p>
+                </div>
+            </section>
+
+            <section class="sec" id="s6">
+                <div class="sec-kicker">PART 6 — DRIVER LOCATION TRACKING</div>
+                <h2 class="sec-title rv">The Hardest Data in the System</h2>
+                <p class="sec-lead rv">A driver on the road generates a GPS ping every few seconds. Multiply that by
+                    one million active drivers and you have hundreds of thousands of pings every second. <b>That data
+                        cannot live in the same database as your riders and payments.</b> It is too much, it changes
+                    too fast, and it is mostly throwaway.</p>
+                <h3 class="rv">Why location needs a different storage approach</h3>
+                <ul class="nlist rv">
+                    <li><b>Volume</b> — ~333,000 writes per second at peak. A normal transactional database can do a
+                        few thousand writes per second per node.</li>
+                    <li><b>Half-life</b> — a driver position is interesting for a few minutes (while a rider looks for
+                        a car). After the trip, it is history.</li>
+                    <li><b>Read pattern</b> — "who is near this point right now?" — a geographic query, not a primary
+                        key lookup.</li>
+                    <li><b>Failure tolerance</b> — if a ping is lost, the next one comes in three seconds. A dropped
+                        location update is not a disaster.</li>
+                </ul>
+                <h3 class="rv">A practical approach</h3>
+                <ul class="nlist rv">
+                    <li><b>Fast in-memory store</b> for the current position of every online driver (Redis-style).</li>
+                    <li><b>Geo index</b> that lets you ask "who is inside this rectangle?" in milliseconds.</li>
+                    <li><b>Short-lived persistence</b> for the trip itself — breadcrumbs of where the car went.</li>
+                    <li><b>Long-term storage</b> only for the final trip polyline, kept for receipts and disputes.</li>
+                </ul>
+                <div class="callout co-warn rv"><span class="co-label">DO NOT</span>
+                    <p>Do not write 333,000 pings per second to your main transactional database. Do not index
+                        geospatial columns on the same table where you store payments. Do not keep raw GPS pings for
+                        years — the privacy risk alone is enough to lose you a country.</p>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">INTERVIEW TIP</span>
+                    <p>When the interviewer asks "how do you handle millions of location updates?", the strong answer
+                        is: "they never touch the main database. They go to a dedicated, in-memory, geo-aware store
+                        with a short TTL, and only the trip's final polyline is written to long-term storage."</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s7">
+                <div class="sec-kicker">PART 7 — FINDING NEARBY DRIVERS</div>
+                <h2 class="sec-title rv">"Who Is Close to This Rider?"</h2>
+                <p class="sec-lead rv">The matching service asks this question thousands of times per second. Speed
+                    matters more than perfect accuracy. The system should answer in under 200ms, ideally under 100ms.
+                </p>
+                <h3 class="rv">The core ideas</h3>
+                <ul class="nlist rv">
+                    <li><b>Geo indexing</b> — drivers are placed in a grid or a quadtree, so the system only looks at
+                        the
+                        cells inside the search radius, not every driver in the city.</li>
+                    <li><b>Grid or area-based grouping</b> — divide the city into small cells (e.g., 500m squares).
+                        Drivers belong to one cell; queries only scan a few nearby cells.</li>
+                    <li><b>In-memory data</b> — driver positions live in memory; disk seeks would kill latency.</li>
+                    <li><b>Update cheaply</b> — when a driver moves, just update their position; if they cross a cell
+                        boundary, move them to the new cell.</li>
+                    <li><b>Filter unavailable drivers</b> — never include drivers on a trip, drivers who went offline,
+                        or drivers in the wrong vehicle category.</li>
+                </ul>
+                <h3 class="rv">The four trade-offs</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>GOAL</th>
+                                <th>WHAT IT COSTS</th>
+                                <th>WHAT YOU GIVE UP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b class="pros">More accuracy</b></td>
+                                <td>More cells to scan, more index updates.</td>
+                                <td>Slower, more CPU, more memory.</td>
+                            </tr>
+                            <tr>
+                                <td><b class="pros">More speed</b></td>
+                                <td>Coarser cells, fewer scans.</td>
+                                <td>Some faraway drivers included, some close ones missed.</td>
+                            </tr>
+                            <tr>
+                                <td><b class="pros">Lower cost</b></td>
+                                <td>Smaller machines, fewer replicas.</td>
+                                <td>Lower peak capacity, slower failover.</td>
+                            </tr>
+                            <tr>
+                                <td><b class="pros">Lower complexity</b></td>
+                                <td>No exotic data structures.</td>
+                                <td>Worse performance at scale.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE TRADE</span>
+                    <p>You do not need to find the single closest driver. You need to find <b>any one of the closest
+                            drivers</b> in under a second. Once you accept that, the algorithm gets dramatically simpler
+                        — and that is the architect's win.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s8">
+                <div class="sec-kicker">PART 8 — DRIVER MATCHING</div>
+                <h2 class="sec-title rv">How the System Picks One Driver</h2>
+                <p class="sec-lead rv">Matching is a ranking problem, but the architect's job is to design the flow, not
+                    the algorithm. Here is the flow and the few rules that matter.</p>
+                <h3 class="rv">The decision factors (in order of importance)</h3>
+                <ul class="nlist rv">
+                    <li><b>Distance / ETA</b> — closer is better, but "estimated time of arrival" usually beats raw
+                        distance (a driver 1 km away on a highway beats one 500 m away in traffic).</li>
+                    <li><b>Driver availability</b> — must be online, on shift, and not already on a trip.</li>
+                    <li><b>Vehicle type</b> — must match what the rider asked for (sedan, SUV, premium).</li>
+                    <li><b>Driver status</b> — not on break, not flagged by safety system.</li>
+                    <li><b>Reliability score</b> — cancellation rate, on-time rate, ratings.</li>
+                    <li><b>Business rules</b> — driver quotas, new-driver boost, surge-zone priority.</li>
+                </ul>
+                <h3 class="rv">The flow</h3>
+                <ol class="framework rv">
+                    <li><b>Matching starts when the ride service creates a request</b><span>It calls the matching
+                            service with pickup point, vehicle type, and rider preferences.</span></li>
+                    <li><b>Matching gets a shortlist of nearby drivers</b><span>From the location service, filtered by
+                            availability and vehicle type.</span></li>
+                    <li><b>It ranks them and sends the request to the top one</b><span>Push notification through the
+                            real-time channel. Driver has 10–15 seconds.</span></li>
+                    <li><b>If the driver does not respond, try the next one</b><span>Repeat up to a small number
+                            (e.g., 3–5 drivers). After that, tell the rider "no cars nearby".</span></li>
+                    <li><b>If the driver accepts, lock the ride</b><span>Set ride state to "DriverAssigned" and update
+                            driver availability to "on trip". See Part 9 for the lock.</span></li>
+                </ol>
+                <div class="callout co-warn rv"><span class="co-label">WHAT IF TWO DRIVERS ACCEPT AT THE SAME
+                        TIME?</span>
+                    <p>The system must allow only one winner. This is the <b>double-booking problem</b>, covered in
+                        Part 9. The architect's answer is: the first accepted response wins, the system must be fast
+                        enough to reject the loser gracefully, and the loser must be told "ride already taken".</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s9">
+                <div class="sec-kicker">PART 9 — PREVENTING DOUBLE BOOKING</div>
+                <h2 class="sec-title rv">One Driver Cannot Be in Two Rides</h2>
+                <p class="sec-lead rv">Imagine two riders requesting a ride in the same second. The same driver is a
+                    great match for both. Both requests reach the system. <b>Only one of them can win.</b> This is the
+                    most common failure in ride-booking systems that don't have proper locks.</p>
+                <h3 class="rv">The defense layers</h3>
+                <ul class="nlist rv">
+                    <li><b>Driver state flag</b> — when a ride is offered, mark the driver as "reserved" for that ride
+                        for a short window (10–15 seconds). Other matching calls will skip reserved drivers.</li>
+                    <li><b>Atomic state change</b> — the moment a driver accepts, the system performs a single
+                        conditional update: "set driver status to on-trip only if it is currently free". The database
+                        ensures only one update succeeds.</li>
+                    <li><b>Database constraints</b> — a unique active-ride-per-driver constraint, or a check that
+                        rejects updates to a driver who is already on a trip.</li>
+                    <li><b>Short-lived reservation</b> — use a short-lived lock that auto-expires if the driver never
+                        accepts, so a stuck request doesn't keep a driver frozen forever.</li>
+                    <li><b>Idempotent accept endpoint</b> — the "accept ride" call carries a ride ID. The server
+                        accepts only the first one. The second arrival is acknowledged as "ride already taken".</li>
+                </ul>
+                <h3 class="rv">Trade-offs</h3>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>PROS OF LOCKING</b><span>Strict correctness. No double-booking ever.
+                            Predictable behavior under load.</span></div>
+                    <div class="topic"><b>CONS OF LOCKING</b><span>Lock contention can slow matching. Locks must expire
+                            or they leak. A buggy lock can freeze a driver.</span></div>
+                    <div class="topic"><b>PROS OF EVENTUAL CONSISTENCY</b><span>Faster, no contention. Resolves the
+                            conflict only at accept time.</span></div>
+                    <div class="topic"><b>CONS OF EVENTUAL CONSISTENCY</b><span>Can let the same driver be offered
+                            twice. Needs a strong "winner" logic at the moment of accept.</span></div>
+                </div>
+                <div class="callout co-ok rv"><span class="co-label">RECOMMENDED</span>
+                    <p>Use a <b>short-lived reservation</b> when a request is sent, and a <b>conditional atomic update
+                            at accept time</b> as the final word. Two layers. If the reservation fails, no big deal —
+                        the accept-time check will catch it. If the accept-time check is the only line of defense, you
+                        have no early filter and matching wastes work.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s10">
+                <div class="sec-kicker">PART 10 — REAL-TIME COMMUNICATION</div>
+                <h2 class="sec-title rv">Pushing Updates to Rider and Driver</h2>
+                <p class="sec-lead rv">The driver is moving. The rider is watching. Both apps need updates in real time
+                    without refreshing. <b>This is the part that decides whether the system feels alive or feels
+                        broken.</b></p>
+                <h3 class="rv">The three options</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>OPTION</th>
+                                <th>HOW IT WORKS</th>
+                                <th>SPEED</th>
+                                <th>SERVER LOAD</th>
+                                <th>RELIABILITY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Polling</b></td>
+                                <td>App asks "anything new?" every few seconds.</td>
+                                <td><span class="cons">Slow (3–10s lag)</span></td>
+                                <td><span class="cons">High (many wasted calls)</span></td>
+                                <td><span class="pros">Simple</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>Long polling</b></td>
+                                <td>App asks, server holds the connection until something changes.</td>
+                                <td><span class="pros">Fast</span></td>
+                                <td><span class="cons">High (many held connections)</span></td>
+                                <td><span class="pros">Reasonable</span></td>
+                            </tr>
+                            <tr>
+                                <td><b>WebSockets</b></td>
+                                <td>Open, persistent connection both ways.</td>
+                                <td><span class="pros">Instant</span></td>
+                                <td><span class="pros">Lower per update</span></td>
+                                <td><span class="pros">Best, with reconnect logic</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">RECOMMENDED</span>
+                    <p>WebSockets (or a managed equivalent) for live driver location, ride status, and chat. <b>Always
+                            have reconnect logic and an offline queue</b> — phones lose network in tunnels and
+                        elevators. The system must catch up when the device reconnects.</p>
+                </div>
+                <h3 class="rv">What the real-time channel carries</h3>
+                <ul class="nlist rv">
+                    <li><b>Rider → server</b> — new ride request, cancellation, chat message, payment confirmation.</li>
+                    <li><b>Server → rider</b> — driver assigned, driver approaching, driver arrived, trip started,
+                        driver location updates, trip completed.</li>
+                    <li><b>Driver → server</b> — accept, reject, arrived, start trip, end trip, location pings.</li>
+                    <li><b>Server → driver</b> — new ride request, ride cancelled, surge updates.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s11">
+                <div class="sec-kicker">PART 11 — RIDE STATE MANAGEMENT</div>
+                <h2 class="sec-title rv">The State Machine That Keeps Everything Honest</h2>
+                <p class="sec-lead rv">A ride is a journey through well-defined states. <b>Clear states prevent
+                        illegal moves</b> like "completed ride goes back to searching". The state machine is the
+                    contract
+                    between every service that touches a ride.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 880 240" fill="none">
+                        <rect class="s-box" x="20" y="100" width="120" height="50" rx="6" />
+                        <text x="80" y="125" class="s-lab" text-anchor="middle">Requested</text>
+                        <rect class="s-box" x="170" y="100" width="120" height="50" rx="6" />
+                        <text x="230" y="125" class="s-lab" text-anchor="middle">Searching</text>
+                        <rect class="s-box hot" x="320" y="100" width="140" height="50" rx="6" />
+                        <text x="390" y="125" class="s-lab" text-anchor="middle">DriverAssigned</text>
+                        <rect class="s-box" x="490" y="30" width="120" height="50" rx="6" />
+                        <text x="550" y="55" class="s-lab" text-anchor="middle">Arriving</text>
+                        <rect class="s-box" x="490" y="100" width="120" height="50" rx="6" />
+                        <text x="550" y="125" class="s-lab" text-anchor="middle">Arrived</text>
+                        <rect class="s-box" x="640" y="100" width="120" height="50" rx="6" />
+                        <text x="700" y="125" class="s-lab" text-anchor="middle">TripStarted</text>
+                        <rect class="s-box ok" x="640" y="180" width="120" height="50" rx="6" />
+                        <text x="700" y="205" class="s-lab" text-anchor="middle">Completed</text>
+                        <rect class="s-box bad" x="320" y="180" width="140" height="50" rx="6" />
+                        <text x="390" y="205" class="s-lab" text-anchor="middle">Cancelled</text>
+                        <line class="s-line" x1="140" y1="125" x2="170" y2="125" />
+                        <line class="s-line" x1="290" y1="125" x2="320" y2="125" />
+                        <line class="s-line" x1="460" y1="125" x2="490" y2="125" />
+                        <line class="s-line" x1="550" y1="80" x2="550" y2="100" />
+                        <line class="s-line" x1="610" y1="125" x2="640" y2="125" />
+                        <line class="s-line" x1="700" y1="150" x2="700" y2="180" />
+                        <line class="s-line" x1="230" y1="100" x2="320" y2="190" />
+                        <line class="s-line" x1="170" y1="125" x2="320" y2="205" />
+                        <text x="148" y="118" class="s-sub">→</text>
+                        <text x="298" y="118" class="s-sub">→</text>
+                        <text x="468" y="118" class="s-sub">→</text>
+                        <text x="540" y="118" class="s-sub" text-anchor="middle">↕</text>
+                        <text x="618" y="118" class="s-sub">→</text>
+                        <text x="710" y="170" class="s-sub">↓</text>
+                        <text x="40" y="230" class="s-lbl">Invalid: Completed → Searching (rejected by the state
+                            machine). Cancellation is
+                            allowed only before TripStarted.</text>
+                    </svg>
+                </div>
+                <h3 class="rv">Why this matters</h3>
+                <ul class="nlist rv">
+                    <li><b>Prevents illegal transitions</b> — a completed ride cannot go back to searching.</li>
+                    <li><b>Enables audit</b> — every state change is a recorded event.</li>
+                    <li><b>Makes distributed services safe</b> — every service asks "what is the current state?" before
+                        acting.</li>
+                    <li><b>Defines recovery paths</b> — if a driver disconnects mid-trip, the system knows the ride is
+                        still in "TripStarted" and waits for the next event.</li>
+                </ul>
+                <div class="callout co-warn rv"><span class="co-label">INTERVIEW TRAP</span>
+                    <p>If your design has no explicit states, you are letting the system invent them. That is how you
+                        end up with two services both thinking the ride is in different states, and the rider sees a
+                        driver who never arrives. <b>State is the truth. Name it.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s12">
+                <div class="sec-kicker">PART 12 — PRICING</div>
+                <h2 class="sec-title rv">How the Fare Is Built</h2>
+                <p class="sec-lead rv">Pricing is business rules + math. The architect's job is to keep the rules
+                    separate from the trip processing, so that marketing can change promotions without breaking the
+                    trip flow.</p>
+                <h3 class="rv">The components of a fare</h3>
+                <ul class="nlist rv">
+                    <li><b>Base fare</b> — the flat fee to start a trip.</li>
+                    <li><b>Distance</b> — per-kilometer charge based on the actual route.</li>
+                    <li><b>Time</b> — per-minute charge for slow traffic or waiting.</li>
+                    <li><b>Surge</b> — a multiplier when demand is high.</li>
+                    <li><b>Taxes &amp; fees</b> — city, country, or platform fees.</li>
+                    <li><b>Discounts &amp; promos</b> — codes, loyalty credits, partner discounts.</li>
+                </ul>
+                <h3 class="rv">When the fare is calculated</h3>
+                <ul class="nlist rv">
+                    <li><b>Estimate</b> — when the rider requests, show a price range. Use historical data and
+                        distance.</li>
+                    <li><b>Final fare</b> — at trip end, recompute exactly using the actual distance and time. The
+                        estimate can be off; the final cannot.</li>
+                </ul>
+                <div class="callout co-tip rv"><span class="co-label">WHY PRICING IS SEPARATE</span>
+                    <p>Promotions change weekly. Surge changes every few minutes. Tax rules change by city. The pricing
+                        service isolates all of this from the ride flow. <b>If marketing can change a promo without
+                            a code deploy, your pricing is in the right place.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s13">
+                <div class="sec-kicker">PART 13 — PAYMENT</div>
+                <h2 class="sec-title rv">The One Flow You Must Get Right</h2>
+                <p class="sec-lead rv">Payment is where the system touches real money. Errors here are visible,
+                    expensive,
+                    and embarrassing. The architect must design for <b>idempotency</b>, <b>retries</b>, and
+                    <b>failure</b>.
+                </p>
+                <h3 class="rv">The flow</h3>
+                <ol class="framework rv">
+                    <li><b>Ride completes</b><span>Pricing service produces the final fare with a unique fare
+                            ID.</span></li>
+                    <li><b>Payment service is called</b><span>With ride ID, fare ID, payment method ID. This call is
+                            <b>idempotent</b> — calling it twice has the same effect as calling it once.</span></li>
+                    <li><b>External provider is called</b><span>The provider charges the card and returns success or
+                            failure.</span></li>
+                    <li><b>If success, mark ride as paid, queue receipt</b><span>The rider gets a push and an email.
+                            Database record updated.</span></li>
+                    <li><b>If failure, retry with backoff</b><span>Try a few more times. If still failing, ask the
+                            rider for a new payment method or support contact.</span></li>
+                    <li><b>If timeout, do not retry blindly</b><span>Ask the provider for the charge status. Otherwise
+                            you may double-charge.</span></li>
+                </ol>
+                <h3 class="rv">Idempotency, in simple English</h3>
+                <p class="rv">"Idempotent" means: <b>doing the same thing twice has the same result as doing it
+                        once</b>. Imagine your payment service sends a charge to the bank, but the response is lost in
+                    the network. The service retries. Without idempotency, the rider is charged twice. With
+                    idempotency, the system uses a unique <b>charge ID</b> and the bank recognizes it as the same
+                    operation.</p>
+                <div class="callout co-key rv"><span class="co-label">THE THREE RULES OF PAYMENT</span>
+                    <p><b>1. Every charge has a unique ID.</b> <b>2. Retries send the same ID.</b> <b>3. The provider
+                            answers the same way for the same ID.</b> This is the difference between a system that
+                        scales and a system that gets headlines.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s14">
+                <div class="sec-kicker">PART 14 — MESSAGING AND BACKGROUND WORK</div>
+                <h2 class="sec-title rv">What Should Never Block the User</h2>
+                <p class="sec-lead rv">A ride request is on the hot path. The user is waiting. Anything that does not
+                    have to happen <i>right now</i> should be queued and processed in the background. The system
+                    absorbs spikes better, and the user gets a faster response.</p>
+                <h3 class="rv">Candidates for async processing</h3>
+                <ul class="nlist rv">
+                    <li><b>Notifications</b> — push, SMS, email. The user does not need them instantly; 5–10 seconds is
+                        fine.</li>
+                    <li><b>Receipts</b> — generate a PDF after payment and email it later.</li>
+                    <li><b>Analytics events</b> — every ride produces dozens of events. Stream them to a warehouse.</li>
+                    <li><b>Driver statistics</b> — accept rate, cancellation rate, online hours. Computed nightly.</li>
+                    <li><b>Rating processing</b> — recalculate driver scores after each rating.</li>
+                    <li><b>Reporting</b> — daily, weekly, monthly reports.</li>
+                    <li><b>Fraud checks</b> — analyze patterns out-of-band, then flag if needed.</li>
+                    <li><b>Driver payouts</b> — compute weekly payouts, then transfer.</li>
+                </ul>
+                <div class="callout co-tip rv"><span class="co-label">RULE OF THUMB</span>
+                    <p>If the user is staring at a spinner while this work happens, it is in the wrong place. Move it
+                        to a queue. <b>The only work that stays sync is the work the user is waiting for.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s15">
+                <div class="sec-kicker">PART 15 — DATA STORAGE</div>
+                <h2 class="sec-title rv">One Database Is Never Right for Everything</h2>
+                <p class="sec-lead rv">Different data has different shape, different access pattern, and different life
+                    span. Putting everything in one place either starves the slow queries or kills the fast ones.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>MAIN TRANSACTIONAL DB</b><span>Riders, drivers, rides, trips, payments. ACID
+                            matters. Schema is fixed. Strong relationships. Use a relational database.</span></div>
+                    <div class="topic"><b>FAST TEMPORARY STORE</b><span>Driver positions, availability flags, short
+                            matching locks. In-memory. TTL-based. Throwaway data.</span></div>
+                    <div class="topic"><b>LONG-TERM STORAGE</b><span>Trip history, finalized polylines, audit logs.
+                            Cheap
+                            storage, batch analytics, regulated retention.</span></div>
+                    <div class="topic"><b>SEARCH INDEX</b><span>City, place, address search. Built for fuzzy text and
+                            geo. Not the source of truth — a copy optimized for read.</span></div>
+                </div>
+                <h3 class="rv">Why one database hurts</h3>
+                <ul class="nlist rv">
+                    <li><b>Location writes</b> are 100× more frequent than ride writes. Putting them in the same
+                        database overwhelms it.</li>
+                    <li><b>Long-running analytics</b> queries lock tables and slow down live traffic.</li>
+                    <li><b>Regulated data</b> may need to be in a specific region. Mixing it with global data prevents
+                        that.</li>
+                    <li><b>Different backup needs</b> — you back up transactions every minute, GPS breadcrumbs every
+                        hour, and analytics nightly.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s16">
+                <div class="sec-kicker">PART 16 — CACHING</div>
+                <h2 class="sec-title rv">When Cache Helps and When It Lies</h2>
+                <p class="sec-lead rv">Cache is the fastest query. It is also the easiest place to serve stale, wrong,
+                    or malicious data. Treat it as a hint, not a source of truth.</p>
+                <h3 class="rv">What to cache</h3>
+                <ul class="nlist rv">
+                    <li><b>Driver availability summary</b> per cell (number of free drivers per area).</li>
+                    <li><b>Frequently accessed rider profile</b> (name, default payment method).</li>
+                    <li><b>Pricing configuration</b> per city (tariff, surge rules).</li>
+                    <li><b>City configuration</b> (time zone, currency, support contacts).</li>
+                    <li><b>Popular pickup places</b> (airport terminal, train station — searched 1000× a minute).</li>
+                </ul>
+                <h3 class="rv">What NOT to cache</h3>
+                <ul class="nlist rv">
+                    <li><b>Live driver positions</b> — too frequent, too short-lived; the dedicated location store
+                        handles this.</li>
+                    <li><b>Active ride state</b> — must be authoritative; caching risks showing wrong state to the
+                        user.</li>
+                    <li><b>Payment status</b> — must come from the payment system, period.</li>
+                </ul>
+                <h3 class="rv">Three rules for any cache</h3>
+                <ul class="nlist rv">
+                    <li><b>Have a TTL</b> — every cache entry expires. No exceptions.</li>
+                    <li><b>Have a fallback</b> — when the cache is down, the system still works (slower, but
+                        correct).</li>
+                    <li><b>Have invalidation</b> — when the source data changes, push an invalidation or update.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s17">
+                <div class="sec-kicker">PART 17 — SCALING</div>
+                <h2 class="sec-title rv">Why Location Traffic Scales Differently From API Traffic</h2>
+                <p class="sec-lead rv">A normal API call (login, request ride) is request-response: one request, one
+                    response, then the connection is free. A location ping is fire-and-forget: the driver app sends
+                    pings continuously whether or not anyone is asking. <b>This is why one set of rules does not work
+                        for both.</b></p>
+                <h3 class="rv">How each layer scales</h3>
+                <ul class="nlist rv">
+                    <li><b>API</b> — stateless, scales horizontally. Add more servers behind a load balancer.</li>
+                    <li><b>Location processing</b> — needs a separate ingestion path (e.g., a message queue + workers)
+                        that absorbs bursts and writes to the in-memory store.</li>
+                    <li><b>Matching</b> — stateless from the outside, but pulls heavily from the location store. Scale
+                        by partitioning cities.</li>
+                    <li><b>Ride service</b> — scale by region and by city. One city's traffic is independent of
+                        another's.</li>
+                    <li><b>Database</b> — primary for writes, read replicas for reads, sharding for very large
+                        datasets.</li>
+                    <li><b>Real-time gateway</b> — scale by connection count, not by request rate. Each open
+                        WebSocket uses memory.</li>
+                    <li><b>Notifications</b> — workers, queues, and a third-party delivery service.</li>
+                </ul>
+                <div class="callout co-key rv"><span class="co-label">THE INSIGHT</span>
+                    <p>Location traffic and API traffic look similar in dashboards but are <b>fundamentally different
+                            shapes</b>. One is request-response, the other is streaming. The architecture must reflect
+                        that, or the same infrastructure will be optimal for neither.</p>
+                </div>
+            </section>
+
+            <section class="sec" id="s18">
+                <div class="sec-kicker">PART 18 — GEOGRAPHIC SCALING</div>
+                <h2 class="sec-title rv">From One City to Many Countries</h2>
+                <p class="sec-lead rv">Geographic scaling is not just "add more servers". It changes <b>latency</b>,
+                    <b>availability</b>, and <b>regulation</b>. Each country has its own rules about data residency
+                    (where data must live) and privacy.
+                </p>
+                <h3 class="rv">The growth path</h3>
+                <ol class="framework rv">
+                    <li><b>One city, one data center</b><span>Simple. All in one place. Works until 100k+ users.</span>
+                    </li>
+                    <li><b>Multiple cities, one region</b><span>Partition the database by city. Location service
+                            partitioned by city. Each city's traffic is independent.</span></li>
+                    <li><b>Multiple regions</b><span>Replicate read traffic. Pin writes to the home region for each
+                            city. Plan for cross-region outages.</span></li>
+                    <li><b>Multiple countries</b><span>Region-per-country for data residency. Local payment
+                            providers. Local language and currency. Local support.</span></li>
+                </ol>
+                <h3 class="rv">The trade-off</h3>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>CENTRALIZED</b><span>Easy to operate, one source of truth, one place to
+                            deploy. But: high latency for far users, single regional outage takes down everyone,
+                            hard to satisfy data residency.</span></div>
+                    <div class="topic"><b>REGIONAL</b><span>Low latency, isolated failures, meets data residency.
+                            But: hard to keep consistent, more complex ops, more expensive.</span></div>
+                </div>
+                <div class="callout co-ok rv"><span class="co-label">RECOMMENDED</span>
+                    <p>Start centralized. As you grow into a second country, <b>split by region</b> for that country
+                        alone. Don't pre-split for countries you don't have. <b>Complexity is earned.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s19">
+                <div class="sec-kicker">PART 19 — FAILURE SCENARIOS</div>
+                <h2 class="sec-title rv">What Will Break, and What You Will Do About It</h2>
+                <p class="sec-lead rv">The interviewer is not trying to trick you. They want to know that you have
+                    thought about the system on a bad day. <b>Walk the failure path before you walk the happy
+                        path.</b></p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>SCENARIO</th>
+                                <th>WHAT HAPPENS</th>
+                                <th>USER IMPACT</th>
+                                <th>IMMEDIATE RESPONSE</th>
+                                <th>LONG-TERM FIX</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Location service down</b></td>
+                                <td>Driver pings not stored.</td>
+                                <td>Riders see no cars nearby.</td>
+                                <td>Show "looking for drivers", widen search radius, retry.</td>
+                                <td>Redundant in-memory store, partitioned by city.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Matching service down</b></td>
+                                <td>No new ride requests get assigned.</td>
+                                <td>Riders stuck on "searching".</td>
+                                <td>Queue requests; serve them when matching is back.</td>
+                                <td>Standby matching instance, automatic failover.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Payment provider down</b></td>
+                                <td>Charges fail or time out.</td>
+                                <td>Riders cannot complete payment.</td>
+                                <td>Allow cash or "pay later", retry in background.</td>
+                                <td>Backup provider, circuit breaker, retry queue.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database down</b></td>
+                                <td>No reads, no writes.</td>
+                                <td>App effectively dead.</td>
+                                <td>Failover to replica, read-only mode, queue writes.</td>
+                                <td>Multi-region replication, tested failover runbook.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Message broker down</b></td>
+                                <td>Async work stuck in producers.</td>
+                                <td>No notifications, no analytics, no reports.</td>
+                                <td>Buffer locally, replay when broker is back.</td>
+                                <td>Redundant broker cluster, monitoring on broker lag.</td>
+                            </tr>
+                            <tr>
+                                <td><b>WebSocket gateway down</b></td>
+                                <td>Apps cannot receive real-time updates.</td>
+                                <td>Users see stale screens.</td>
+                                <td>Apps reconnect, fall back to polling for short period.</td>
+                                <td>Multiple gateway regions, sticky session fallback.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Driver loses network</b></td>
+                                <td>Driver app goes offline.</td>
+                                <td>Active trip may stall.</td>
+                                <td>Rider sees "driver connection lost", safety check triggered.</td>
+                                <td>Reconnect logic, heartbeat, on-trip timeout.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Rider loses network</b></td>
+                                <td>Rider app goes offline.</td>
+                                <td>Cannot see updates.</td>
+                                <td>Driver sees "rider disconnected", trip continues; reconnect syncs state.</td>
+                                <td>Idempotent state replay on reconnect.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Driver disappears after assignment</b></td>
+                                <td>Driver does not arrive or accept.</td>
+                                <td>Rider waits forever.</td>
+                                <td>Timeout the assignment, try the next driver, refund the rider.</td>
+                                <td>Strict assignment TTL, automatic re-matching.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Duplicate ride request</b></td>
+                                <td>Rider double-taps "request".</td>
+                                <td>Two rides created.</td>
+                                <td>Idempotency key per request; second one is rejected.</td>
+                                <td>Idempotency layer in the API.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Duplicate payment</b></td>
+                                <td>Payment service retries after timeout.</td>
+                                <td>Rider charged twice.</td>
+                                <td>Use unique charge ID; provider is idempotent.</td>
+                                <td>Idempotency contract with payment provider.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Two drivers accept</b></td>
+                                <td>Race condition on accept.</td>
+                                <td>One driver gets a ghost ride.</td>
+                                <td>First accept wins; second is told "ride taken".</td>
+                                <td>Atomic state transition, short-lived reservation.</td>
+                            </tr>
+                            <tr>
+                                <td><b>No driver accepts</b></td>
+                                <td>Search times out.</td>
+                                <td>Rider sees "no cars nearby".</td>
+                                <td>Suggest waiting, change pickup, increase fare (surge).</td>
+                                <td>Better search radius, supply incentives, driver re-engagement.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Regional outage</b></td>
+                                <td>An entire cloud region is down.</td>
+                                <td>All users in that region offline.</td>
+                                <td>Failover to another region, restore from backups.</td>
+                                <td>Multi-region active-passive, tested recovery.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Peak demand (concert, holiday)</b></td>
+                                <td>Request rate 10× normal.</td>
+                                <td>Slow or failed requests.</td>
+                                <td>Auto-scale, shed low-priority work, queue notifications.</td>
+                                <td>Capacity planning, surge pricing, queue-based load shedding.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Surge miscalculation</b></td>
+                                <td>Price spike or wrong surge.</td>
+                                <td>Riders overcharged or drivers underpaid.</td>
+                                <td>Cap surge, allow overrides, fast refund path.</td>
+                                <td>Surge rules review, anomaly detection, refund automation.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s20">
+                <div class="sec-kicker">PART 20 — CONSISTENCY AND ACCURACY</div>
+                <h2 class="sec-title rv">Where the System Must Be Right Now, and Where It Can Wait</h2>
+                <p class="sec-lead rv">Not everything needs the same level of correctness. The architect decides per
+                    use case, and pays only for what is needed.</p>
+                <h3 class="rv">Needs strong correctness (right now)</h3>
+                <ul class="nlist rv">
+                    <li><b>Driver assignment</b> — one driver per ride, never two.</li>
+                    <li><b>Ride state</b> — the user must see the right state.</li>
+                    <li><b>Payment</b> — money is real. Mistakes are public.</li>
+                    <li><b>Final fare</b> — the rider must be charged exactly what the rules say.</li>
+                </ul>
+                <h3 class="rv">Can tolerate temporary delay (eventual is fine)</h3>
+                <ul class="nlist rv">
+                    <li><b>Analytics counts</b> — off by a few percent is fine for a dashboard.</li>
+                    <li><b>Reports</b> — a few minutes late is normal.</li>
+                    <li><b>Some notifications</b> — arriving 30 seconds later is fine.</li>
+                    <li><b>Driver statistics</b> — recomputed nightly is acceptable.</li>
+                </ul>
+                <div class="callout co-key rv"><span class="co-label">THE DECISION</span>
+                    <p>Strong consistency costs money, latency, and complexity. Eventual consistency is cheaper and
+                        faster. Choose by business impact: <b>if the user is staring at the screen waiting, it must
+                            be strong. If the user is not, eventual is fine.</b></p>
+                </div>
+            </section>
+
+            <section class="sec" id="s21">
+                <div class="sec-kicker">PART 21 — SECURITY</div>
+                <h2 class="sec-title rv">Practical Security, Not Theory</h2>
+                <p class="sec-lead rv">The architect's job is to make the system hard to misuse, not to install every
+                    possible control. Practical security is the small set of decisions that eliminate the most common
+                    risks.</p>
+                <ul class="nlist rv">
+                    <li><b>Rider and driver authentication</b> — strong password, phone OTP, token-based sessions
+                        (short-lived access + long-lived refresh).</li>
+                    <li><b>Authorization</b> — a driver cannot read another driver's trips. A rider cannot read
+                        another rider's payment. Always check ownership.</li>
+                    <li><b>Location privacy</b> — driver location is shared with the matched rider only during the
+                        trip. Never expose raw positions to the public.</li>
+                    <li><b>Secure communication</b> — TLS everywhere. Internal calls are signed.</li>
+                    <li><b>Payment protection</b> — never store full card numbers. Use a tokenized provider. PCI-DSS
+                        scope is the provider's, not yours.</li>
+                    <li><b>API protection</b> — rate limit, throttling, anomaly detection. Block credential stuffing.
+                    </li>
+                    <li><b>Audit logging</b> — every state change, every payment, every admin action is logged and
+                        tamper-evident.</li>
+                    <li><b>Trip safety</b> — emergency button, trip sharing, continuous driver check-in.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s22">
+                <div class="sec-kicker">PART 22 — ARCHITECTURE TRADE-OFFS</div>
+                <h2 class="sec-title rv">The Ten Decisions You Will Be Asked About</h2>
+                <p class="sec-lead rv">Each decision has two real options. The right one is rarely obvious. The
+                    interviewer's question is not "which is best" — it is "which fits and why".</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>DECISION</th>
+                                <th>OPTION A</th>
+                                <th>OPTION B</th>
+                                <th>RECOMMENDED</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Real-time updates</b></td>
+                                <td>Polling — simple.</td>
+                                <td>WebSockets — fast, scalable.</td>
+                                <td>WebSockets with polling fallback.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Geographic system</b></td>
+                                <td>Centralized — simple.</td>
+                                <td>Regional — fast, isolated.</td>
+                                <td>Regional from day one of the second country.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Location storage</b></td>
+                                <td>Same SQL — easy.</td>
+                                <td>Specialized in-memory store — fast.</td>
+                                <td>Specialized store; SQL only for trip history.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Service communication</b></td>
+                                <td>Direct API — simple, sync.</td>
+                                <td>Events — decoupled, async.</td>
+                                <td>Sync for the hot path, events for the rest.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Database</b></td>
+                                <td>Single database — simple.</td>
+                                <td>Partitioned — scalable.</td>
+                                <td>Single with sharding by city, when needed.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Consistency</b></td>
+                                <td>Strong everywhere — safe but slow.</td>
+                                <td>Eventual where possible — fast but careful.</td>
+                                <td>Strong for payments, eventual for analytics.</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Matching placement</b></td>
+                                <td>Centralized — uniform.</td>
+                                <td>Regional — low latency.</td>
+                                <td>Regional matching per city.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Caching</b></td>
+                                <td>Cache everything hot.</td>
+                                <td>Cache only safe, slow-changing data.</td>
+                                <td>Cache config, not state.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Service shape</b></td>
+                                <td>One large service — simple.</td>
+                                <td>Many small services — scalable.</td>
+                                <td>One service, then split by load pattern.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Payment provider</b></td>
+                                <td>Build it yourself — control.</td>
+                                <td>Use external — speed, compliance.</td>
+                                <td>External for V1; build if you have a unique edge.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="sec" id="s23">
+                <div class="sec-kicker">PART 23 — COST THINKING</div>
+                <h2 class="sec-title rv">Where the Money Goes</h2>
+                <p class="sec-lead rv">Senior architects think about cost as part of the design, not after. A correct
+                    design that breaks the bank is a failed design.</p>
+                <h3 class="rv">The big cost areas</h3>
+                <ul class="nlist rv">
+                    <li><b>Server processing</b> — application servers scale with request rate.</li>
+                    <li><b>Location processing</b> — the largest single cost. 333k pings/sec is not free.</li>
+                    <li><b>Network traffic</b> — moving GPS data to the cloud costs real money.</li>
+                    <li><b>Real-time connections</b> — each open WebSocket uses memory and bandwidth.</li>
+                    <li><b>Database</b> — storage, IOPS, replicas, backups.</li>
+                    <li><b>Storage</b> — long-term trip history, audit logs.</li>
+                    <li><b>Monitoring</b> — metrics, logs, traces add up at scale.</li>
+                    <li><b>External services</b> — payment, SMS, maps, push notifications.</li>
+                </ul>
+                <h3 class="rv">Eight ways to control cost</h3>
+                <ol class="framework rv">
+                    <li><b>Throttle location pings when not needed</b><span>Slow down pings when the driver is idle
+                            for minutes. Speed them up only when a rider is being matched or during a trip.</span></li>
+                    <li><b>Use server-side batching</b><span>Combine multiple pings into a single network call where
+                            possible.</span></li>
+                    <li><b>Sample analytics events</b><span>You don't need every GPS ping in analytics. Sample 1 in
+                            10.</span></li>
+                    <li><b>Pick the right tier of database</b><span>Hot data on fast disks, cold data on cheap
+                            storage.</span></li>
+                    <li><b>Right-size real-time connections</b><span>Disconnect idle WebSockets. Reconnect on
+                            demand.</span></li>
+                    <li><b>Negotiate provider fees</b><span>Payment and SMS fees add up. Volume is leverage.</span></li>
+                    <li><b>Cache aggressively</b><span>Every cached read is a database read you don't pay for.</span>
+                    </li>
+                    <li><b>Delete what you don't need</b><span>GPS breadcrumbs, debug logs, old sessions. Set retention
+                            policies.</span></li>
+                </ol>
+            </section>
+
+            <section class="sec" id="s24">
+                <div class="sec-kicker">PART 24 — 25 INTERVIEW QUESTIONS</div>
+                <h2 class="sec-title rv">The Questions You Will Get, and How to Answer</h2>
+                <p class="sec-lead rv">For each question, you get: <b>what the interviewer is testing</b>, the
+                    <b>simple answer</b> a junior gives, the <b>strong architect answer</b>, and the <b>common
+                        mistake</b> to avoid.
+                </p>
+                <ol class="qlist rv">
+                    <li>How would you design an Uber-like system?<span class="qt warm">OPEN</span></li>
+                    <li>How do you estimate the scale of the system?<span class="qt warm">OPEN</span></li>
+                    <li>What are the main business areas you would identify?<span class="qt warm">OPEN</span></li>
+                    <li>How do you find nearby drivers for a rider?<span class="qt">CORE</span></li>
+                    <li>How do you process millions of location updates per second?<span class="qt">CORE</span></li>
+                    <li>How do you match a rider with the right driver?<span class="qt">CORE</span></li>
+                    <li>How do you prevent the same driver being assigned to two rides?<span class="qt">CORE</span></li>
+                    <li>How do you handle driver location changes during a ride request?<span class="qt">CORE</span>
+                    </li>
+                    <li>How do you design the ride state machine?<span class="qt">CORE</span></li>
+                    <li>How would you scale the matching service to 10× traffic?<span class="qt deep">DEEP</span></li>
+                    <li>Why use real-time communication instead of polling?<span class="qt deep">DEEP</span></li>
+                    <li>What happens if the payment provider fails during checkout?<span class="qt deep">DEEP</span>
+                    </li>
+                    <li>How do you prevent duplicate payment requests?<span class="qt deep">DEEP</span></li>
+                    <li>What happens if a driver disconnects mid-trip?<span class="qt deep">DEEP</span></li>
+                    <li>How would you support multiple cities and countries?<span class="qt deep">DEEP</span></li>
+                    <li>What happens during a regional outage?<span class="qt deep">DEEP</span></li>
+                    <li>Where would you use asynchronous processing in this system?<span class="qt deep">DEEP</span>
+                    </li>
+                    <li>What would you cache, and what would you never cache?<span class="qt deep">DEEP</span></li>
+                    <li>How would you handle peak demand (concerts, holidays)?<span class="qt deep">DEEP</span></li>
+                    <li>How do you handle a surge in price changes?<span class="qt deep">DEEP</span></li>
+                    <li>How do you keep location data private?<span class="qt deep">DEEP</span></li>
+                    <li>What is idempotency and why is it critical in payments?<span class="qt curve">CURVE</span></li>
+                    <li>How do you decide between a SQL database and a NoSQL store?<span class="qt curve">CURVE</span>
+                    </li>
+                    <li>What trade-off would you make first if your budget was cut by 30%?<span
+                            class="qt curve">CURVE</span></li>
+                    <li>How would you explain your design to a non-technical executive in one minute?<span
+                            class="qt curve">CURVE</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">HOW TO USE THIS</span>
+                    <p>Pick five questions. Answer each in writing or out loud, timing yourself to one minute. Then
+                        <b>critique your answer against the four-part framework</b>: requirement, numbers, failure,
+                        trade-off. Most candidates fail because they skip the numbers and the failure.
+                    </p>
+                </div>
+                <h3 class="rv">Sample: "How do you prevent the same driver being assigned to two rides?"</h3>
+                <ul class="nlist rv">
+                    <li><b>What interviewer is testing</b> — concurrency, distributed systems thinking.</li>
+                    <li><b>Simple answer</b> — "We use a database lock."</li>
+                    <li><b>Strong architect answer</b> — "Two layers. First, when we offer a ride to a driver, we set a
+                        short reservation flag in the location/availability store, so other matching calls skip them.
+                        Second, the moment the driver accepts, we perform a single conditional state change: set the
+                        driver to on-trip only if they are currently free. The database enforces atomicity, so only
+                        one accept wins. The reservation is short-lived so a stuck request doesn't freeze a
+                        driver."</li>
+                    <li><b>Common mistake</b> — relying on application logic alone ("we check the flag in the
+                        application") without a database-level guarantee. Race conditions will still happen.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s25">
+                <div class="sec-kicker">PART 25 — 45-MINUTE WHITEBOARD CHALLENGE</div>
+                <h2 class="sec-title rv">Your Turn. Set a Timer. Solve This Cold.</h2>
+                <p class="sec-lead rv">This is the live mock. There is no solution on this page. The 18-point checklist
+                    below is your grading rubric.</p>
+                <div class="panel rv">
+                    <h4>THE PROBLEM</h4>
+                    <p style="font-size:16.5px;color:var(--ink)">"Design an Uber-like ride-booking system. The system
+                        must support riders, drivers, ride requests, real-time matching, location updates, payments,
+                        and notifications. It must work across many cities, scale to millions of users, and stay
+                        available when individual components fail."</p>
+                    <div class="tblwrap" style="margin:18px 0 0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                    <th>DIMENSION</th>
+                                    <th>FIGURE</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Riders</b></td>
+                                    <td>50,000,000</td>
+                                    <td><b>Peak RPS</b></td>
+                                    <td>~2,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Drivers</b></td>
+                                    <td>5,000,000</td>
+                                    <td><b>Peak location pings/sec</b></td>
+                                    <td>~333,000</td>
+                                </tr>
+                                <tr>
+                                    <td><b>DAU</b></td>
+                                    <td>10,000,000</td>
+                                    <td><b>Geography</b></td>
+                                    <td>Multiple cities and countries</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Concurrent rides</b></td>
+                                    <td>~500,000</td>
+                                    <td><b>Availability</b></td>
+                                    <td>99.9%</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Latency target (match)</b></td>
+                                    <td>&lt; 1 second</td>
+                                    <td><b>Growth</b></td>
+                                    <td>10× in 2 years</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <h3 class="rv">Your 18-point grading rubric</h3>
+                <div class="asg-progress rv">
+                    <div class="asg-bar"><i id="asgFill"></i></div><span class="asg-count" id="asgCount">0 / 18
+                        DONE</span>
+                </div>
+                <label class="asg-item"><input type="checkbox" data-asg="1"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>1</b>Asked clarifying questions before designing.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="2"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>2</b>Stated assumptions explicitly.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="3"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>3</b>Estimated scale with simple math.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="4"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>4</b>Identified business areas (auth, ride, location, matching, payment,
+                        etc.).</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="5"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>5</b>Drew a high-level architecture (boxes and arrows).</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="6"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>6</b>Walked through the ride flow end to end.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="7"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>7</b>Explained how location is stored and queried.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="8"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>8</b>Explained how matching works and how to prevent
+                        double-booking.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="9"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>9</b>Chose real-time vs polling and defended it.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="10"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>10</b>Chose database types (SQL for transactions, in-memory for location) and
+                        defended it.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="11"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>11</b>Decided what to cache and what to never cache.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="12"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>12</b>Used messaging for async work and said what stays sync.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="13"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>13</b>Designed the payment flow with idempotency and retries.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="14"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>14</b>Described how to scale each major layer.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="15"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>15</b>Named at least 5 failure scenarios and the response to
+                        each.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="16"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>16</b>Identified security risks and the controls.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="17"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>17</b>Estimated cost and named one cost-saving decision.</span></label>
+                <label class="asg-item"><input type="checkbox" data-asg="18"><span class="asg-cb"></span><span
+                        class="asg-tx"><b>18</b>Named at least 3 trade-offs explicitly (option A vs option
+                        B).</span></label>
+
+                <h3 class="rv" style="margin-top:50px">Suggested Architect Solution</h3>
+                <p class="rv">A sketch of what a strong answer would include. Use it after your attempt, not before.</p>
+                <ul class="nlist rv">
+                    <li><b>Clarifying questions</b> — what countries, what languages, what payment providers, what
+                        vehicles, what SLAs, what regulatory rules, what about driver onboarding flow, what about
+                        safety, what about offline behavior.</li>
+                    <li><b>Assumptions</b> — 50M riders, 5M drivers, 1M peak drivers, 333k pings/sec peak, 2k RPS
+                        peak, sub-second matching, 99.9% availability.</li>
+                    <li><b>Scale</b> — show the simple math (Part 2).</li>
+                    <li><b>Business areas</b> — auth, rider, driver, location, matching, ride, trip, pricing,
+                        payment, notification, rating, reporting (Part 3).</li>
+                    <li><b>Architecture</b> — clients → API → services → DBs (Part 4). Use a diagram. Label
+                        components. Justify each box.</li>
+                    <li><b>Ride flow</b> — request → match → assign → arrive → start → end → fare → pay → close
+                        (Part 5).</li>
+                    <li><b>Location handling</b> — in-memory store with geo index, short TTL, long-term polyline only
+                        (Part 6).</li>
+                    <li><b>Matching</b> — geo query, shortlist, rank, send, reservation, atomic accept (Parts
+                        7–9).</li>
+                    <li><b>Real-time</b> — WebSockets for live updates, polling fallback (Part 10).</li>
+                    <li><b>Database</b> — SQL for transactions, in-memory for location, warehouse for analytics (Part
+                        15).</li>
+                    <li><b>Caching</b> — config and hot reads only (Part 16).</li>
+                    <li><b>Messaging</b> — async for notifications, receipts, analytics; sync for the hot path (Part
+                        14).</li>
+                    <li><b>Payment</b> — unique charge ID, idempotent retries, queued fallbacks, refund path (Part
+                        13).</li>
+                    <li><b>Scaling</b> — stateless API, partitioned matching by city, separated location pipeline,
+                        multi-region later (Parts 17–18).</li>
+                    <li><b>Failures</b> — five concrete ones with response (Part 19).</li>
+                    <li><b>Security</b> — auth, authorization, location privacy, payment tokenization, audit logs
+                        (Part 21).</li>
+                    <li><b>Cost</b> — biggest cost is location pipeline; one saving: sample analytics, throttle idle
+                        pings (Part 23).</li>
+                    <li><b>Trade-offs</b> — at least three named explicitly (Part 22).</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="s26">
+                <div class="sec-kicker">PART 26 — ARCHITECTURE DEFENSE</div>
+                <h2 class="sec-title rv">The Tough Interviewer, 20 Follow-ups</h2>
+                <p class="sec-lead rv">After your solution, the interviewer leans forward. For each, the <b>model
+                        answer guide</b> shows what a senior architect would say in two to three sentences.</p>
+                <div class="surprise rv">
+                    <div class="sp"><b>1 · 1M drivers send updates at once</b>
+                        <p>The location pipeline must be separate from the API. Use a dedicated ingestion queue, batch
+                            writes to the in-memory store, and partition by city.</p><span class="ask">MODEL
+                            ANSWER</span>
+                    </div>
+                    <div class="sp"><b>2 · Two riders want the same driver</b>
+                        <p>Two layers — short-lived reservation when offering the ride, atomic state change on accept.
+                            The database is the final word.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>3 · Matching service is down</b>
+                        <p>Riders see "looking for drivers". Queue new requests and process them when matching is back.
+                            Have a standby instance for failover.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>4 · Payment provider times out</b>
+                        <p>Do not retry blindly. Query the provider for the charge status. If unknown, mark the ride
+                            as "payment pending" and reconcile later.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>5 · Driver accepts then loses network</b>
+                        <p>Use a short assignment TTL. If the driver does not arrive in time, re-match to the next
+                            driver. The rider gets an update.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>6 · Driver moves to another region</b>
+                        <p>Geo index updates on cell boundary. The driver is now in a different cell, available for
+                            matching there. No database move needed.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>7 · Database is down</b>
+                        <p>Failover to a read replica. Mark the system as degraded. Queue writes to be replayed when
+                            the primary is back.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>8 · 10× traffic</b>
+                        <p>Scale API horizontally. Partition location by city. Add matching instances per region.
+                            Increase cache hit ratio to keep database load constant.</p><span class="ask">MODEL
+                            ANSWER</span>
+                    </div>
+                    <div class="sp"><b>9 · Cost reduction</b>
+                        <p>Throttle idle driver pings. Sample analytics. Use cheaper storage for cold history.
+                            Right-size
+                            WebSocket connections.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>10 · Why not polling?</b>
+                        <p>Polling wastes requests, lags 3–10 seconds, and overloads the server at peak. WebSockets give
+                            instant updates with lower per-update cost.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>11 · Why not one database?</b>
+                        <p>One database cannot serve 333k location writes and transactional payments at the same time.
+                            The location volume and the write pattern are different.</p><span class="ask">MODEL
+                            ANSWER</span>
+                    </div>
+                    <div class="sp"><b>12 · Why need a message broker?</b>
+                        <p>To decouple slow work (notifications, receipts, analytics) from the hot path. Spikes don't
+                            reach the user-facing services.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>13 · How do you handle location privacy?</b>
+                        <p>Share live location only with the matched rider. Do not log raw pings. Store only the trip
+                            polyline. Anonymize for analytics.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>14 · How do you test failover?</b>
+                        <p>Game days. Inject failure in one region. Measure recovery time. Verify no data loss. Practice
+                            the runbook before you need it.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>15 · How do you update surge pricing?</b>
+                        <p>Pricing service recomputes per zone every minute. Push to cache. The ride service reads the
+                            current value. Updates are atomic.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>16 · What if a city has 10× normal traffic?</b>
+                        <p>Local matching auto-scales. Surge rises. Notifications get queued. Lower-priority work is
+                            shed. The system stays available, just slower.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>17 · Why WebSockets over long polling?</b>
+                        <p>WebSockets hold fewer resources per active user and deliver updates instantly. Long polling
+                            wastes connections on idle users.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>18 · How do you onboard a new country?</b>
+                        <p>Stand up a new region. Local database, local payment provider, local language. Replicate
+                            platform code. Comply with local data residency.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>19 · How do you measure success?</b>
+                        <p>Match latency, p95. Match-to-arrive time. Cancellation rate. Payment success rate. App crash
+                            rate. Cost per ride.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                    <div class="sp"><b>20 · What would you change if you started again?</b>
+                        <p>Build the location pipeline first. Everything else depends on it. Get a real payment
+                            provider on day one — do not build your own.</p><span class="ask">MODEL ANSWER</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="sec" id="s27">
+                <div class="sec-kicker">PART 27 — FINAL 20-MINUTE CHALLENGE</div>
+                <h2 class="sec-title rv">The Last Mock. Time Yourself.</h2>
+                <p class="sec-lead rv">One problem, twenty minutes, no notes. Then read the model solution.</p>
+                <div class="panel rv">
+                    <h4>THE PROBLEM</h4>
+                    <p style="font-size:16.5px;color:var(--ink)">"Design a global ride-booking platform that supports
+                        millions of riders and drivers across multiple cities. It must handle heavy location traffic,
+                        peak-hour demand, real-time driver matching, payments, notifications, high availability,
+                        regional failures, and 10× future growth, all within a cost budget."</p>
+                </div>
+                <h3 class="rv">Your task (in order)</h3>
+                <ol class="framework rv">
+                    <li><b>Ask 5 clarifying questions</b><span>What would you ask before drawing anything?</span></li>
+                    <li><b>List 3 assumptions</b><span>State them explicitly.</span></li>
+                    <li><b>Estimate the scale</b><span>Show the simple math.</span></li>
+                    <li><b>Draw the architecture</b><span>Boxes and arrows, no more than 12 components.</span></li>
+                    <li><b>Walk the ride flow</b><span>From "rider requests" to "ride completed".</span></li>
+                    <li><b>Explain location handling</b><span>Where it lives, how it scales.</span></li>
+                    <li><b>Explain matching</b><span>How a driver is picked, how double-booking is prevented.</span>
+                    </li>
+                    <li><b>Explain data storage</b><span>SQL vs in-memory vs warehouse.</span></li>
+                    <li><b>Explain real-time</b><span>WebSockets, what happens on disconnect.</span></li>
+                    <li><b>Name 3 failure scenarios</b><span>For each, the response.</span></li>
+                    <li><b>Name 3 scaling triggers</b><span>"When X happens, I add Y."</span></li>
+                    <li><b>Name 2 security controls</b><span>Specific to this design.</span></li>
+                    <li><b>Name 1 cost optimization</b><span>Specific to this design.</span></li>
+                    <li><b>Name 3 trade-offs</b><span>Option A vs option B for each.</span></li>
+                </ol>
+
+                <h3 class="rv" style="margin-top:50px">Model Solution (read AFTER your attempt)</h3>
+                <p class="rv">A compact sketch of what a strong answer would cover. Compare it to yours, point by
+                    point.</p>
+                <ul class="nlist rv">
+                    <li><b>Clarifying questions</b> — countries, languages, payment providers, regulations, safety
+                        rules, support expectations, surge caps.</li>
+                    <li><b>Assumptions</b> — 50M riders, 5M drivers, multi-region from year one, English-only
+                        interface, USD default, surge capped at 3×.</li>
+                    <li><b>Scale</b> — 1M peak drivers, 333k pings/sec, 2k ride RPS, sub-second match.</li>
+                    <li><b>Architecture</b> — clients → API → (auth, rider, driver, location, matching, ride, pricing,
+                        payment, notification) → SQL DB, in-memory location store, cache, broker, WebSocket gateway,
+                        analytics warehouse, external payment.</li>
+                    <li><b>Ride flow</b> — request → match → offer → accept → arrive → start → end → fare → pay →
+                        close.</li>
+                    <li><b>Location</b> — in-memory geo store, partitioned by city, TTL of 5 min, only trip polyline
+                        persisted.</li>
+                    <li><b>Matching</b> — geo query → shortlist → rank → reservation → atomic accept.</li>
+                    <li><b>Storage</b> — SQL for transactions, in-memory for hot location, warehouse for analytics,
+                        object storage for receipts.</li>
+                    <li><b>Real-time</b> — WebSockets with reconnect, polling fallback, queue events for missed
+                        updates.</li>
+                    <li><b>Failures</b> — payment provider down (queue and retry), driver disconnect (TTL and
+                        re-match), DB down (replica failover).</li>
+                    <li><b>Scaling triggers</b> — p95 match latency over 800ms → add matching instance per city; peak
+                        pings over 250k/sec → add location partition; payment queue depth over 10k → add worker.</li>
+                    <li><b>Security</b> — tokenized payments (no card storage), location visible only to matched
+                        rider, audit log for every state change.</li>
+                    <li><b>Cost</b> — throttle idle driver pings (largest single saving), sample analytics, right-size
+                        real-time connections.</li>
+                    <li><b>Trade-offs</b> — WebSockets vs polling (chose WebSockets for instant updates, pay for
+                        connection memory); SQL vs NoSQL (chose SQL for transactions); centralized vs regional
+                        (chose regional for the second country onward).</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="score">
+                <div class="sec-kicker">SELF-EVALUATION — 100 POINTS</div>
+                <h2 class="sec-title rv">Score Yourself Honestly</h2>
+                <p class="sec-lead rv">This is for you. The total updates live. A generous score only cheats one
+                    person.</p>
+                <div class="panel rv">
+                    <h4>SCORING SHEET</h4>
+                    <div class="score-row"><label>Requirement understanding<small>DID I ASK BEFORE I
+                                DREW?</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Scale &amp; numbers<small>BACK-OF-ENVELOPE MATH</small></label><input
+                            type="number" class="sc" data-max="10" value="0" min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Architecture clarity<small>BOXES, ARROWS,
+                                JUSTIFICATION</small></label><input type="number" class="sc" data-max="10" value="0"
+                            min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Location &amp; matching<small>GEO STORE,
+                                DOUBLE-BOOKING</small></label><input type="number" class="sc" data-max="10" value="0"
+                            min="0" max="10"> / 10</div>
+                    <div class="score-row"><label>Real-time &amp; state<small>WEBSOCKETS, STATE
+                                MACHINE</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Payment &amp; idempotency<small>RETRY, DEDUPE,
+                                RECOVERY</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Scaling &amp; geography<small>PARTITION, REGIONS,
+                                COST</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Failure &amp; consistency<small>WHAT BREAKS, WHAT
+                                WAITS</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Security &amp; privacy<small>AUTH, LOCATION,
+                                PAYMENT</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-row"><label>Trade-offs &amp; decisions<small>OPTION A VS B,
+                                EXPLAINED</small></label><input type="number" class="sc" data-max="10" value="0" min="0"
+                            max="10"> / 10</div>
+                    <div class="score-total">
+                        <span class="big" id="scoreBig">0<span
+                                style="font-size:20px;color:var(--ink3)">/100</span></span>
+                        <span class="band" id="scoreBand">Score as you go — the band will appear here.</span>
+                    </div>
+                    <div class="band-bar"><i id="scoreBar"></i></div>
+                </div>
+            </section>
+
+            <section class="sec" id="honest">
+                <div class="sec-kicker">HONEST REVIEW</div>
+                <h2 class="sec-title rv">Where Did You Think Like a Developer Instead of an Architect?</h2>
+                <p class="sec-lead rv">Tick everything that happened during your mock. The list tells you what Day 24+
+                    must fix.</p>
+                <ul class="devlist rv" id="devList">
+                    <li data-d="1"><span class="cb"></span><b>Jumped to microservices</b> — I named services before I
+                        knew the numbers.</li>
+                    <li data-d="2"><span class="cb"></span><b>Did not ask enough questions</b> — I designed before I
+                        understood who and what.</li>
+                    <li data-d="3"><span class="cb"></span><b>Ignored business impact</b> — I optimized for the call,
+                        not for the customer or the money.</li>
+                    <li data-d="4"><span class="cb"></span><b>Ignored cost</b> — I never mentioned what the design
+                        would cost to run.</li>
+                    <li data-d="5"><span class="cb"></span><b>Over-engineered</b> — I added sharding, event sourcing,
+                        or Kubernetes nobody asked for.</li>
+                    <li data-d="6"><span class="cb"></span><b>Did not explain alternatives</b> — I gave one answer and
+                        never said what I rejected.</li>
+                    <li data-d="7"><span class="cb"></span><b>Designed only the happy path</b> — I walked the success
+                        and skipped the failure.</li>
+                    <li data-d="8"><span class="cb"></span><b>Forgot failure scenarios</b> — no answer for the cache
+                        dying or the region failing.</li>
+                    <li data-d="9"><span class="cb"></span><b>Focused on implementation</b> — I described code, schemas,
+                        or config instead of the architecture.</li>
+                    <li data-d="10"><span class="cb"></span><b>No numbers</b> — I said "fast" and "scalable" without
+                        attaching a figure.</li>
+                </ul>
+            </section>
+
+            <section class="sec" id="report">
+                <div class="sec-kicker">DAY 23 FINAL REPORT</div>
+                <h2 class="sec-title rv">Your Day 23 Snapshot</h2>
+                <p class="sec-lead rv">One page. Fill it honestly, then save it (or print it). It autosaves as you
+                    type.</p>
+                <div class="panel rv report">
+                    <h4>DAY 23 REPORT</h4>
+                    <div class="rgrid">
+                        <div class="rfield"><label>DAY 23 SCORE (AUTO-FILLED)</label><input id="repScore" type="text"
+                                value="0 / 100" readonly></div>
+                        <div class="rfield"><label>STRONGEST AREA</label><input id="repStrong" type="text"
+                                placeholder="e.g. location handling"></div>
+                        <div class="rfield"><label>WEAKEST AREA</label><input id="repWeak" type="text"
+                                placeholder="e.g. payment idempotency"></div>
+                        <div class="rfield"><label>BIGGEST ARCHITECTURE MISTAKE</label><input id="repMistake"
+                                type="text" placeholder="the one you keep replaying"></div>
+                        <div class="rfield"><label>MOST IMPORTANT LESSON</label><input id="repLesson" type="text"
+                                placeholder="one sentence"></div>
+                        <div class="rfield"><label>THREE THINGS TO IMPROVE</label><textarea id="repImprove"
+                                placeholder="1 ·&#10;2 ·&#10;3 ·"></textarea></div>
+                        <div class="rfield"><label>CONFIDENCE BEFORE DAY 23</label><input id="repConfBefore"
+                                type="number" min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>CONFIDENCE AFTER DAY 23</label><input id="repConfAfter" type="number"
+                                min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>TECHNICAL LEAD READINESS</label><input id="repLead" type="number"
+                                min="0" max="10" value="0"> / 10</div>
+                        <div class="rfield"><label>TECHNICAL ARCHITECT READINESS</label><input id="repArch"
+                                type="number" min="0" max="10" value="0"> / 10</div>
+                    </div>
+                    <div style="margin-top:16px;display:flex;gap:8px;flex-wrap:wrap">
+                        <button class="btn" id="repPrint">PRINT THIS REPORT</button>
+                        <button class="btn" id="repClear">CLEAR REPORT</button>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <section class="mindset" id="mindset">
+        <div class="mindset-in">
+            <div class="sec-kicker">FINAL — 15 THINGS TO REMEMBER</div>
+            <h2 class="sec-title rv" style="margin-bottom:14px">The Day 23 Cheat Sheet</h2>
+            <p class="sec-lead rv">Memorize these. They are the difference between a developer answer and an architect
+                answer.</p>
+            <div class="rule rv">
+                <div class="rule-num">01</div>
+                <div>
+                    <h3>Ask before you draw.</h3>
+                    <p>Five clarifying questions before the first box. Always.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">02</div>
+                <div>
+                    <h3>Show the math.</h3>
+                    <p>333,000 location pings per second, 2,000 ride requests per second, 500,000 concurrent rides.
+                        These are your design constraints.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">03</div>
+                <div>
+                    <h3>Separate fast, business, and background data.</h3>
+                    <p>Three storage tiers. In-memory for location, SQL for transactions, warehouse for analytics.
+                        Never one database for all three.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">04</div>
+                <div>
+                    <h3>Location is a pipeline, not a database call.</h3>
+                    <p>333k writes per second goes to a queue, gets batched, lands in an in-memory store. Never the
+                        transactional DB.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">05</div>
+                <div>
+                    <h3>Match by area, not by city.</h3>
+                    <p>Grid or quadtree. Query only nearby cells. The single closest driver does not matter; an
+                        available one nearby does.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">06</div>
+                <div>
+                    <h3>Two layers prevent double-booking.</h3>
+                    <p>Short-lived reservation when offering, atomic state change on accept. The database is the final
+                        word.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">07</div>
+                <div>
+                    <h3>Real-time means WebSockets, with a fallback.</h3>
+                    <p>Polling when disconnected. Reconnect logic that catches up. Never trust a single
+                        connection.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">08</div>
+                <div>
+                    <h3>The ride is a state machine.</h3>
+                    <p>Name the states. Reject illegal moves. The state machine is the contract between services.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">09</div>
+                <div>
+                    <h3>Pricing is a separate service.</h3>
+                    <p>Marketing will change promos weekly. Surges change every minute. Tax rules change by city.
+                        Isolate
+                        all of it.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">10</div>
+                <div>
+                    <h3>Idempotency is the payment rule.</h3>
+                    <p>Unique charge ID, retries send the same ID, the provider answers the same way. No idempotency,
+                        no scale.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">11</div>
+                <div>
+                    <h3>Async is for everything the user is not waiting for.</h3>
+                    <p>Notifications, receipts, analytics, payouts. If the user is staring at a spinner, it should be
+                        sync; otherwise, queue it.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">12</div>
+                <div>
+                    <h3>Cache config, not state.</h3>
+                    <p>Cache city rules, surge tables, profiles. Never cache active ride state or payment status.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">13</div>
+                <div>
+                    <h3>Geographic scaling is a regulator question, not just a latency one.</h3>
+                    <p>Some countries require their data to stay in their country. Plan for that before you expand.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">14</div>
+                <div>
+                    <h3>Cost is part of the design.</h3>
+                    <p>Throttle idle pings, sample analytics, right-size real-time connections. The largest cost is
+                        location, not API.</p>
+                </div>
+            </div>
+            <div class="rule rv">
+                <div class="rule-num">15</div>
+                <div>
+                    <h3>Every choice is a trade. Say both sides.</h3>
+                    <p>Choose, reject, explain. If you cannot name what you gave up, you did not make a decision.</p>
+                </div>
+            </div>
+
+            <h2 class="sec-title rv" style="margin:60px 0 14px">One-Minute Interview Answer</h2>
+            <p class="rv">"I'd start by separating three concerns: fast-changing data, business transactions, and
+                background work. Live driver location is fast-changing — hundreds of thousands of GPS pings per
+                second — so it lives in an in-memory geo store with a short TTL, never the main database. Rides,
+                payments, and profiles are business transactions in a relational database with strong consistency.
+                Notifications, receipts, and analytics are background work that runs through a message broker so the
+                user is never blocked. Matching sits in front of the location store: it asks for nearby available
+                drivers, ranks them, offers the ride, and uses a short-lived reservation plus an atomic state change
+                to prevent double-booking. Real-time updates go over WebSockets with a polling fallback. The ride
+                itself is a strict state machine — Requested, Assigned, Arriving, Arrived, TripStarted, Completed —
+                and only legal moves are allowed. For payment, every charge has a unique ID and the provider is
+                idempotent, so retries never double-charge. Finally, scaling is geographic: the system is partitioned
+                by city, regions are isolated for data residency, and the location pipeline is sized separately from
+                the API because the traffic shapes are completely different. That's the shape — the trade-offs are
+                consistency versus latency, simplicity versus scale, and centralized versus regional, and each is
+                chosen by business impact, not by what is popular."</p>
+
+            <h2 class="sec-title rv" style="margin:50px 0 14px">One Powerful Architect Statement</h2>
+            <p class="mind-close rv">"A large real-time system earns its reliability by separating fast-changing
+                data, business transactions, and background work into three independent pipelines — so each can scale
+                on its own clock, fail on its own terms, and recover without taking the customer with it."</p>
+        </div>
+    </section>
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 23 / 30 — UBER-LIKE RIDE BOOKING SYSTEM</div>
+            <div class="f-r">END OF DAY 23 · <b>DAY 24 NOT ON THIS PAGE</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () {
+            if (window.jQuery) return;
+            function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; }
+            Q.prototype = {
+                each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); },
+                addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); },
+                removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); },
+                toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); },
+                closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); }
+            };
+            function $(s) {
+                if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; }
+                if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s));
+            }
+            window.jQuery = window.$ = $;
+        })();
+    </script>
+    <script>
+        (function () {
+            function $$(s) { return [].slice.call(document.querySelectorAll(s)); }
+            var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop');
+            var spyIds = ['s1', 's2', 's3', 's4', 's5', 's6', 's7', 's8', 's9', 's10', 's11', 's12', 's13', 's14', 's15', 's16', 's17', 's18', 's19', 's20', 's21', 's22', 's23', 's24', 's25', 's26', 's27', 'score', 'honest', 'report', 'mindset'];
+            var tocLinks = $$('.tn[data-spy]'), ticking = false;
+            function onScroll() {
+                if (ticking) return; ticking = true; requestAnimationFrame(function () {
+                    var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop;
+                    if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')';
+                    if (toTop) toTop.classList.toggle('show', y > 900);
+                    var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; });
+                    tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false;
+                });
+            }
+            window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll();
+            toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); });
+            var rvs = $$('.rv');
+            if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); }
+            else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); }
+            var themeBtn = document.getElementById('themeBtn');
+            function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } }
+            var st = null; try { st = localStorage.getItem('arch-day23-theme'); } catch (e) { }
+            applyTheme(st === 'dark');
+            themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day23-theme', d ? 'dark' : 'light'); } catch (e) { } });
+            var toc = document.getElementById('toc'), scrim = document.getElementById('scrim');
+            function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); }
+            document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); });
+            scrim.addEventListener('click', closeToc);
+            toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); });
+            document.getElementById('printBtn').addEventListener('click', function () { window.print(); });
+
+            var asg = $$('.asg-item input[type=checkbox]'), fill = document.getElementById('asgFill'), cnt = document.getElementById('asgCount');
+            var sv = []; try { sv = JSON.parse(localStorage.getItem('arch-day23-asg') || '[]'); } catch (e) { }
+            function upAsg() { var d = 0; asg.forEach(function (c) { if (c.checked) d++; }); if (fill) fill.style.width = Math.round((d / asg.length) * 100) + '%'; if (cnt) cnt.textContent = d + ' / ' + asg.length + ' DONE'; }
+            asg.forEach(function (c) {
+                var id = c.getAttribute('data-asg'); if (sv.indexOf(id) !== -1) c.checked = true;
+                c.addEventListener('change', function () { var s = []; asg.forEach(function (x) { if (x.checked) s.push(x.getAttribute('data-asg')); }); try { localStorage.setItem('arch-day23-asg', JSON.stringify(s)); } catch (e) { } upAsg(); });
+            });
+            upAsg();
+
+            var devs = $$('#devList li');
+            var dv = []; try { dv = JSON.parse(localStorage.getItem('arch-day23-dev') || '[]'); } catch (e) { }
+            devs.forEach(function (li) {
+                var id = li.getAttribute('data-d'); if (dv.indexOf(id) !== -1) li.classList.add('checked');
+                li.addEventListener('click', function () { li.classList.toggle('checked'); var s = []; devs.forEach(function (x) { if (x.classList.contains('checked')) s.push(x.getAttribute('data-d')); }); try { localStorage.setItem('arch-day23-dev', JSON.stringify(s)); } catch (e) { } });
+            });
+
+            var sc = $$('.sc');
+            function recalcScore() {
+                var total = 0;
+                sc.forEach(function (inp) { var v = parseInt(inp.value, 10); if (isNaN(v) || v < 0) v = 0; var m = parseInt(inp.getAttribute('data-max'), 10); if (v > m) v = m; inp.value = v; total += v; });
+                var big = document.getElementById('scoreBig'); if (big) big.innerHTML = total + '<span style="font-size:20px;color:var(--ink3)">/100</span>';
+                var bar = document.getElementById('scoreBar'); if (bar) bar.style.width = total + '%';
+                var band = document.getElementById('scoreBand'); var txt;
+                if (total >= 80) txt = '<b style="color:var(--ok)">Strong Architect readiness.</b> You think in trade-offs and reason across failure and scale. Ready for Day 24.';
+                else if (total >= 70) txt = '<b style="color:var(--blue)">Good Technical Lead, architect transition needed.</b> Knowledge is there; the habits — questions, numbers, alternatives — are still forming.';
+                else if (total >= 60) txt = '<b style="color:var(--gold)">Strong technical base, major architecture gaps.</b> You build well; you do not yet design across failure, scale and cost.';
+                else txt = '<b style="color:var(--red)">More preparation required.</b> Revisit the parts where the pressure round hurt most, then retake.';
+                if (band) band.innerHTML = txt;
+                var rs = document.getElementById('repScore'); if (rs) rs.value = total + ' / 100';
+                try { localStorage.setItem('arch-day23-score', String(total)); } catch (e) { }
+            }
+            sc.forEach(function (inp) { inp.addEventListener('input', recalcScore); });
+            recalcScore();
+
+            var repIds = ['repStrong', 'repWeak', 'repMistake', 'repLesson', 'repImprove', 'repConfBefore', 'repConfAfter', 'repLead', 'repArch'];
+            function loadRep() { try { var r = JSON.parse(localStorage.getItem('arch-day23-report') || '{}'); repIds.forEach(function (id) { var el = document.getElementById(id); if (el && r[id] !== undefined) el.value = r[id]; }); } catch (e) { } }
+            function saveRep() { var r = {}; repIds.forEach(function (id) { var el = document.getElementById(id); if (el) r[id] = el.value; }); try { localStorage.setItem('arch-day23-report', JSON.stringify(r)); } catch (e) { } }
+            repIds.forEach(function (id) { var el = document.getElementById(id); if (el) el.addEventListener('input', saveRep); });
+            loadRep();
+            document.getElementById('repPrint').addEventListener('click', function () { window.print(); });
+            document.getElementById('repClear').addEventListener('click', function () {
+                repIds.forEach(function (id) { var el = document.getElementById(id); if (el && id !== 'repScore') el.value = (el.tagName === 'TEXTAREA' || el.type === 'text') ? '' : '0'; });
+                var rs = document.getElementById('repScore'); var t = 0; try { t = localStorage.getItem('arch-day23-score') || 0; } catch (e) { } if (rs) rs.value = t + ' / 100';
+                try { localStorage.removeItem('arch-day23-report'); } catch (e) { } saveRep();
+            });
+        })();
+    </script>
+</body>
+
+</html>

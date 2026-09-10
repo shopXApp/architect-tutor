@@ -1,306 +1,433 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project File Index</title>
+    <meta name="description"
+        content="30-Day Technical Architect Track: master .NET, Azure, distributed systems, cloud architecture, and system design through daily hands-on practice.">
+    <title>30-Day Technical Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
     <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-d: #9E4312;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --reliability: #2F6D5C;
+            --performance: #C2571B;
+            --scalability: #2C5D77;
+            --security: #8C2F39;
+            --maintainability: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --disp: 'Fraunces', Georgia, 'Times New Roman', serif;
+            --body: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
+        html {
+            scroll-behavior: smooth;
+        }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 40px 20px;
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 1000px;
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line);
+            padding: 80px 28px 60px;
+            text-align: center;
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 900px;
             margin: 0 auto;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            padding: 40px;
         }
 
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-            text-align: center;
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            margin-bottom: 20px;
         }
 
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(36px, 5vw, 64px);
+            line-height: 1.05;
+            letter-spacing: -.015em;
         }
 
-        .file-section {
-            margin-bottom: 30px;
+        .hero-sub {
+            margin-top: 20px;
+            font-size: 18px;
+            color: var(--ink2);
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .section-title {
-            background-color: #667eea;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 16px;
-            font-weight: 600;
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 24px;
         }
 
-        .file-list {
-            list-style: none;
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card);
         }
 
-        .file-item {
-            padding: 12px 20px;
-            border-left: 4px solid #667eea;
-            background-color: #f8f9fa;
-            margin-bottom: 10px;
-            border-radius: 4px;
-            transition: all 0.3s ease;
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
         }
 
-        .file-item:hover {
-            background-color: #e9ecef;
-            border-left-color: #764ba2;
-            transform: translateX(5px);
+        .toc {
+            padding: 60px 0 40px;
         }
 
-        .file-item a {
-            color: #667eea;
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .day-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .day-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 20px 22px;
             text-decoration: none;
-            font-weight: 500;
+            color: inherit;
+            transition: all .25s;
+            display: block;
         }
 
-        .file-item a:hover {
-            color: #764ba2;
-            text-decoration: underline;
+        .day-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+            box-shadow: var(--shadow);
         }
 
-        .file-path {
-            color: #999;
-            font-size: 12px;
-            margin-top: 5px;
+        .day-card .day-num {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            color: var(--accent);
+            margin-bottom: 6px;
         }
 
-        .stats {
-            background-color: #f0f2f5;
-            padding: 20px;
-            border-radius: 5px;
-            margin-top: 30px;
+        .day-card h3 {
+            font-family: var(--disp);
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 8px;
+            line-height: 1.2;
+        }
+
+        .day-card p {
+            font-size: 14.5px;
+            color: var(--ink2);
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        .day-card .day-media {
+            margin-top: 12px;
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .1em;
+            color: var(--ink3);
+        }
+
+        .day-card.audio-day {
+            border-left: 3px solid var(--reliability);
+        }
+
+        .day-card.video-day {
+            border-left: 3px solid var(--scalability);
+        }
+
+        .day-card.image-day {
+            border-left: 3px solid var(--performance);
+        }
+
+        .footer {
+            border-top: 2px solid var(--ink);
+            margin-top: 80px;
+            padding: 34px 28px;
             text-align: center;
-        }
-
-        .stat-item {
-            display: inline-block;
-            margin: 0 20px;
-            color: #555;
-        }
-
-        .stat-number {
-            font-size: 24px;
-            font-weight: bold;
-            color: #667eea;
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>📁 Project File Index</h1>
-        <p class="subtitle">All files in the Architect-tutor project</p>
-
-        <!-- Root Level Files -->
-        <div class="file-section">
-            <div class="section-title">Root Level Files</div>
-            <ul class="file-list">
-                <li class="file-item">
-                    <a href="day1-v1.html">day1-v1.html</a>
-                    <div class="file-path">The Architect mindset</div>
-                </li>
-                <li class="file-item">
-                    <a href="day2-v1.html">day2-v1.html</a>
-                    <div class="file-path">Scaling basics</div>
-                </li>
-                <li class="file-item">
-                    <a href="day3-v1.html">day3-v1.html</a>
-                    <div class="file-path">Databases strategic</div>
-                </li>
-                <li class="file-item">
-                    <a href="day4-v1.html">day4-v1.html</a>
-                    <div class="file-path">Distributed systems</div>
-                </li>
-                <li class="file-item">
-                    <a href="day5-v1.html">day5-v1.html</a>
-                    <div class="file-path">Caching and Redis at architect level</div>
-                </li>
-                <li class="file-item">
-                    <a href="day6-v1.html">day6-v1.html</a>
-                    <div class="file-path">Messages, Queues & Background Work</div>
-                </li>
-                <li class="file-item">
-                    <a href="day7-v1.html">day7-v1.html</a>
-                    <div class="file-path">Mock interview</div>
-                </li>
-                <li class="file-item">
-                    <a href="day8-v1.html">day8-v1.html</a>
-                    <div class="file-path">Azure architecture</div>
-                </li>
-                <li class="file-item">
-                    <a href="day9-v1.html">day9-v1.html</a>
-                    <div class="file-path">Security & Compliance in Cloud Design</div>
-                </li>
-                <li class="file-item">
-                    <a href="day10-v1.html">day10-v1.html</a>
-                    <div class="file-path">Monitoring, Logging, & Alerting Strategies</div>
-                </li>
-                <li class="file-item">
-                    <a href="day11-v1.html">day11-v1.html</a>
-                    <div class="file-path">Cost Optimization & FinOps Principles</div>
-                </li>
-                <li class="file-item">
-                    <a href="day12-v1.html">day12-v1.html</a>
-                    <div class="file-path">Migration Strategies: Lift & Shift to Cloud-Native</div>
-                </li>
-                <li class="file-item">
-                    <a href="day13-v1.html">day13-v1.html</a>
-                    <div class="file-path">Observability & Distributed Tracing</div>
-                </li>
-                <li class="file-item">
-                    <a href="day14-v1.html">day14-v1.html</a>
-                    <div class="file-path">Microservices Patterns: API Gateway, Circuit Breaker, Service Discovery</div>
-                </li>
-                <li class="file-item">
-                    <a href="day15-v1.html">day15-v1.html</a>
-                    <div class="file-path">Event-Driven Architecture & Pub/Sub Patterns</div>
-                </li>
-                <li class="file-item">
-                    <a href="day16-v1.html">day16-v1.html</a>
-                    <div class="file-path">API Design & Management Best Practices</div>
-                </li>
-                <li class="file-item">
-                    <a href="day17-v1.html">day17-v1.html</a>
-                    <div class="file-path">Serverless Architecture Patterns</div>
-                </li>
-                <li class="file-item">
-                    <a href="day18-v1.html">day18-v1.html</a>
-                    <div class="file-path">Containerization & Kubernetes Strategy</div>
-                </li>
-                <li class="file-item">
-                    <a href="day19-v1.html">day19-v1.html</a>
-                    <div class="file-path">CI/CD Pipelines & DevOps Automation</div>
-                </li>
-                <li class="file-item">
-                    <a href="day20-v1.html">day20-v1.html</a>
-                    <div class="file-path">Disaster Recovery & Business Continuity Planning</div>
-                </li>
-                <li class="file-item">
-                    <a href="day21-v1.html">day21-v1.html</a>
-                    <div class="file-path">Database Replication & Sharding Strategies</div>
-                </li>
-                <li class="file-item">
-                    <a href="day22-v1.html">day22-v1.html</a>
-                    <div class="file-path">Search Technologies & Distributed Search</div>
-                </li>
-                <li class="file-item">
-                    <a href="day23-v1.html">day23-v1.html</a>
-                    <div class="file-path">Multi-Cloud & Hybrid Cloud Architectures</div>
-                </li>
-                <li class="file-item">
-                    <a href="day24-v1.html">day24-v1.html</a>
-                    <div class="file-path">Graph Databases & Recommendation Systems</div>
-                </li>
-                <li class="file-item">
-                    <a href="day25-v1.html">day25-v1.html</a>
-                    <div class="file-path">Geospatial Architectures & Location-Based Services</div>
-                </li>
-                <li class="file-item">
-                    <a href="day26-v1.html">day26-v1.html</a>
-                    <div class="file-path">Time-Series Data Architectures</div>
-                </li>
-                <li class="file-item">
-                    <a href="day27-v1.html">day27-v1.html</a>
-                    <div class="file-path">Data Warehousing & Data Lakehouse Strategies</div>
-                </li>
-                <li class="file-item">
-                    <a href="day28-v1.html">day28-v1.html</a>
-                    <div class="file-path">Edge Computing Architectures</div>
-                </li>
-                <li class="file-item">
-                    <a href="day29-v1.html">day29-v1.html</a>
-                    <div class="file-path">AI & Machine Learning System Design</div>
-                </li>
-                <li class="file-item">
-                    <a href="day30-v1.html">day30-v1.html</a>
-                    <div class="file-path">Enterprise Architecture Frameworks & TOGAF</div>
-                </li>
-                <li class="file-item">
-                    <a href="Mastering%20technical%20architect%20interview.html">Mastering technical architect
-                        interview.html</a>
-                    <div class="file-path">Mastering technical architect interview</div>
-                </li>
-                <li class="file-item">
-                    <a href="roadmap.html">roadmap.html</a>
-                    <div class="file-path">Root directory</div>
-                </li>
-                <li class="file-item">
-                    <a href=".gitignore">.gitignore</a>
-                    <div class="file-path">Root directory</div>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Others Directory -->
-        <div class="file-section">
-            <div class="section-title">📂 Others Directory</div>
-            <ul class="file-list">
-                <li class="file-item">
-                    <a href="others/day1.html">day1.html</a>
-                    <div class="file-path">others/</div>
-                </li>
-                <li class="file-item">
-                    <a href="others/day2.html">day2.html</a>
-                    <div class="file-path">others/</div>
-                </li>
-                <li class="file-item">
-                    <a href="others/day3-index.html">day3-index.html</a>
-                    <div class="file-path">others/</div>
-                </li>
-                <li class="file-item">
-                    <a href="others/day3-v0.html">day3-v0.html</a>
-                    <div class="file-path">others/</div>
-                </li>
-                <li class="file-item">
-                    <a href="others/day3.html">day3.html</a>
-                    <div class="file-path">others/</div>
-                </li>
-            </ul>
-        </div>
-
-        <!-- Statistics -->
-        <div class="stats">
-            <div class="stat-item">
-                <div class="stat-number">11</div>
-                <div>Total Files</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">10</div>
-                <div>HTML Files</div>
-            </div>
-            <div class="stat-item">
-                <div class="stat-number">2</div>
-                <div>Directories</div>
+    <header class="hero">
+        <div class="hero-in">
+            <div class="hero-kicker">30-Day Technical Architect Track</div>
+            <h1 class="hero-title">Master .NET, Azure, and Distributed Systems</h1>
+            <p class="hero-sub">A structured 30-day roadmap to bridge the gap between Technical Lead and Technical
+                Architect through daily practice, system design, and architecture decision-making.</p>
+            <div class="hero-meta">
+                <span class="chip">30 Days</span>
+                <span class="chip">.NET / Azure</span>
+                <span class="chip">Distributed Systems</span>
+                <span class="chip">System Design</span>
             </div>
         </div>
-    </div>
+    </header>
+
+    <main class="shell">
+        <nav class="toc" aria-label="Day index">
+            <div class="toc-title">All 30 Days</div>
+            <div class="day-grid">
+                <a class="day-card" href="pages/day1-v1.html">
+                    <div class="day-num">DAY 01</div>
+                    <h3>Architecture Mindset</h3>
+                    <p>Functional vs NFR, scalability, availability, reliability, maintainability, and cost. Design a
+                        multi-tenant SaaS platform.</p>
+                    <div class="day-media audio-day">AUDIO: The Human Side of Technical Leadership</div>
+                </a>
+                <a class="day-card" href="pages/day2-v1.html">
+                    <div class="day-num">DAY 02</div>
+                    <h3>Scaling Basics</h3>
+                    <p>Load balancing, horizontal scaling, vertical scaling, caching, CDN, and database scaling. Design
+                        for 1M users and 100K concurrent.</p>
+                </a>
+                <a class="day-card" href="pages/day3-v1.html">
+                    <div class="day-num">DAY 03</div>
+                    <h3>Databases</h3>
+                    <p>SQL vs NoSQL, indexing, partitioning, replication, sharding, read replicas, and consistency. SQL
+                        Server vs PostgreSQL vs MongoDB vs Cosmos DB.</p>
+                </a>
+                <a class="day-card" href="pages/day4-v1.html">
+                    <div class="day-num">DAY 04</div>
+                    <h3>Distributed Systems</h3>
+                    <p>CAP, consistency, availability, eventual consistency, and distributed transactions. Explain Order
+                        to Payment to Inventory to Notification.</p>
+                </a>
+                <a class="day-card" href="pages/day5-v1.html">
+                    <div class="day-num">DAY 05</div>
+                    <h3>Caching</h3>
+                    <p>Cache-aside, write-through, write-behind, TTL, invalidation, cache stampede, and distributed
+                        cache failure. Use Redis outage as interview case.</p>
+                </a>
+                <a class="day-card" href="pages/day6-v1.html">
+                    <div class="day-num">DAY 06</div>
+                    <h3>Messaging</h3>
+                    <p>RabbitMQ, Kafka, Azure Service Bus, queues vs topics, retry, DLQ, and idempotency.</p>
+                </a>
+                <a class="day-card" href="pages/day7-v1.html">
+                    <div class="day-num">DAY 07</div>
+                    <h3>Mock Interview</h3>
+                    <p>Design an Amazon-like order system in 45 minutes without Google.</p>
+                </a>
+                <a class="day-card" href="pages/day8-v1.html">
+                    <div class="day-num">DAY 08</div>
+                    <h3>Azure Architecture</h3>
+                    <p>App Service, Functions, AKS, Service Bus, Event Grid, Cosmos DB, Azure SQL, Key Vault, and API
+                        Management.</p>
+                </a>
+                <a class="day-card" href="pages/day9-v1.html">
+                    <div class="day-num">DAY 09</div>
+                    <h3>AWS Equivalent Architecture</h3>
+                    <p>Map Azure services to AWS equivalents: App Service to Elastic Beanstalk, Functions to Lambda,
+                        Service Bus to SQS/SNS, and more.</p>
+                </a>
+                <a class="day-card" href="pages/day10-v1.html">
+                    <div class="day-num">DAY 10</div>
+                    <h3>Docker + Kubernetes</h3>
+                    <p>Explain why Kubernetes exists beyond scalability. Containers, orchestration, and cloud-native
+                        patterns.</p>
+                </a>
+                <a class="day-card" href="pages/day11-v1.html">
+                    <div class="day-num">DAY 11</div>
+                    <h3>Security Architecture</h3>
+                    <p>OAuth2, OpenID Connect, JWT, Entra ID, API gateway, RBAC, secrets, encryption, and zero trust.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day12-v1.html">
+                    <div class="day-num">DAY 12</div>
+                    <h3>Observability</h3>
+                    <p>Logs, metrics, traces, correlation IDs, OpenTelemetry, Application Insights, and alerting.</p>
+                </a>
+                <a class="day-card" href="pages/day13-v1.html">
+                    <div class="day-num">DAY 13</div>
+                    <h3>Resilience</h3>
+                    <p>Timeout, retry, exponential backoff, circuit breaker, bulkhead, rate limiting, and idempotency.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day14-v1.html">
+                    <div class="day-num">DAY 14</div>
+                    <h3>Mock Payment Platform</h3>
+                    <p>Build a payment system with 99.99% availability, retries, duplicate requests, and observability.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day15-v1.html">
+                    <div class="day-num">DAY 15</div>
+                    <h3>Domain-Driven Design</h3>
+                    <p>Bounded context, aggregate, entity, value object, and domain event.</p>
+                </a>
+                <a class="day-card" href="pages/day16-v1.html">
+                    <div class="day-num">DAY 16</div>
+                    <h3>CQRS</h3>
+                    <p>Command Query Responsibility Segregation. Answer: why would I not use CQRS?</p>
+                </a>
+                <a class="day-card image-day" href="pages/day17-v1.html">
+                    <div class="day-num">DAY 17</div>
+                    <h3>Event-Driven Architecture</h3>
+                    <p>Design Order to Payment to Inventory to Shipping to Notification with events and sagas.</p>
+                    <div class="day-media">IMAGE: Event-Driven Architecture Diagram</div>
+                </a>
+                <a class="day-card" href="pages/day18-v1.html">
+                    <div class="day-num">DAY 18</div>
+                    <h3>Microservices</h3>
+                    <p>When should you not use microservices? Service boundaries, data ownership, and inter-service
+                        communication.</p>
+                </a>
+                <a class="day-card" href="pages/day19-v1.html">
+                    <div class="day-num">DAY 19</div>
+                    <h3>Modular Monolith vs Microservices</h3>
+                    <p>Make this one of your strongest interview topics. Trade-offs, migration paths, and team
+                        organization.</p>
+                </a>
+                <a class="day-card" href="pages/day20-v1.html">
+                    <div class="day-num">DAY 20</div>
+                    <h3>Architecture Trade-Offs</h3>
+                    <p>For every major technology, create Option A, Option B, pros, cons, cost, complexity, scale, and
+                        recommendation.</p>
+                </a>
+                <a class="day-card" href="pages/day21-v1.html">
+                    <div class="day-num">DAY 21</div>
+                    <h3>Architecture Presentation</h3>
+                    <p>Explain one architecture in 10 minutes to a CTO, Product Manager, and Engineering Manager. Avoid
+                        jargon.</p>
+                </a>
+                <a class="day-card" href="pages/day22-v1.html">
+                    <div class="day-num">DAY 22</div>
+                    <h3>Netflix-like Video Platform</h3>
+                    <p>Complete system design with requirements, NFRs, trade-offs, and failure modes.</p>
+                </a>
+                <a class="day-card" href="pages/day23-v1.html">
+                    <div class="day-num">DAY 23</div>
+                    <h3>Uber-like Ride Platform</h3>
+                    <p>Focus on geo, matching, availability, location updates, and surge load.</p>
+                </a>
+                <a class="day-card" href="pages/day24-v1.html">
+                    <div class="day-num">DAY 24</div>
+                    <h3>WhatsApp-like Messaging System</h3>
+                    <p>Messaging, delivery guarantees, fanout, presence, storage, and offline handling.</p>
+                </a>
+                <a class="day-card" href="pages/day25-v1.html">
+                    <div class="day-num">DAY 25</div>
+                    <h3>Multi-Tenant Enterprise SaaS</h3>
+                    <p>Tenancy, authorization, scale, reporting, integrations, and future AI. Particularly relevant to
+                        your experience.</p>
+                </a>
+                <a class="day-card" href="pages/day26-v1.html">
+                    <div class="day-num">DAY 26</div>
+                    <h3>Production Incident Interview</h3>
+                    <p>Redis goes down, returns, and 1M requests hit SQL. Explain what happens and how you prevent
+                        database collapse.</p>
+                </a>
+                <a class="day-card" href="pages/day27-v1.html">
+                    <div class="day-num">DAY 27</div>
+                    <h3>Architecture Governance</h3>
+                    <p>ADRs, architecture review boards, decision records, and governing distributed systems evolution.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day28-v1.html">
+                    <div class="day-num">DAY 28</div>
+                    <h3>Cost Architecture</h3>
+                    <p>Cloud cost models, reserved instances, spot instances, serverless vs dedicated, and TCO analysis.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day29-v1.html">
+                    <div class="day-num">DAY 29</div>
+                    <h3>Architecture for AI Systems</h3>
+                    <p>RAG patterns, embedding stores, vector databases, inference scaling, and AI integration patterns.
+                    </p>
+                </a>
+                <a class="day-card" href="pages/day30-v1.html">
+                    <div class="day-num">DAY 30</div>
+                    <h3>Final Mock Exam</h3>
+                    <p>Complete 60-minute system design under exam conditions. Review gaps and create personal architect
+                        manifesto.</p>
+                </a>
+            </div>
+        </nav>
+    </main>
+
+    <footer class="footer">
+        30-Day Technical Architect Track � Built for focused, daily architecture practice
+    </footer>
 </body>
 
 </html>

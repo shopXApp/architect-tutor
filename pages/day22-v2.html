@@ -1,0 +1,3329 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 22 of the 30-Day Technical Architect Track: Design a Netflix-Like Video Streaming System. Scale estimation, CDN, storage, video processing, database, caching, reliability, and interview defense." />
+    <title>Day 22 — Design a Netflix-Like Video Streaming System · 30-Day Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 4 4
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .calc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 18px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--teal)
+        }
+
+        .calc-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px
+        }
+
+        .calc-card .step {
+            font-family: var(--body);
+            font-size: 14.5px;
+            color: var(--ink2);
+            line-height: 1.8;
+            padding: 4px 0
+        }
+
+        .calc-card .step b {
+            color: var(--ink);
+            font-weight: 700
+        }
+
+        .calc-card .step .res {
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .calc-card .step .note {
+            color: var(--ink3);
+            font-style: italic;
+            font-size: 13px
+        }
+
+        .ans {
+            border-left-color: var(--teal)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge" onclick="window.location.href='../pages/day0-roadmap.html#roadmap'">DAY 22 /
+                30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 22 / 30 · LARGE-SCALE VIDEO DELIVERY
+                </div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">Millions of viewers.</span></span>
+                    <span class="mask"><span class="line d2">One "play" button.</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">And a <em>ton</em> of
+                            bytes.</em></span></span>
+                </h1>
+                <p class="hero-sub">Day 22 is the grand system design challenge: a Netflix-like video streaming
+                    platform. You will learn to estimate scale, design the video pipeline, put a CDN where it belongs,
+                    protect the core system from the video flood, and defend every decision to a demanding interviewer.
+                </p>
+                <div class="hero-meta"><span class="chip hot">VIDEO STREAMING</span><span class="chip">CDN</span><span
+                        class="chip">OBJECT STORAGE</span><span class="chip">14 FAILURES</span><span class="chip">20
+                        INTERVIEW Qs</span></div>
+                <div class="howto">
+                    <h4>HOW TO STUDY THIS SESSION</h4>
+                    <ol>
+                        <li><b>01</b> Parts 1–7: Start with questions, scale, high-level design, the video pipeline,
+                            streaming, and CDN.</li>
+                        <li><b>02</b> Parts 8–13: Storage, database, search, caching, recommendations, scaling, and peak
+                            traffic.</li>
+                        <li><b>03</b> Parts 14–23: 14 failures, availability, security, cost, alternatives, trade-offs,
+                            20 Qs, whiteboard exercise, defense.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">23 PARTS · 14 FAILURE SCENARIOS · 20 INTERVIEW QUESTIONS · 45-MIN CHALLENGE · 15
+                    DEFENSE QUESTIONS</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 22 → THE STREAMING PLATFORM</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 22.0 — CORE VS EDGE</text>
+                    <rect class="box" x="36" y="58" width="100" height="40" rx="3" /><text x="86" y="77" font-size="9"
+                        class="t1" text-anchor="middle">WATCHERS</text><text x="86" y="90" font-size="7.5" class="t3"
+                        text-anchor="middle">2M concurrent</text>
+                    <rect class="box" x="160" y="58" width="110" height="40" rx="3" /><text x="215" y="77" font-size="9"
+                        class="t1" text-anchor="middle">API</text><text x="215" y="90" font-size="7.5" class="t3"
+                        text-anchor="middle">metadata only</text>
+                    <rect class="box" x="294" y="58" width="110" height="40" rx="3" /><text x="349" y="77" font-size="9"
+                        class="t1" text-anchor="middle">DB + CACHE</text><text x="349" y="90" font-size="7.5" class="t3"
+                        text-anchor="middle">small data</text>
+                    <rect class="box" x="428" y="58" width="82" height="40" rx="3" /><text x="469" y="77"
+                        font-size="8.5" class="t1" text-anchor="middle">PROC</text><text x="469" y="90" font-size="7.5"
+                        class="t3" text-anchor="middle">encode</text>
+                    <path class="thin" d="M136 78 H160 M270 78 H294 M404 78 H428" />
+                    <path d="M156 74 l8 4 -8 4 z" fill="var(--ink3)" />
+                    <path d="M266 74 l8 4 -8 4 z" fill="var(--ink3)" />
+                    <path d="M400 74 l8 4 -8 4 z" fill="var(--ink3)" />
+                    <path class="dash-t" d="M86 98 V112 H215 V127 M349 98 V112 H215 V127 M469 98 V112 H215 V127" />
+                    <rect class="box ok" x="126" y="127" width="180" height="30" rx="3" /><text x="216" y="146"
+                        font-size="9" class="tt" text-anchor="middle">OBJECT STORAGE (origin)</text>
+                    <path class="dash-t" d="M216 157 V170 H428 V186" />
+                    <rect class="box ok" x="130" y="196" width="80" height="30" rx="3" /><text x="170" y="215"
+                        font-size="8.5" class="tt" text-anchor="middle">CDN · EU</text>
+                    <rect class="box ok" x="226" y="196" width="80" height="30" rx="3" /><text x="266" y="215"
+                        font-size="8.5" class="tt" text-anchor="middle">CDN · US</text>
+                    <rect class="box ok" x="322" y="196" width="80" height="30" rx="3" /><text x="362" y="215"
+                        font-size="8.5" class="tt" text-anchor="middle">CDN · ASIA</text>
+                    <rect class="box hot" x="418" y="196" width="100" height="30" rx="3" /><text x="468" y="215"
+                        font-size="8.5" class="ta" text-anchor="middle">EDGE CACHE</text>
+                    <path class="s-line" d="M130 226 V244 H86" />
+                    <path d="M90 244 l-8 6 8 6 z" fill="var(--ink3)" />
+                    <path class="s-line" d="M266 226 V244 H86" />
+                    <path class="s-line" d="M362 226 V244 H86" />
+                    <rect class="fr" x="36" y="262" width="448" height="44" rx="3" />
+                    <text x="52" y="282" font-size="9.5" class="ta">THE ONE RULE ABOVE ALL ELSE:</text>
+                    <text x="52" y="298" font-size="8.5" class="t1">VIDEOS NEVER TOUCH THE API. VIDEOS RIDE THE
+                        EDGE.</text>
+                    <rect class="fr" x="36" y="322" width="448" height="44" rx="3" />
+                    <text x="52" y="342" font-size="8.5" class="t1">CORE = AUTH · CATALOG · PROFILE · HISTORY (TINY
+                        BYTES)</text>
+                    <text x="52" y="356" font-size="8.5" class="t3">EDGE = VIDEO SEGMENTS (MASSIVE BYTES) · CACHED CLOSE
+                        TO VIEWERS</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#p1" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.33c-.65.25-.9.65-.9 1.17v.5M12 16.5h.01" stroke="currentColor"
+                        stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Start With Questions</span><span class="p-tg">DON'T DRAW
+                        FIRST</span></span></a>
+            <a class="pstrip" href="#p5" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M5 4l10 8-10 8z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"
+                        fill="none" />
+                </svg><span><span class="p-nm">Streaming &amp; CDN</span><span class="p-tg">VIDEO ON THE
+                        EDGE</span></span></a>
+            <a class="pstrip" href="#p7" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.6" />
+                    <circle cx="9" cy="12" r="2" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M21 9l-4 3 4 3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Storage &amp; Pipeline</span><span class="p-tg">BLOBS ≠
+                        ROWS</span></span></a>
+            <a class="pstrip" href="#p13" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path
+                        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">14 Failures</span><span class="p-tg">PEAK &amp; OUTAGE</span></span></a>
+            <a class="pstrip" href="#p21" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor"
+                        stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">45-Min Challenge</span><span class="p-tg">WHITEBOARD
+                        TEST</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#p1" data-spy="p1"><span>01</span> Start like an architect</a>
+            <a class="tn" href="#p2" data-spy="p2"><span>02</span> Define the scale</a>
+            <a class="tn" href="#p3" data-spy="p3"><span>03</span> High-level architecture</a>
+            <a class="tn" href="#p4" data-spy="p4"><span>04</span> Video upload &amp; processing</a>
+            <a class="tn" href="#p5" data-spy="p5"><span>05</span> Video streaming</a>
+            <a class="tn" href="#p6" data-spy="p6"><span>06</span> Why CDN matters</a>
+            <a class="tn" href="#p7" data-spy="p7"><span>07</span> Storage design</a>
+            <a class="tn" href="#p8" data-spy="p8"><span>08</span> Database design</a>
+            <a class="tn" href="#p9" data-spy="p9"><span>09</span> Search</a>
+            <a class="tn" href="#p10" data-spy="p10"><span>10</span> Caching</a>
+            <a class="tn" href="#p11" data-spy="p11"><span>11</span> Recommendations</a>
+            <a class="tn" href="#p12" data-spy="p12"><span>12</span> Scaling</a>
+            <a class="tn" href="#p13" data-spy="p13"><span>13</span> Peak traffic</a>
+            <a class="tn" href="#p14" data-spy="p14"><span>14</span> 14 failure scenarios</a>
+            <a class="tn" href="#p15" data-spy="p15"><span>15</span> Availability &amp; recovery</a>
+            <a class="tn" href="#p16" data-spy="p16"><span>16</span> Security</a>
+            <a class="tn" href="#p17" data-spy="p17"><span>17</span> Cost thinking</a>
+            <a class="tn" href="#p18" data-spy="p18"><span>18</span> Architecture alternatives</a>
+            <a class="tn" href="#p19" data-spy="p19"><span>19</span> 10 trade-offs</a>
+            <a class="tn" href="#p20" data-spy="p20"><span>20</span> 20 interview Q&amp;A</a>
+            <a class="tn" href="#p21" data-spy="p21"><span>21</span> 45-min whiteboard</a>
+            <a class="tn" href="#p22" data-spy="p22"><span>22</span> Defense (15 Qs)</a>
+            <a class="tn" href="#p23" data-spy="p23"><span>23</span> 15 things to remember</a>
+        </aside>
+        <main class="doc">
+
+            <!-- PART 1 -->
+            <section class="sec" id="p1">
+                <div class="sec-kicker">PART 1 — ACT LIKE AN ARCHITECT</div>
+                <h2 class="sec-title rv">Don't Draw Boxes Yet — Ask Questions First</h2>
+                <p class="sec-lead rv">The #1 mistake in system design interviews is drawing the first box within sixty
+                    seconds. A streaming platform looks completely different at 10,000 users versus 10 million.
+                    Architects <b>extract numbers before they draw shapes.</b></p>
+                <h3>Functional requirements — what the system must <i>do</i></h3>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Account &amp; access</b><span>User registration, login, subscription tiers
+                            (free/paid), multiple profiles per account, device registration. These are the front door —
+                            small data, high consistency requirements.</span></div>
+                    <div class="topic"><b>Discovery</b><span>Browse the catalog, search, view detail pages,
+                            continue-watching rail, personalized home page. This is where most API requests land.</span>
+                    </div>
+                    <div class="topic"><b>Playback</b><span>Watch video, pause/resume, adaptive quality switching,
+                            captions, offline downloads. This is the "product" — everything else is a lobby for
+                            it.</span></div>
+                    <div class="topic"><b>Engagement loop</b><span>Watch history, ratings, recommendations, "because you
+                            watched X". These feed the next session's discovery.</span></div>
+                </div>
+                <h3>Non-functional requirements — the qualities that shape everything</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>QUALITY</th>
+                                <th>WHY IT MATTERS TO ARCHITECTURE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Number of users</b></td>
+                                <td>Sets database size and signup/auth throughput, not the hard part.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Concurrent viewers</b></td>
+                                <td>The hard number — sets CDN capacity and bandwidth, not server count.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Video startup time</b></td>
+                                <td>The single most important user metric. Forces edge caching + adaptive bitrate.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Response time (API)</b></td>
+                                <td>Metadata must feel instant — forces caching of catalog and home data.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Availability</b></td>
+                                <td>99.9%+ means redundant API, failover DB, multi-region CDN.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scalability</b></td>
+                                <td>Peak is bursts (new series launch) — forces stateless APIs and horizontal scale.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Security</b></td>
+                                <td>Subscriptions gate content: signed URLs, anti-sharing, content protection.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Storage</b></td>
+                                <td>Petabytes. Defines object storage over databases by itself.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td>Video is bandwidth-dominant — the whole design bends to control CDN/egress cost.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE THREE MUST-ASK QUESTIONS</span>
+                    <p><b>1. How many concurrent viewers at peak?</b> — shapes CDN/bandwidth.<br><b>2. Where are users
+                            located?</b> — single region or global, shapes CDN distribution.<br><b>3. Is the catalog
+                            user-generated or curated/professional?</b> — processing a 1,000-title curated library is
+                        very different from ingesting 10,000 user uploads an hour.</p>
+                </div>
+            </section>
+
+            <!-- PART 2 -->
+            <section class="sec" id="p2">
+                <div class="sec-kicker">PART 2 — THE NUMBERS</div>
+                <h2 class="sec-title rv">Define the Scale (Back of the Envelope)</h2>
+                <p class="sec-lead rv">Every architecture decision downstream is a consequence of these estimates. State
+                    your assumptions aloud, then let the numbers steer.</p>
+                <h3>Working assumptions</h3>
+                <div class="calc-card rv">
+                    <h4>ASSUMPTIONS (state these to the interviewer)</h4>
+                    <div class="step"><b>Registered users:</b> 50 million <span class="note">// total signups</span>
+                    </div>
+                    <div class="step"><b>Daily active users (DAU):</b> 10 million <span class="note">// 20% of
+                            registered, reasonable for streaming</span></div>
+                    <div class="step"><b>Concurrent viewers at peak:</b> 2 million <span class="note">// peak evening,
+                            e.g. a popular new series</span></div>
+                    <div class="step"><b>Average viewing session:</b> 90 minutes <span class="note">// per active viewer
+                            per day</span></div>
+                    <div class="step"><b>Average bitrate:</b> 5 Mbps <span class="note">// HD, adaptive — could be 1–15
+                            Mbps</span></div>
+                    <div class="step"><b>Catalog size:</b> ~20,000 titles, each averaging 2 hours <span class="note">//
+                            assume one 2-hour video ~3–5 GB at HD</span></div>
+                </div>
+                <h3>Simple calculations</h3>
+                <div class="calc-card rv">
+                    <h4>TRAFFIC &amp; BANDWIDTH</h4>
+                    <div class="step"><b>Peak bandwidth:</b> 2,000,000 viewers × 5 Mbps = <span class="res">10 Tbps
+                            (terabits per second)</span></div>
+                    <div class="step"><b>Daily video delivered:</b> 10M DAU × 90 min × 5 Mbps = <span class="res">~3.4
+                            PB/day</span> <span class="note">// this is why CDN is non-negotiable</span></div>
+                    <div class="step"><b>API QPS (peak-heavy browsing):</b> ~10M DAU × ~20 API calls/day ÷ 86,400 ≈
+                        2,300 avg, but peak browsing spikes it: <span class="res">~5,000–10,000 QPS at launch
+                            moments</span> <span class="note">// metadata only — tiny compared to video bytes</span>
+                    </div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>STORAGE</h4>
+                    <div class="step"><b>One 2-hour movie, 4 quality ladders:</b> ~10 GB total across qualities <span
+                            class="note">// low 360p ~1GB, medium 720p ~2GB, high 1080p ~4GB, 4K ~8GB</span></div>
+                    <div class="step"><b>20,000 titles × 10 GB = </b><span class="res">~200 TB base</span> <span
+                            class="note">// a lot, but cloud object storage handles it; growth is linear</span></div>
+                    <div class="step"><b>Plus replicas + transcoding intermediates:</b> budget 2–3× → <span
+                            class="res">~400–600 TB actively managed</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">WHAT THESE NUMBERS WHISPER TO AN ARCHITECT</span>
+                    <p>Bandwidth is <b>3.4 PB/day flowing</b> while storage is only <b>hundreds of TB</b>. That single
+                        fact reshapes the whole design: <b>delivery dominates storage in both difficulty and cost.</b>
+                        Every decision — CDN over self-hosting, segments over whole files, edge caching over origin
+                        reads — stems from "we move more than we store."</p>
+                </div>
+            </section>
+
+            <!-- PART 3 -->
+            <section class="sec" id="p3">
+                <div class="sec-kicker">PART 3 — THE SHAPE</div>
+                <h2 class="sec-title rv">High-Level Architecture</h2>
+                <p class="sec-lead rv">One clean diagram, then every major component explained in plain language. Notice
+                    the sharp divide: <b>metadata on the left, video on the right.</b></p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 760 360" fill="none">
+                        <rect class="s-box" x="20" y="20" width="120" height="36" rx="3" /><text x="80" y="43"
+                            class="s-lab" text-anchor="middle" font-size="10">WEB · MOBILE · TV</text>
+                        <path class="s-line" d="M140 38 H170" />
+                        <path d="M166 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="170" y="16" width="110" height="44" rx="3" /><text x="225" y="34"
+                            class="s-lab" text-anchor="middle" font-size="10">API GATEWAY</text><text x="225" y="48"
+                            font-size="7" class="t3" text-anchor="middle">auth · rate limit</text>
+                        <path class="s-line" d="M280 38 H300" />
+                        <path d="M296 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="300" y="16" width="210" height="44" rx="3" /><text x="405" y="34"
+                            class="s-lab" text-anchor="middle" font-size="10">CORE SERVICES</text><text x="405" y="48"
+                            font-size="7" class="t3" text-anchor="middle">auth · catalog · search · profile ·
+                            history</text>
+                        <path class="s-line" d="M510 38 H530" />
+                        <path d="M526 34 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="530" y="16" width="110" height="44" rx="3" /><text x="585" y="34"
+                            class="s-lab" text-anchor="middle" font-size="10">DB + CACHE</text><text x="585" y="48"
+                            font-size="7" class="t3" text-anchor="middle">small data</text>
+                        <rect class="s-box ok" x="620" y="16" width="120" height="44" rx="3" /><text x="680" y="34"
+                            class="s-lab" text-anchor="middle" font-size="10">VIDEO PIPELINE</text><text x="680" y="48"
+                            font-size="7" class="t3" text-anchor="middle">upload → encode</text>
+
+                        <rect class="s-box" x="170" y="100" width="110" height="36" rx="3" /><text x="225" y="122"
+                            class="s-lab" text-anchor="middle" font-size="9">SEARCH INDEX</text>
+                        <rect class="s-box" x="300" y="100" width="150" height="36" rx="3" /><text x="375" y="122"
+                            class="s-lab" text-anchor="middle" font-size="9">RECOMMENDATION</text>
+                        <rect class="s-box" x="470" y="100" width="150" height="36" rx="3" /><text x="545" y="122"
+                            class="s-lab" text-anchor="middle" font-size="9">MONITORING · LOGS</text>
+                        <path class="s-line" d="M225 82 V100 M375 82 V100 M545 82 V100" />
+
+                        <path class="dash-t" d="M680 60 V160 H585" />
+                        <rect class="s-box ok" x="530" y="160" width="110" height="36" rx="3" /><text x="585" y="182"
+                            class="s-lab" text-anchor="middle" font-size="9">OBJECT STORAGE</text>
+                        <path class="dash-t" d="M585 196 V220 H225" />
+                        <rect class="s-box" x="170" y="220" width="120" height="36" rx="3" /><text x="230" y="242"
+                            class="s-lab" text-anchor="middle" font-size="9">CDN (origin)</text>
+                        <path class="s-line" d="M230 256 V280 H80" />
+                        <path d="M84 280 l-8 6 8 6 z" fill="var(--ink3)" />
+                        <path class="dash-t" d="M230 256 V300 H375" />
+                        <path d="M379 300 l-8 6 8 6 z" fill="var(--teal)" />
+                        <rect class="s-box ok" x="320" y="300" width="70" height="30" rx="2" /><text x="355" y="319"
+                            class="s-lab" text-anchor="middle" font-size="8">EDGE 1</text>
+                        <rect class="s-box ok" x="400" y="300" width="70" height="30" rx="2" /><text x="435" y="319"
+                            class="s-lab" text-anchor="middle" font-size="8">EDGE 2</text>
+                        <rect class="s-box ok" x="480" y="300" width="70" height="30" rx="2" /><text x="515" y="319"
+                            class="s-lab" text-anchor="middle" font-size="8">EDGE 3</text>
+                        <path class="s-line" d="M355 330 V344 H80 M435 330 V344 H80 M515 330 V344 H80" />
+                        <text x="20" y="356" font-size="7.5" class="t3">LEFT SIDE = SMALL BYTES (metadata, always
+                            available) · RIGHT SIDE = MASSIVE BYTES (video, at the edge)</text>
+                    </svg>
+                    <div class="figcap">FIG. 22.1 — HIGH-LEVEL ARCHITECTURE: CORE VS EDGE, CLEANLY SEPARATED</div>
+                </div>
+                <h3>Every major component, simply</h3>
+                <ul class="nlist rv">
+                    <li><b>Clients (web/mobile/TV):</b> Three different front ends; all speak to one API. Playback code
+                        lives here, choosing quality per device/network.</li>
+                    <li><b>API Gateway:</b> One entry point: authentication, rate limiting, routing. Stops abuse before
+                        it reaches anything expensive.</li>
+                    <li><b>Core services:</b> Auth, catalog, search, profiles, watch history. Small, frequent,
+                        consistency-sensitive.</li>
+                    <li><b>Database + cache:</b> Relational store for users/titles/history; cache in front for hot
+                        reads. No video bytes here, ever.</li>
+                    <li><b>Video pipeline:</b> Ingests a raw upload, transcodes it into multiple qualities and segments,
+                        writes the result to object storage.</li>
+                    <li><b>Object storage:</b> The "origin" of truth for every video file. Cheap, durable, scales to
+                        petabytes.</li>
+                    <li><b>CDN:</b> The delivery network — caches video near viewers so the origin rarely gets hit, and
+                        a user in Tokyo isn't pulling bytes from Virginia.</li>
+                    <li><b>Search index:</b> A purpose-built search store so "find a movie" never scans the main
+                        database.</li>
+                    <li><b>Recommendation:</b> Background service that precomputes "watch next" so the home page loads
+                        instantly.</li>
+                    <li><b>Monitoring/logs:</b> The observability backbone — you can't run 2M concurrent viewers you
+                        can't see.</li>
+                </ul>
+            </section>
+
+            <!-- PART 4 -->
+            <section class="sec" id="p4">
+                <div class="sec-kicker">PART 4 — THE PATENTED PIPELINE</div>
+                <h2 class="sec-title rv">Video Upload and Processing</h2>
+                <p class="sec-lead rv">What happens when a new movie arrives? This flow is the single most distinctive
+                    part of a streaming platform.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 740 150" fill="none">
+                        <rect class="s-box" x="20" y="40" width="90" height="40" rx="3" /><text x="65" y="64"
+                            class="s-lab" text-anchor="middle" font-size="9">ADMIN</text>
+                        <path class="s-line" d="M110 60 H132" />
+                        <path d="M128 56 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="132" y="40" width="100" height="40" rx="3" /><text x="182" y="60"
+                            class="s-lab" text-anchor="middle" font-size="9">UPLOAD</text><text x="182" y="73"
+                            font-size="7" class="t3" text-anchor="middle">raw master</text>
+                        <path class="s-line" d="M232 60 H254" />
+                        <path d="M250 56 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="254" y="40" width="120" height="40" rx="3" /><text x="314" y="60"
+                            class="s-lab" text-anchor="middle" font-size="9">ORIGINAL STORAGE</text><text x="314" y="73"
+                            font-size="7" class="t3" text-anchor="middle">keep the master</text>
+                        <path class="s-line" d="M374 60 H396" />
+                        <path d="M392 56 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="396" y="40" width="130" height="40" rx="3" /><text x="461" y="60"
+                            class="s-lab" text-anchor="middle" font-size="9">PROCESSING</text><text x="461" y="73"
+                            font-size="7" class="t3" text-anchor="middle">transcode + segment</text>
+                        <path class="s-line" d="M526 60 H548" />
+                        <path d="M544 56 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="548" y="40" width="120" height="40" rx="3" /><text x="608" y="60"
+                            class="s-lab" text-anchor="middle" font-size="9">PROCESSED FILES</text><text x="608" y="73"
+                            font-size="7" class="t3" text-anchor="middle">multi-quality</text>
+                        <path class="s-line" d="M608 80 V92 H182 V118" />
+                        <path d="M186 118 l-8 6 8 6 z" fill="var(--teal)" />
+                        <rect class="s-box ok" x="132" y="112" width="120" height="26" rx="2" /><text x="192" y="129"
+                            class="s-lab" text-anchor="middle" font-size="8">CDN (ready)</text>
+                        <path class="s-line" d="M192 138 V146 H65" />
+                        <path d="M69 146 l-8 6 8 6 z" fill="var(--ink3)" />
+                        <text x="608" y="95" font-size="8" class="t3">▶▶ 360p · 720p · 1080p · 4K</text>
+                    </svg>
+                    <div class="figcap">FIG. 22.2 — UPLOAD → PROCESS → MULTI-QUALITY → CDN READY</div>
+                </div>
+                <h3>The flow, step by step</h3>
+                <ol class="nlist rv">
+                    <li><b>Admin uploads a raw master</b> (e.g., a 50 GB uncompressed studio file).</li>
+                    <li><b>Original is stored as-is</b> — you keep the master forever so you can re-encode later.</li>
+                    <li><b>Processing (transcoding)</b> converts it into multiple qualities and cuts each into small
+                        <b>segments</b> (a few seconds each).
+                    </li>
+                    <li><b>Processed files land in object storage</b>, ready for the CDN to pull.</li>
+                    <li><b>Users pull only the segments they need</b>, at the quality their network/device can handle.
+                    </li>
+                </ol>
+                <h3>Why multiple qualities?</h3>
+                <ul class="nlist rv">
+                    <li><b>Low (360p):</b> for weak mobile signals, low data plans, tiny screens.</li>
+                    <li><b>Medium (720p):</b> the sweet spot for most phones and laptops.</li>
+                    <li><b>High (1080p):</b> TVs and fast home broadband.</li>
+                    <li><b>Very high (4K):</b> premium tiers, big 4K screens — biggest bandwidth, highest storage.</li>
+                </ul>
+                <p class="rv"><b>Adaptive streaming:</b> the player continuously measures bandwidth and buffer, and
+                    switches segment quality on the fly — start fast in low quality, silently step up to HD as bandwidth
+                    allows, drop down if the network wobbles. Why it matters: a viewer on a shaky connection still gets
+                    smooth playback, never a frozen spinner. This per-segment switching is why you cut the video into
+                    segments in the first place.</p>
+                <div class="callout co-tip rv"><span class="co-label">THE ARCHITECTURAL INSIGHT</span>
+                    <p>Transcoding is <b>CPU-heavy, background work</b> — a 2-hour movie doesn't encode in a
+                        millisecond. It belongs in an asynchronous worker pool, never in the upload request path. Upload
+                        returns "processing"; the pipeline emails/completes when the title is viewable. This separates a
+                        slow, expensive, retryable job from a fast, tiny, one-shot API call.</p>
+                </div>
+            </section>
+
+            <!-- PART 5 -->
+            <section class="sec" id="p5">
+                <div class="sec-kicker">PART 5 — THE PLAY BUTTON</div>
+                <h2 class="sec-title rv">Video Streaming: What Happens on "Play"</h2>
+                <p class="sec-lead rv">The user's click is the whole business. Trace it precisely — and notice where the
+                    big bytes are <b>not</b>.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 740 150" fill="none">
+                        <rect class="s-box" x="20" y="45" width="90" height="40" rx="3" /><text x="65" y="65"
+                            class="s-lab" text-anchor="middle" font-size="9">PLAY ▶</text>
+                        <path class="s-line" d="M110 65 H132" />
+                        <path d="M128 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="132" y="45" width="90" height="40" rx="3" /><text x="177" y="65"
+                            class="s-lab" text-anchor="middle" font-size="9">APP</text>
+                        <path class="s-line" d="M222 65 H244" />
+                        <path d="M240 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="244" y="45" width="90" height="40" rx="3" /><text x="289" y="65"
+                            class="s-lab" text-anchor="middle" font-size="9">API</text>
+                        <path class="s-line" d="M334 65 H356" />
+                        <path d="M352 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="356" y="45" width="100" height="40" rx="3" /><text x="406" y="61"
+                            class="s-lab" text-anchor="middle" font-size="9">AUTH + LIST</text><text x="406" y="74"
+                            font-size="7" class="t3" text-anchor="middle">entitled? URL?</text>
+                        <path class="s-line" d="M456 65 H478" />
+                        <path d="M474 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="478" y="45" width="110" height="40" rx="3" /><text x="533" y="65"
+                            class="s-lab" text-anchor="middle" font-size="9">SIGNED URL</text><text x="533" y="78"
+                            font-size="7" class="t3" text-anchor="middle">→ CDN location</text>
+                        <path class="s-line" d="M588 65 H610" />
+                        <path d="M606 61 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="610" y="45" width="110" height="40" rx="3" /><text x="665" y="65"
+                            class="s-lab" text-anchor="middle" font-size="9">CDN</text>
+                        <path class="s-line" d="M665 85 V96 H289 V114" />
+                        <path d="M293 114 l-8 6 8 6 z" fill="var(--teal)" />
+                        <rect class="s-box ok" x="244" y="108" width="110" height="26" rx="2" /><text x="299" y="125"
+                            class="s-lab" text-anchor="middle" font-size="8">SEGMENTS STREAM</text>
+                        <path class="s-line" d="M299 134 V140 H65" />
+                        <path d="M69 140 l-8 6 8 6 z" fill="var(--ink3)" />
+                        <text x="20" y="144" font-size="8" class="t3">VIDEO BYTES: CDN → DEVICE (NEVER VIA API)</text>
+                    </svg>
+                    <div class="figcap">FIG. 22.3 — PLAY: API HANDS OFF A LOCATION, CDN DELIVERS THE BYTES</div>
+                </div>
+                <ol class="nlist rv">
+                    <li><b>User clicks Play.</b> The app asks the API: "am I allowed, and where is this video?"</li>
+                    <li><b>Authorization:</b> the API checks the account is entitled (subscribed, or owns/rents this
+                        title).</li>
+                    <li><b>Video location:</b> the API returns <b>metadata + a signed URL</b> pointing at the CDN (or a
+                        manifest listing segments).</li>
+                    <li><b>CDN delivers:</b> the player fetches segments directly from the CDN, at the right quality, as
+                        they're needed.</li>
+                    <li><b>Playback continues</b> segment by segment, switching quality adaptively, buffering ahead.
+                    </li>
+                </ol>
+                <div class="callout co-warn rv"><span class="co-label">WHY THE API NEVER SENDS VIDEO</span>
+                    <p>An API server is built for thousands of small metadata requests. If it streamed 5 Mbps of video
+                        itself, <b>a handful of concurrent viewers would saturate its network card</b> and starve the
+                        login and catalog subsystems entirely. Separation is survival: the API says <i>you may
+                            watch</i>, the edge network does the <i>delivering</i>. Two different machines, two
+                        different jobs, two different scaling rules.</p>
+                </div>
+            </section>
+
+            <!-- PART 6 -->
+            <section class="sec" id="p6">
+                <div class="sec-kicker">PART 6 — THE EDGE NETWORK</div>
+                <h2 class="sec-title rv">Why the CDN Is Non-Negotiable</h2>
+                <p class="sec-lead rv">A <b>CDN (Content Delivery Network)</b> is a network of thousands of servers
+                    spread around the world, each holding cached copies of content, so users download from a machine
+                    <b>near them</b> instead of from your single origin far away.
+                </p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>1. What it does</b><span>Caches copies of popular video segments in hundreds
+                            of edge locations. A viewer in Sydney gets segments from Sydney, not from Virginia.</span>
+                    </div>
+                    <div class="topic"><b>2. Why it speeds delivery</b><span>Distance = latency. Serving from 50 km away
+                            instead of 15,000 km turns startup time from seconds into tens of milliseconds. TCP itself
+                            is faster on short, uncongested paths.</span></div>
+                    <div class="topic"><b>3. Why geography matters</b><span>2M concurrent viewers spread globally means
+                            every region needs its own edge cache. One origin cannot serve the planet — the math of
+                            light-speed latency plus single-machine bandwidth breaks down instantly.</span></div>
+                    <div class="topic"><b>4. How it protects the core</b><span>The origin only serves a segment once (a
+                            "cache miss"), then the edge serves the next 100,000 copies. Your object storage and
+                            datacenter see a trickle; the internet's edge absorbs the flood.</span></div>
+                    <div class="topic"><b>5. When CDN use grows</b><span>More viewers, more regions, more titles → more
+                            edge traffic. Cache hit ratio stays high for popular content; long-tail titles compress more
+                            at origin, so you pay more egress for old/obscure content that doesn't fit edge
+                            caches.</span></div>
+                    <div class="topic"><b>6. When CDN fails</b><span>Users served by that edge can't get video (or are
+                            rerouted to a farther, slower edge). A good design routes around failures: multiple CDNs or
+                            origin failover, health-checked at the app layer.</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE COST LAW OF STREAMING</span>
+                    <p>CDN is usually the <b>single largest line item</b> in a streaming company's bill — more than
+                        servers, more than storage. Optimizations that increase cache hit rate (popular-content
+                        prewarming, regional catalogs, quality-aware caching) are literally <i>revenue engineering</i>,
+                        because every miss that round-trips to origin costs real egress money at YouTube/Netflix scale.
+                    </p>
+                </div>
+            </section>
+
+            <!-- PART 7 -->
+            <section class="sec" id="p7">
+                <div class="sec-kicker">PART 7 — WHERE FILES LIVE</div>
+                <h2 class="sec-title rv">Storage Design: Never Put Video in a Database</h2>
+                <p class="sec-lead rv">The most frequent beginner mistake in this design is storing video in a
+                    relational database. Here is the decision, cleanly.</p>
+                <h3>Database vs object storage for video</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>FACTOR</th>
+                                <th>DATABASE (BLOB in SQL)</th>
+                                <th>OBJECT STORAGE (S3/Blob)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Cost per GB</b></td>
+                                <td>Very expensive — high-perf SSD/engineered disks, backup overhead.</td>
+                                <td class="pros">~50–90% cheaper, designed for massive data at rest.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scale</b></td>
+                                <td>Petabytes in a DB = pain: sharding, migrations, connection issues.</td>
+                                <td class="pros">Virtually unlimited, scales horizontally with no thought.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Performance</b></td>
+                                <td>Retrieving a 5 GB video through SQL is slow and hammers the DB connection pool.</td>
+                                <td class="pros">Built for streaming large objects efficiently; pairs naturally with
+                                    CDN.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Backup</b></td>
+                                <td>Backing up video blobs bloats backups 1000×, slows restore, inflates cost.</td>
+                                <td class="pros">Versioning + replication + cross-region replication built-in.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Management</b></td>
+                                <td>Video in DB is an anti-pattern to maintain and scale.</td>
+                                <td class="pros">Lifecycle policies auto-tier old/unused data to cheaper classes.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>What goes where</h3>
+                <ul class="nlist rv">
+                    <li><b>Database (relational):</b> Movie information (title, genre, cast, release year), user
+                        accounts, subscriptions, watch history, ratings, device registrations. Small, structured,
+                        related, transactional.</li>
+                    <li><b>Object storage:</b> The raw masters, every processed quality, every segment, thumbnails,
+                        captions. Large, immutable-ish, referenced by the DB via a pointer (object key/URL).</li>
+                    <li><b>The link between them:</b> the database stores <b>metadata + a key</b> to the object, never
+                        the object itself. The movie row knows <i>where</i> the 1080p manifest lives; storage holds the
+                        bytes.</li>
+                </ul>
+                <div class="callout co-tip rv"><span class="co-label">THE ONE-LINE RULE</span>
+                    <p><b>Structured, small, transactional → database. Large, binary, write-once-read-many → object
+                            storage.</b> Say that in the interview and you have answered "why not store video in SQL
+                        Server?" permanently.</p>
+                </div>
+            </section>
+
+            <!-- PART 8 -->
+            <section class="sec" id="p8">
+                <div class="sec-kicker">PART 8 — THE TRUTH LAYER</div>
+                <h2 class="sec-title rv">Database Design at Architecture Level</h2>
+                <p class="sec-lead rv">Keep tables minimal — this is about knowing what data is relational and which
+                    parts need consistency vs can lag.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>DATA AREA</th>
+                                <th>WHAT IT HOLDS</th>
+                                <th>CONSISTENCY NEED</th>
+                                <th>NOTES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>User</b></td>
+                                <td>Account, email, subscription tier, billing reference.</td>
+                                <td class="pros">Strong — payment-relevant.</td>
+                                <td>Profiles (viewer sub-accounts) hang off the user.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Subscription</b></td>
+                                <td>Plan, renew date, active/cancelled.</td>
+                                <td class="pros">Strong — gates all playback.</td>
+                                <td>Must be checked at play time — fast cached lookup.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Movie / Series / Episode</b></td>
+                                <td>Title, synopsis, cast, genre, release, object key pointers.</td>
+                                <td>Read-mostly; <span class="">strong enough</span>.</td>
+                                <td>Series has many episodes/episodes have seasons — natural hierarchy.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Watch history</b></td>
+                                <td>What, when, position, device per viewer.</td>
+                                <td class="cons">Eventual OK — a 1s lag is invisible.</td>
+                                <td class="pros">Massive write volume; append-mostly — a great fit for async capture.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Rating</b></td>
+                                <td>Thumbs up/down or stars per title per user.</td>
+                                <td class="cons">Eventual OK.</td>
+                                <td>Aggregates (avg rating) can be recomputed lazily.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Device</b></td>
+                                <td>Registered devices, last login, capabilities.</td>
+                                <td><span class="pros">Strong enough</span> for account limits.</td>
+                                <td>Ties to "how many screens allowed".</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">STRONG VS EVENTUAL — THE LINE THAT MATTERS</span>
+                    <p><b>Strong consistency</b> for anything that gates <b>money or entitlement</b>: subscription
+                        status, account validity, a purchase. <b>Eventual consistency</b> for everything the user won't
+                        notice lagging by a second: watch history position, aggregate ratings, "recently watched".
+                        Putting high-cardinality, append-only data (watch history) on an async write path is what keeps
+                        the primary DB from melting under 2M concurrent viewers' heartbeat updates.</p>
+                </div>
+            </section>
+
+            <!-- PART 9 -->
+            <section class="sec" id="p9">
+                <div class="sec-kicker">PART 9 — FIND THE TITLE</div>
+                <h2 class="sec-title rv">Search: Don't Scan the Main Database</h2>
+                <p class="sec-lead rv">"Find all movies with 'dragon' in the title, ranked by popularity" is a full-text
+                    query with ranking and typo tolerance — a very different beast from a point lookup by primary key.
+                </p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Why the main DB struggles</b><span>Relational databases aren't optimized for
+                            relevance-ranked, typo-tolerant, partial-text matching across 20K titles. As traffic grows,
+                            such queries scan and strain the same database serving account and playback lookups.</span>
+                    </div>
+                    <div class="topic"><b>A separate search store</b><span>A dedicated search engine
+                            (Elasticsearch-style) maintains a specialized <b>index</b> — a pre-built, inverted structure
+                            optimized for fast text search and ranking. Queries hit it, never the primary
+                            database.</span></div>
+                    <div class="topic"><b>Indexing &amp; updates</b><span>New titles and metadata edits flow to the
+                            search index <b>asynchronously</b> via a feed/queue. Search may lag a new title by seconds —
+                            invisible to users, enormous for decoupling.</span></div>
+                    <div class="topic"><b>Search failure</b><span>If search is down, browsing and catalog still work —
+                            the home page caches popular titles; users can still watch from their list. Search is
+                            <b>degradable</b>, not the whole product.</span></div>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">ARCHITECTURAL THEME RESTATED</span>
+                    <p>This is the same "don't make the critical path share a home with bursty, expensive work" idea as
+                        reporting (Day 16) and videos-vs-API (Part 5). <b>Search is read-heavy and self-contained —
+                            segregate it.</b> You'll reuse this exact justification in the interview: same principle,
+                        different subsystem.</p>
+                </div>
+            </section>
+
+            <!-- PART 10 -->
+            <section class="sec" id="p10">
+                <div class="sec-kicker">PART 10 — HOT DATA</div>
+                <h2 class="sec-title rv">Caching: What, Where, and What Not To</h2>
+                <p class="sec-lead rv">Caching is the cheapest performance win in the whole design — but only for the
+                    right data. Here's the architecture-level map.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>WHAT TO CACHE</th>
+                                <th>WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Movie details</b></td>
+                                <td>Changed rarely, read constantly. Prime cache material.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Popular movies / home page rail</b></td>
+                                <td>The single highest-read, lowest-write data — cache aggressively, serve the home
+                                    screen from memory.</td>
+                            </tr>
+                            <tr>
+                                <td><b>User preferences &amp; profile</b></td>
+                                <td>Needed on every request; small; changes rarely (but invalidate on profile edit).
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Search results (hot queries)</b></td>
+                                <td>"dragon", "popular", actor names repeat a lot — cache top queries.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Recommendation rows</b></td>
+                                <td>Precomputed per user; cache until they're rebuilt in the background.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>WHAT NOT TO CACHE</th>
+                                <th>WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Subscription / entitlement status</b></td>
+                                <td>Must be authoritative at play time — stale "paid" is a piracy hole.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Video bytes</b></td>
+                                <td>That's the CDN's job, not the API cache's.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Watch position during playback</b></td>
+                                <td>It's the "current" value — cache helps here, but a recoverable, slightly-stale cache
+                                    with authoritative write-through is the right pattern, not a naive TTL.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Anything money-touching</b></td>
+                                <td>Billing, purchase state — read from source of truth.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>The three caching questions</h3>
+                <ul class="nlist rv">
+                    <li><b>Expiration (TTL):</b> how long may data be stale? Titles: hours. Home rails: minutes. Prefs:
+                        minutes. The TTL is your <i>statement of acceptable staleness</i>, get it from the business.
+                    </li>
+                    <li><b>Failure:</b> when cache dies, traffic hits DB directly — slower but alive. Design DB to
+                        survive the burst, and alert on cache-hit drop.</li>
+                    <li><b>Updates/invalidation:</b> when a title changes or profile updates, <b>invalidate</b> (delete)
+                        the entry, don't just wait for TTL — stale products lose trust fast.</li>
+                </ul>
+            </section>
+
+            <!-- PART 11 -->
+            <section class="sec" id="p11">
+                <div class="sec-kicker">PART 11 — "BECAUSE YOU WATCHED…"</div>
+                <h2 class="sec-title rv">Recommendation System, Architect's Eye</h2>
+                <p class="sec-lead rv">You don't need ML expertise to design the shape. Recommendations are "watch
+                    next": take what you watched, produce a ranked list of what to watch next. The architecture question
+                    is <b>when</b>, not <b>how</b>.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 640 120" fill="none">
+                        <rect class="s-box" x="20" y="40" width="110" height="36" rx="3" /><text x="75" y="63"
+                            class="s-lab" text-anchor="middle" font-size="9">USER ACTIVITY</text>
+                        <path class="s-line" d="M130 58 H152" />
+                        <path d="M148 54 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="152" y="40" width="100" height="36" rx="3" /><text x="202" y="63"
+                            class="s-lab" text-anchor="middle" font-size="9">HISTORY STORE</text>
+                        <path class="s-line" d="M252 58 H274" />
+                        <path d="M270 54 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="274" y="40" width="130" height="36" rx="3" /><text x="339" y="63"
+                            class="s-lab" text-anchor="middle" font-size="9">BATCH PROCESSING</text><text x="339" y="76"
+                            font-size="7" class="t3" text-anchor="middle">async, offline</text>
+                        <path class="s-line" d="M404 58 H426" />
+                        <path d="M422 54 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="426" y="40" width="130" height="36" rx="3" /><text x="491" y="63"
+                            class="s-lab" text-anchor="middle" font-size="9">RECOMMENDED LIST</text>
+                        <text x="491" y="86" font-size="7.5" class="t3" text-anchor="middle">precomputed, cached</text>
+                        <path class="s-line" d="M491 88 V96 H202 V108" />
+                        <path d="M206 108 l-8 6 8 6 z" fill="var(--teal)" />
+                        <rect class="s-box" x="152" y="102" width="130" height="26" rx="2" /><text x="217" y="119"
+                            class="s-lab" text-anchor="middle" font-size="8">HOME PAGE READS IT</text>
+                    </svg>
+                    <div class="figcap">FIG. 22.4 — RECOMMENDATIONS: COMPUTED OFFLINE, READ INSTANTLY</div>
+                </div>
+                <ul class="nlist rv">
+                    <li><b>User activity</b> flows into a history/behavior store continuously (async, no impact on
+                        playback).</li>
+                    <li><b>Background processing</b> periodically (hourly/daily) recomputes each user's ranked list from
+                        their history.</li>
+                    <li><b>Result is stored and cached</b>, so the home page just <i>reads</i> a ready-made list —
+                        instant load.</li>
+                    <li><b>Why background:</b> recommendation ranking is expensive and non-urgent. Computing it inside
+                        the request path would spike home-page latency from 50 ms to 2,000 ms. Compute when things are
+                        quiet; read when they're busy.</li>
+                </ul>
+            </section>
+
+            <!-- PART 12 -->
+            <section class="sec" id="p12">
+                <div class="sec-kicker">PART 12 — GROW WITHOUT BREAKING</div>
+                <h2 class="sec-title rv">Scaling Every Major Area</h2>
+                <p class="sec-lead rv">Two tools: <b>horizontal scaling</b> (add more machines) and <b>vertical
+                        scaling</b> (make one machine bigger). Different subsystems prefer different tools.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>AREA</th>
+                                <th>SCALING STRATEGY</th>
+                                <th>WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>API (auth, catalog)</b></td>
+                                <td class="pros">Horizontal — stateless, add instances behind a load balancer.</td>
+                                <td>Each request is independent; no shared in-process state.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database (primary)</b></td>
+                                <td class="cons">Vertical first, then read replicas + sharding.</td>
+                                <td>Writes have a single-writer ceiling; reads can fan out to replicas.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Search</b></td>
+                                <td class="pros">Horizontal — add index nodes.</td>
+                                <td>Search is naturally partitioning-friendly (shard by title domain).</td>
+                            </tr>
+                            <tr>
+                                <td><b>Object storage</b></td>
+                                <td class="pros">Auto-scales; no action needed.</td>
+                                <td>The cloud service handles it internally.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Video processing</b></td>
+                                <td class="pros">Horizontal — add workers to the queue.</td>
+                                <td>Transcoding jobs are independent; more workers = faster backlog drain.</td>
+                            </tr>
+                            <tr>
+                                <td><b>CDN</b></td>
+                                <td class="pros">Auto — it IS the horizontal scale; add regions.</td>
+                                <td>Capacity grows with points-of-presence, not your machines.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Background/recommendation</b></td>
+                                <td class="pros">Horizontal — parallel jobs.</td>
+                                <td>Batch jobs partition by user; scale by adding compute.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE PATTERN</span>
+                    <p><b>Stateless and read-mostly → horizontal.</b> API, search, processing, caching.<br><b>Stateful
+                            and write-centric → vertical, then careful horizontal (replicas/sharding).</b> The
+                        database.<br><b>Already-distributed services → scale their region count.</b> The CDN and object
+                        storage.</p>
+                </div>
+            </section>
+
+            <!-- PART 13 -->
+            <section class="sec" id="p13">
+                <div class="sec-kicker">PART 13 — THE LAUNCH NIGHT</div>
+                <h2 class="sec-title rv">Handling Peak Traffic: A New Series Drops</h2>
+                <p class="sec-lead rv">Midnight, a hugely popular series releases, and millions hit Play within minutes.
+                    What bends first, and how does the architecture survive?</p>
+                <ol class="framework rv">
+                    <li><b>First to overload: the CDN's origin + metadata API.</b><span>Everyone's first action is
+                            browsing/fetching the new title's metadata and its segments. The metadata API spikes; the
+                            first viewers miss the CDN cache and the origin is stampeded.</span></li>
+                    <li><b>CDN is the hero:</b><span>Once the first thousand viewers fetch the segments, edge caches
+                            hold them. The next million are served from the edge. <i>The spike is absorbed where it
+                                should be — near the viewers.</i></span></li>
+                    <li><b>API scaling:</b><span>Stateless API scales horizontally under autoscaling rules — add
+                            instances when CPU/latency crosses a threshold. Bursts are the one thing load-balanced
+                            stateless services handle beautifully.</span></li>
+                    <li><b>Caching:</b><span>Home page, new-title detail, top search results all prefetched into cache
+                            <i>before</i> launch ("prewarming"). The most popular thing in the world becomes a cache hit
+                            from the first request.</span></li>
+                    <li><b>Video processing:</b><span>The new series was <b>processed days ahead</b> — upload and
+                            transcode happen before the release moment. On-demand transcoding at midnight would melt the
+                            worker pool; pre-processing means launch night only <i>reads</i>.</span></li>
+                    <li><b>Database protection:</b><span>Watch-history writes flow async (queue), read replicas absorb
+                            catalog reads, and read-mostly paths are cached. The write path sees a calm, measured
+                            stream, not 2M heartbeats at once.</span></li>
+                    <li><b>Monitoring:</b><span>Dashboards watch CDN hit-ratio, API p99, origin bandwidth, queue depth.
+                            An alert on cache-hit collapse or origin-everything is the first sign of a launch going
+                            sideways — long before users complain.</span></li>
+                </ol>
+                <div class="callout co-key rv"><span class="co-label">THE LAUNCH-NIGHT VERDICT</span>
+                    <p>At the moment of spike, <b>the design has already done its hardest work</b> — videos are
+                        pre-processed, popular content is prewarmed at the edge, and the API is stateless. What's left
+                        is watching the metrics confirm what the architecture was built to survive.</p>
+                </div>
+            </section>
+
+            <!-- PART 14 -->
+            <section class="sec" id="p14">
+                <div class="sec-kicker">PART 14 — WHEN IT BREAKS</div>
+                <h2 class="sec-title rv">14 Failure Scenarios</h2>
+                <p class="sec-lead rv">An architect who designs the failure library knows the system cold. Each failure:
+                    effect → user impact → immediate response → long-term prevention.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:900px">
+                        <thead>
+                            <tr>
+                                <th>FAILURE</th>
+                                <th>WHAT HAPPENS / USER IMPACT</th>
+                                <th>IMMEDIATE RESPONSE</th>
+                                <th>LONG-TERM PREVENTION</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. API server fails</b></td>
+                                <td>Can't browse/login/start playback (though a session may continue buffered).</td>
+                                <td>Load balancer routes to healthy instances; auto-replace.</td>
+                                <td>Multiple instances, health checks, auto-scaling, blue-green deploys.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Database fails</b></td>
+                                <td>Catalog/search/history dead — possibly playback-start blocked.</td>
+                                <td>Failover to read replica promoted to primary.</td>
+                                <td>Replication + tested failover + connection retry + circuit breakers.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Cache fails</b></td>
+                                <td>Slower responses; DB hit by full read volume.</td>
+                                <td>Rebuild cache; temporarily throttle non-critical reads.</td>
+                                <td>Cache redundancy, graceful degradation, restart automation, alert on hit-ratio.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. CDN (one region) fails</b></td>
+                                <td>Viewers in that region can't fetch video.</td>
+                                <td>Reroute to neighboring edge/origin; notify.</td>
+                                <td>Multi-CDN, origin failover, per-region health checks.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Video processing fails</b></td>
+                                <td>New upload stuck in "processing" — not viewable.</td>
+                                <td>Restart job; alert on stuck queue; retry with backoff.</td>
+                                <td>Idempotent jobs, dead-letter queue, worker auto-scaling.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Storage unavailable</b></td>
+                                <td>CDN misses can't reach origin → new/un-cached content breaks.</td>
+                                <td>Fail to replicated/secondary region bucket.</td>
+                                <td>Cross-region replication, eventual-consistency awareness, retry.</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Search unavailable</b></td>
+                                <td>Search broken; browse/catalog still work (degraded).</td>
+                                <td>Healthy subset of search cluster; disable search UI gracefully.</td>
+                                <td>Multiple search nodes, fallback to catalog browse, monitoring.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. Recommendation fails</b></td>
+                                <td>Home page missing "recommended" rail — can default to popular.</td>
+                                <td>Serve cached/popular fallback rows.</td>
+                                <td>Cached fallbacks, degrade-to-popular, offline recompute.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Network slow</b></td>
+                                <td>Adaptive bitrate drops quality; users see lower-res but continuity.</td>
+                                <td>Nothing to "fix" — monitor; users stay watching.</td>
+                                <td>Adaptive streaming is itself the mitigation; regional edge capacity.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. One region fails</b></td>
+                                <td>Users in that region lose service.</td>
+                                <td>Traffic routed to neighboring region (higher latency, works).</td>
+                                <td>Multi-region active-active, data replication, global load balancing.</td>
+                            </tr>
+                            <tr>
+                                <td><b>11. Very high traffic</b></td>
+                                <td>Slower API; possible throttling; video still flows via CDN.</td>
+                                <td>Scale APIs, throttle non-essential, serve degraded-but-working.</td>
+                                <td>Autoscaling, queue-based buffering, capacity planning (Day 14).</td>
+                            </tr>
+                            <tr>
+                                <td><b>12. Duplicate processing job</b></td>
+                                <td>Wasted compute, possibly conflicting writes.</td>
+                                <td>Ignore idempotent duplicates; cancel redundant job.</td>
+                                <td>Idempotency keys on jobs; "exactly-once" claims avoided — design for "at-least-once
+                                    + idempotent".</td>
+                            </tr>
+                            <tr>
+                                <td><b>13. Watch history write storm</b></td>
+                                <td>Primary DB overloaded by concurrent position updates.</td>
+                                <td>Backpressure via queue; shed non-critical writes.</td>
+                                <td>Async write path, batching, eventual-consistency design.</td>
+                            </tr>
+                            <tr>
+                                <td><b>14. Signed URL / auth leak</b></td>
+                                <td>Unauthorized access if tokens shared or too long-lived.</td>
+                                <td>Rotate/expire tokens immediately; revoke.</td>
+                                <td>Short TTL tokens, per-device binding, rate limiting, audit alerts.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 15 -->
+            <section class="sec" id="p15">
+                <div class="sec-kicker">PART 15 — STAYING UP</div>
+                <h2 class="sec-title rv">Availability and Recovery</h2>
+                <p class="sec-lead rv">Availability is purchased in five stages, each richer and each pricier. An
+                    architect knows the price of every stage.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Backup</b><span>Snapshots of database and metadata; object storage already
+                            versioned/replicated. Backups protect against <i>data loss</i>, not downtime.</span></div>
+                    <div class="topic"><b>Recovery</b><span>The plan to restore. RPO = how much data you may lose; RTO =
+                            how long you may be down. A backup you've never restored is a wish, not a plan.</span></div>
+                    <div class="topic"><b>Multiple regions</b><span>Running in two+ geographic regions so one region's
+                            outage (or a natural disaster) doesn't kill the service. Video lives at the CDN everywhere;
+                            the core (API+DB) is what must replicate.</span></div>
+                    <div class="topic"><b>Health checks</b><span>Each service exposes liveness/readiness; unhealthy
+                            instances are removed from traffic automatically. The fastest detection and the cheapest
+                            fix.</span></div>
+                    <div class="topic"><b>Failover</b><span>Primary DB dies → replica promotes within minutes. Must be
+                            automated and drilled quarterly — an untested failover is a rumor.</span></div>
+                    <div class="topic"><b>Data replication</b><span>Keep copies in sync: async (faster, some lag) vs
+                            sync (safer, slower, costlier). Pick per data's money-relevance.</span></div>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">THE TRADE-OFF TRIANGLE</span>
+                    <p><b>Higher availability → higher cost + more complexity.</b> Each extra "nine" (99.9% → 99.99%)
+                        roughly doubles the engineering and infrastructure. The correct availability is the one the
+                        business will pay for, not the highest one you can draw. A streaming service's metadata must be
+                        up to <i>start</i> playback, but an already-streaming session surviving an API hiccup buys you
+                        enormous effective resilience — design those two tolerances separately.</p>
+                </div>
+            </section>
+
+            <!-- PART 16 -->
+            <section class="sec" id="p16">
+                <div class="sec-kicker">PART 16 — KEEP IT HONEST</div>
+                <h2 class="sec-title rv">Security at Architecture Level</h2>
+                <p class="sec-lead rv">A paid streaming service's entire revenue is "only entitled users may watch".
+                    Security is the business model, not a bolt-on.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Authentication</b><span>Who are you? Login issues a token the client presents.
+                            Managed identity (Auth0/Entra) is the sane buy — don't build your own OAuth (Day 20's "buy
+                            boring").</span></div>
+                    <div class="topic"><b>Authorization / subscription validation</b><span>What may you do? At every
+                            Play, the API checks entitlement: active subscription? owns/rents this title? On the allowed
+                            number of screens? This is the gate, and it must be fast and authoritative.</span></div>
+                    <div class="topic"><b>Signed access links/tokens</b><span>Video URLs are short-lived signed tokens,
+                            not public links. A leaked URL expires in minutes and can be bound to
+                            device/IP/session.</span></div>
+                    <div class="topic"><b>Encryption</b><span>In transit (TLS everywhere) for privacy; at rest (storage
+                            encryption) for protection; content protection/DRM only for genuinely premium content where
+                            it earns its complexity.</span></div>
+                    <div class="topic"><b>Anti-sharing</b><span>Limit concurrent streams per account, device
+                            registration limits, anomaly detection (unusual login geography). Balance against user
+                            hostility — Netflix famously relaxed anti-sharing because it over-corrected.</span></div>
+                    <div class="topic"><b>API protection / rate limiting</b><span>Throttle at the gateway per user/IP,
+                            block credential-stuffing, detect scraping. The API is where abuse lands first — protect it
+                            before the database.</span></div>
+                </div>
+            </section>
+
+            <!-- PART 17 -->
+            <section class="sec" id="p17">
+                <div class="sec-kicker">PART 17 — THE BILL</div>
+                <h2 class="sec-title rv">Cost Thinking: Bandwidth Is King</h2>
+                <p class="sec-lead rv">Streaming cost is dominated by one line item — bandwidth — and every architecture
+                    choice either feeds it or starves it.</p>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>COST AREA</th>
+                                <th>WHY IT COSTS</th>
+                                <th>ARCHITECTURE LEVER TO CONTROL IT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>CDN traffic</b></td>
+                                <td class="pros">The biggest cost — 3.4 PB/day at 5 Mbps × 2M viewers.</td>
+                                <td>Maximize cache hit-rate: prewarm popular content, warm regions, smarter edge
+                                    caching.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Video storage</b></td>
+                                <td>Hundreds of TB × multiple qualities + replicas.</td>
+                                <td>Lifecycle tiers (hot vs cold/archive), drop rarely-used qualities for old titles.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Video processing</b></td>
+                                <td>Transcoding servers at encode time.</td>
+                                <td>Process once, batch, spot/cheap compute; avoid re-encoding unchanged content.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Servers (API)</b></td>
+                                <td>Stateless API fleet.</td>
+                                <td>Right-size autoscaling; cache to reduce compute; serverless for spiky parts.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database</b></td>
+                                <td>Primary + replicas + storage.</td>
+                                <td>Read replicas for reads, async writes for history, cache aggressively.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Monitoring</b></td>
+                                <td>Log/metrics volume at scale.</td>
+                                <td>Sample logs, tiered retention (30d hot / archive cold).</td>
+                            </tr>
+                            <tr>
+                                <td><b>Backup</b></td>
+                                <td>Redundant copies + restore capacity.</td>
+                                <td>Tiered backup, cross-region only for the data that truly must survive.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>Cost-saving decisions (and when they backfire)</h3>
+                <ul class="nlist rv">
+                    <li><b>Adaptive bitrate</b> — serve 4K only to those whose devices/plan justify it; prevents paying
+                        top-dollar bandwidth for viewers who can't see the difference. <i>Trade:</i> complexity in the
+                        player.</li>
+                    <li><b>Region-aware content caching</b> — a Bollywood title shouldn't hog US edge cache if its
+                        audience is in India. <i>Trade:</i> more cache policy management.</li>
+                    <li><b>Prewarming launch content at edge</b> — the cost of prewarming is tiny vs the origin storm it
+                        avoids. <i>Trade:</i> you must know what's launching when.</li>
+                    <li><b>Not over-encoding</b> — 100 qualities is waste; 4–6 sensible ones covers 99% of devices.
+                        <i>Trade:</i> coarse — some niche device gets "good enough", which is fine.
+                    </li>
+                </ul>
+                <div class="callout co-warn rv"><span class="co-label">THE COST TRAP TO AVOID</span>
+                    <p>Don't assume the most expensive architecture is best. A small regional service with 2,000 users
+                        doesn't need a global multi-CDN setup — it needs one object store, one CDN, and a monolith. Most
+                        "Netflix architecture" is <b>earned at Netflix scale</b>; applying it wholesale at startup scale
+                        is buying a freight train to deliver one package.</p>
+                </div>
+            </section>
+
+            <!-- PART 18 -->
+            <section class="sec" id="p18">
+                <div class="sec-kicker">PART 18 — RIGHT-SIZE THE DESIGN</div>
+                <h2 class="sec-title rv">Three Architecture Alternatives</h2>
+                <p class="sec-lead rv">The correct design depends entirely on scale. Here are three, from scrappy to
+                    planetary.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:880px">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th>A · SINGLE SERVER</th>
+                                <th>B · STORAGE + CDN</th>
+                                <th>C · LARGE DISTRIBUTED</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Shape</b></td>
+                                <td>One server serves API + streams files from disk.</td>
+                                <td>Monolith API + object storage + CDN for video.</td>
+                                <td>Distributed services, multi-region, dedicated search/recs, full pipeline.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Advantages</b></td>
+                                <td>Dead simple, cheap, fastest to build.</td>
+                                <td>Video handled correctly; API still simple; scales to millions of viewers via CDN.
+                                </td>
+                                <td>Massive scale, flexibility, per-subsystem scaling, regional resilience.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Disadvantages</b></td>
+                                <td>Video saturates the one server instantly; dies at trivial load.</td>
+                                <td>API/DB still a single point; limited search/recs sophistication.</td>
+                                <td>Very expensive, complex to operate, overkill under ~100K users.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Cost</b></td>
+                                <td>Lowest.</td>
+                                <td>Low-medium; CDN+storage is the bulk.</td>
+                                <td>High — everything, all at once.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Complexity</b></td>
+                                <td>None.</td>
+                                <td>Low — one real addition (CDN).</td>
+                                <td>Very high — a platform team's full-time job.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Scalability</b></td>
+                                <td>Vertical only, tiny ceiling.</td>
+                                <td>Video scales via CDN (huge); API scales a bit.</td>
+                                <td>Everything scales independently, near-unbounded.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Best for</b></td>
+                                <td>Prototype, internal demo, &lt; 1,000 users.</td>
+                                <td class="pros">A real streaming start-up: most of the value, fraction of the cost.
+                                </td>
+                                <td>Netflix-scale: millions concurrent, global, dedicated teams.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE EVOLUTION STORY</span>
+                    <p>The honest architecture answer is often <b>"start at B, grow toward C, never overpay for
+                            A-too-long or C-too-early."</b> Object storage + CDN is the leap that fixes the fundamental
+                        video problem; everything else (dedicated search, recs service, multi-region) is added only when
+                        its specific pain is measured. This "earn your complexity" arc is the same one from Days 18–19,
+                        applied to media.</p>
+                </div>
+            </section>
+
+            <!-- PART 19 -->
+            <section class="sec" id="p19">
+                <div class="sec-kicker">PART 19 — THE DECISIONS</div>
+                <h2 class="sec-title rv">10 Architecture Trade-offs</h2>
+                <p class="sec-lead rv">Ten real decisions, each with both sides exposed and a recommendation — the Day
+                    20 skill applied to video.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:900px">
+                        <thead>
+                            <tr>
+                                <th>DECISION</th>
+                                <th>OPTION A</th>
+                                <th>OPTION B</th>
+                                <th>GAIN / SACRIFICE</th>
+                                <th>CHOICE + WHY</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Video storage</b></td>
+                                <td>Database</td>
+                                <td>Object storage</td>
+                                <td>Gain simplicity vs sacrifice cost/scale/perf.</td>
+                                <td class="pros">B — video is large binary read-many; object storage is made for it.
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><b>Video delivery</b></td>
+                                <td>Direct from API</td>
+                                <td>Via CDN</td>
+                                <td>Gain trivial setup vs sacrifice API health + global latency.</td>
+                                <td class="pros">B — CDN; video on the edge.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Regions</b></td>
+                                <td>Single</td>
+                                <td>Multiple</td>
+                                <td>Gain simplicity/cost vs sacrifice regional resilience + latency.</td>
+                                <td class="pros">B when users are global; A for a single-country MVP.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Processing timing</b></td>
+                                <td>Synchronous on upload</td>
+                                <td>Background async</td>
+                                <td>Gain "instant" publish vs sacrifice a slow, fragile upload UX.</td>
+                                <td class="pros">B — async; uploads return "processing".</td>
+                            </tr>
+                            <tr>
+                                <td><b>Database</b></td>
+                                <td>Single primary only</td>
+                                <td>+ read replicas</td>
+                                <td>Gain simplicity vs sacrifice read capacity.</td>
+                                <td class="pros">B at scale — catalog reads fan out to replicas.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Recommendations</b></td>
+                                <td>Real-time computed</td>
+                                <td>Precomputed + cached</td>
+                                <td>Gain freshest recs vs sacrifice home-page latency + compute cost.</td>
+                                <td class="pros">B — precompute; freshness not worth the latency.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Search</b></td>
+                                <td>SQL against main DB</td>
+                                <td>Dedicated search index</td>
+                                <td>Gain simplicity vs sacrifice search speed + DB protection.</td>
+                                <td class="pros">B at scale; A for tiny catalogs.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Consistency</b></td>
+                                <td>Strong everywhere</td>
+                                <td>Eventual for non-money</td>
+                                <td>Gain perfect consistency vs sacrifice scale + cost.</td>
+                                <td class="pros">B — strong for entitlement, eventual for history/ratings.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Watch history writes</b></td>
+                                <td>Synchronous to primary</td>
+                                <td>Async queue + batch</td>
+                                <td>Gain instant history vs sacrifice DB stability at 2M viewers.</td>
+                                <td class="pros">B — async, the write storm is the real threat.</td>
+                            </tr>
+                            <tr>
+                                <td><b>CDN depth</b></td>
+                                <td>One provider only</td>
+                                <td>Multi-CDN</td>
+                                <td>Gain simplicity vs sacrifice resilience vs CDN outage.</td>
+                                <td class="pros">A first, add B only when CDN failure = real lost revenue.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 20 -->
+            <section class="sec" id="p20">
+                <div class="sec-kicker">PART 20 — THE INTERVIEW</div>
+                <h2 class="sec-title rv">20 Interview Questions &amp; Model Answers</h2>
+                <p class="sec-lead rv">Click each for examiner intent, the simple answer, the strong architect answer,
+                    and the rookie mistake.</p>
+                <ol class="qlist rv">
+                    <li>How would you support millions of concurrent viewers?<span class="qt warm">SCALE</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Do you understand that
+                            video and metadata scale differently?<br><b>Simple answer:</b> Use a CDN and scale APIs
+                            horizontally.<br><b>Strong answer:</b> "Viewing load is 99% video bytes, which the CDN
+                            absorbs near the user — my origin sees almost none of it. The remaining workload is metadata
+                            (small, cached, stateless), so I scale the API horizontally and use read replicas + async
+                            watch-history writes to protect the database. The concurrency problem is really a bandwidth
+                            problem, solvable at the edge."<br><b>Common mistake:</b> Thinking you need 2 million API
+                            servers or an exotic in-house network to handle it.</span></li>
+                    <li>Why use a CDN?</span><span class="qt warm">CDN</span><span class="qh-btn">▸ VIEW
+                            ANSWER</span><span class="qh"><b>Testing:</b> Grasp of geography + origin
+                            protection.<br><b>Simple answer:</b> It caches video near users.<br><b>Strong answer:</b> "A
+                            CDN turns the delivery problem from 'one datacenter serves the planet' into 'thousands of
+                            edges serve their neighborhoods'. It cuts startup latency from seconds to milliseconds, and
+                            — critically — the origin serves one copy per cache-miss, not one per viewer. That's the
+                            difference between my storage handling a trickle and my storage dying at 2M concurrent
+                            viewers."<br><b>Common mistake:</b> Describing CDN as just "faster" without the
+                            origin-protection economics.</span></li>
+                    <li>Why not store videos in SQL Server?</span><span class="qt warm">STORAGE</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Know DB vs object store
+                            boundaries.<br><b>Simple answer:</b> It's too big and expensive.<br><b>Strong answer:</b>
+                            "Video is large, binary, write-once-read-many data — the exact opposite of what a relational
+                            database is optimized for. Storing petabytes there bloats cost, breaks backups, and hammers
+                            the connection pool on every fetch. I store video in object storage and keep <i>metadata</i>
+                            (title, key, where the file lives) in the database. Two tools, each doing what it's built
+                            for."<br><b>Common mistake:</b> Conflating "the DB references the video" with "the DB must
+                            hold the video".</span></li>
+                    <li>How would you handle peak traffic (a new series launches)?</span><span
+                            class="qt deep">PEAK</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Pre-processing + edge strategy for bursts.<br><b>Simple
+                                answer:</b> Autoscale and cache.<br><b>Strong answer:</b> "Before launch: the content is
+                            already transcoded, and popular metadata/segments are prewarmed at the edge so there's no
+                            cold cache. During the spike: the CDN absorbs the video flood, stateless APIs autoscale, and
+                            the database is protected by caching + async write paths. The design does its hard work
+                            <i>before</i> midnight; the spike itself is mostly read traffic that the edge already
+                            owns."<br><b>Common mistake:</b> Treating the launch as a compute crisis instead of a
+                            cache/prewarm problem.</span></li>
+                    <li>How would you reduce video startup time?</span><span class="qt">LATENCY</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Understand low-latency
+                            streaming levers.<br><b>Simple answer:</b> Use a CDN close to the user.<br><b>Strong
+                                answer:</b> "Five levers, in order of impact: (1) serve from the nearest edge via CDN;
+                            (2) start playback at a low bitrate so the first segment loads fast, then step quality up;
+                            (3) keep segment size small so the first buffer fills instantly; (4) prefetch/prime the
+                            player with the likely next title; (5) cache the title's manifest and metadata so the API
+                            answer is instant. Startup time is really 'time to first segment', cut all the way down the
+                            chain."<br><b>Common mistake:</b> Focusing on bandwidth numbers while ignoring segment size
+                            and low-start-quality.</span></li>
+                    <li>What happens if the CDN fails?</span><span class="qt deep">FAILURE</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>Testing:</b> Failure resilience at the
+                            edge.<br><b>Simple answer:</b> Users can't watch.<br><b>Strong answer:</b> "A single
+                            edge/pop failing hurts only that region — I reroute to a neighboring edge or, at worst, the
+                            origin. A broader CDN outage is exactly why large platforms run multi-CDN: the app
+                            health-checks its video sources and fails over to the secondary CDN (or the origin)
+                            automatically. The API and catalog stay up regardless — video delivery degrades, the product
+                            doesn't die."<br><b>Common mistake:</b> Assuming CDN = single point of failure and
+                            panicking, or assuming it can never fail.</span></li>
+                    <li>How would you store watch history?</span><span class="qt warm">DATA</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>Testing:</b> High-volume write-path
+                            design.<br><b>Simple answer:</b> A table with user + title + position.<br><b>Strong
+                                answer:</b> "Watch history is append-mostly, high-volume, and
+                            eventual-consistency-friendly — a viewer won't notice a one-second lag. So I capture
+                            position updates on an asynchronous path: in-memory/queued writes that batch-flush to the
+                            store, keeping the primary DB free of a 2M-viewer heartbeat storm. Read side is cached per
+                            user for instant 'Continue Watching'."<br><b>Common mistake:</b> Synchronously writing every
+                            position tick to the primary database.</span></li>
+                    <li>How would you scale the database?</span><span class="qt">DB</span><span class="qh-btn">▸ VIEW
+                            ANSWER</span><span class="qh"><b>Testing:</b> Read vs write scaling clarity.<br><b>Simple
+                                answer:</b> Add replicas and cache.<br><b>Strong answer:</b> "Reads first — streaming is
+                            read-heavy, so read replicas fan out catalog/search/history reads while the primary owns
+                            writes. Cache is the next layer, absorbing the hottest reads. Writes are the real ceiling: I
+                            push high-volume writes (history) async, and shard by tenant/user only when write volume
+                            truly exceeds one writer — with a documented trigger, not on day one."<br><b>Common
+                                mistake:</b> Jumping to sharding while the actual pressure is read-side and
+                            cacheable.</span></li>
+                    <li>What happens when a million users watch the same movie?</span><span
+                            class="qt warm">HOTSPOT</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Hot-content handling.<br><b>Simple answer:</b> The CDN caches it
+                            once and serves everyone.<br><b>Strong answer:</b> "This is the case the CDN was built for:
+                            the first viewer (or prewarm) pulls each segment once, and a million viewers read from the
+                            edge. The danger is the <i>cold</i> start — a million simultaneous first-requests before any
+                            cache fill — which prewarming and low-start-quality solve. Hot content also moves up in the
+                            cache-eviction priority so it stays at the edge."<br><b>Common mistake:</b> Designing for
+                            million simultaneous <i>unique</i> requests when in reality it's one popular asset,
+                            massively reused.</span></li>
+                    <li>How would you design multi-region support?</span><span class="qt deep">GEO</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Data residency + global
+                            delivery.<br><b>Simple answer:</b> Run in each region with a CDN.<br><b>Strong answer:</b>
+                            "Video: the CDN already delivers globally — that's mostly solved. The hard part is stateful
+                            data: run the API + database in each major region, replicate between them (async where
+                            latency is tolerable, sync where money/entitlement demands), and georoute users to the
+                            nearest healthy region. Watch regulation: some regions demand data residency, which forces
+                            local stores. The edge is easy; replicating the truth is the work."<br><b>Common
+                                mistake:</b> Assuming video delivery handles everything and ignoring that users'
+                            accounts/history must also be near them (and legally placed).</span></li>
+                    <li>How would you control cost?</span><span class="qt">COST</span><span class="qh-btn">▸ VIEW
+                            ANSWER</span><span class="qh"><b>Testing:</b> Bandwidth-cost maturity.<br><b>Simple
+                                answer:</b> Use a CDN and cheaper storage tiers.<br><b>Strong answer:</b> "Attack the
+                            biggest line item first — bandwidth. Higher cache hit-rate (prewarming, smart eviction,
+                            region-aware catalog), adaptive bitrate so we don't overpay for 4K nobody watches, and
+                            offline/lower-granularity encodes for the long tail. Then storage: lifecycle tiers move old
+                            content to cold classes. Then compute: process once, batch, use renewable capacity. Cost is
+                            a design output, not an accident."<br><b>Common mistake:</b> Optimizing server CPU costs
+                            (tiny) while bandwidth (huge) balloons unchecked.</span></li>
+                    <li>Why separate the search subsystem?</span><span class="qt">SEARCH</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>Testing:</b> Specialized-store reasoning.<br><b>Simple
+                                answer:</b> Full-text search needs an index.<br><b>Strong answer:</b> "Relevance-ranked,
+                            typo-tolerant text search over a growing catalog isn't what a relational DB does best, and
+                            mixing it with transactional account traffic risks both. A dedicated search index handles
+                            ranking and speed, updated asynchronously from the catalog, and — because it's isolated —
+                            when search fails, browsing and playback continue unaffected."<br><b>Common mistake:</b>
+                            Running LIKE-queries against the primary at scale.</span></li>
+                    <li>What if the recommendation service is down?</span><span class="qt warm">GRACEFUL</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Degradation paths for
+                            non-critical features.<br><b>Simple answer:</b> Show popular content instead.<br><b>Strong
+                                answer:</b> "Recommendations are non-critical and precomputed, so I serve the last
+                            cached list, or fall back to a 'popular in your region' ranked list. The home page degrades
+                            gracefully — slightly less personal, still useful — and no one loses the ability to browse,
+                            search, or watch. Not every subsystem gets a 99.9% SLA; the important thing is knowing which
+                            do and which don't."<br><b>Common mistake:</b> Giving recommendations the same availability
+                            budget as the playback gate.</span></li>
+                    <li>How would you identify the bottleneck in a slow system?</span><span
+                            class="qt deep">OBSERVABILITY</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Systematic triage (Day 12 applied).<br><b>Simple answer:</b>
+                            Check metrics and traces.<br><b>Strong answer:</b> "Same chain every time: is it the edge
+                            (CDN hit-ratio, origin bandwidth), the API (p99, error rate, autoscaling), the cache
+                            (hit-ratio drop = DB under fire), or the database (query latency, connection pool, write
+                            queue depth)? I go signal to signal — a trace of a slow 'Play' shows exactly which hop ate
+                            the time. Metric scopes, trace locates, log explains."<br><b>Common mistake:</b> Guessing
+                            ("it's probably the DB") instead of reading the waterfall.</span></li>
+                    <li>How would you reduce cost by 40%?</span><span class="qt curve">BUDGET</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Cost-priority judgment
+                            under pressure.<br><b>Simple answer:</b> Use cheaper servers.<br><b>Strong answer:</b> "In
+                            order of leverage: drop 4K to on-demand only (massive bandwidth + storage savings); move
+                            long-tail/old titles to cold storage; reduce encode rungs from 6 to 4; reserve/sample logs
+                            and metrics; trim non-essential replicas to on-call failover. Protected at all costs: the
+                            entitlement gate, the cache hit-rate, and the CDN prewarm on launches — those carry revenue
+                            and user trust."<br><b>Common mistake:</b> Cutting the cache or entitlement path because
+                            it's "redundant" — killing revenue to save pennies.</span></li>
+                    <li>Why asynchronous processing for encode?</span><span class="qt">ASYNC</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Sync vs async line for
+                            heavy work.<br><b>Simple answer:</b> Encoding is slow; do it in the background.<br><b>Strong
+                                answer:</b> "Transcoding a 2-hour master takes minutes and is CPU-heavy but non-urgent.
+                            Blocking the upload request on it would freeze a tiny one-shot API call behind a long op —
+                            exactly backwards. So: upload persists the master and returns 'processing', a queue feeds
+                            worker pools that produce the quality ladder, and a completion event publishes 'ready to
+                            watch'. The work is retryable and idempotent; it's a textbook background job."<br><b>Common
+                                mistake:</b> Synchronously encoding in the request path, baking minutes of latency into
+                            an upload.</span></li>
+                    <li>How do you protect against unauthorized sharing?</span><span
+                            class="qt deep">SECURITY</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Business-aware security balance.<br><b>Simple answer:</b> Limit
+                            devices, sign URLs.<br><b>Strong answer:</b> "Signed short-lived URLs prevent link-sharing;
+                            per-account device and concurrent-stream limits cap simultaneous use; and anomaly detection
+                            flags suspicious geography/behavior. But I also flag the business risk: over-aggressive
+                            anti-sharing drove real user backlash before. The architecture provides the knobs — signing,
+                            limits, detection — and the <i>product</i> decides how tight to turn them. Security here is
+                            a business dial, not a hammer."<br><b>Common mistake:</b> Treating sharing as purely
+                            technical, ignoring the customer-experience cost of enforcement.</span></li>
+                    <li>Single server vs distributed — how do you decide?</span><span class="qt">SIZING</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Right-sizing vs
+                            resume-driven over-engineering.<br><b>Simple answer:</b> Depends on users.<br><b>Strong
+                                answer:</b> "The real lever is video, not user count: even 1,000 viewers at 5 Mbps needs
+                            5 Gbps — a single server can't stream that. So the <i>minimum</i> correct design is object
+                            storage + CDN (Option B), even at modest scale. The rest — dedicated search, recs service,
+                            multi-region, multi-CDN — I add only when each specific pain is measured. Start with B, grow
+                            toward C on evidence."<br><b>Common mistake:</b> Two failure extremes: a single server
+                            streaming video, or a full Netflix stack for 500 users.</span></li>
+                    <li>Why signed URLs instead of public links?</span><span class="qt">SECURITY</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Entitlement enforcement
+                            in delivery.<br><b>Simple answer:</b> Public links get shared.<br><b>Strong answer:</b>
+                            "Video bytes live at the edge, outside my application's memory, so the URL is the only lock
+                            between an entitled user and the content. A signed URL encodes who-may-access and
+                            when-it-expires, bound to a short window (and optionally device/session). A leaked link dies
+                            in minutes instead of living forever. Public links would make the CDN a free, un-gated
+                            publishing platform for my own content."<br><b>Common mistake:</b> Relying on "the CDN is
+                            obscure" instead of cryptographic signing.</span></li>
+                    <li>Explain your architecture in one minute to a CEO.</span><span class="qt curve">COMMS</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Translation to business
+                            (Day 21 applied).<br><b>Simple answer:</b> "It's a streaming platform with a
+                            CDN."<br><b>Strong answer:</b> "Watch: 'Customers press play and video starts instantly
+                            because we keep copies of every movie on thousands of servers around the world, close to
+                            them, not in one building. The one building — our core — only handles accounts, payment, and
+                            the catalog, which is light lifting it does forever unaided. The big cost is exactly one
+                            thing, bandwidth, and every design choice exists to bend that number down. It fails rarely,
+                            and when it does, users in one region might wait a moment while everyone else keeps
+                            watching.' No tech terms, money and risk only."<br><b>Common mistake:</b> Starting with
+                            Kubernetes, object storage, and micro-frontends.</span></li>
+                </ol>
+            </section>
+
+            <!-- PART 21 -->
+            <section class="sec" id="p21">
+                <div class="sec-kicker">PART 21 — YOUR 45 MINUTES</div>
+                <h2 class="sec-title rv">Interview Whiteboard Challenge</h2>
+                <p class="sec-lead rv">The full system design interview problem. Work it cold — 45 minutes — before
+                    revealing the suggested solution. No peeking first.</p>
+                <div class="panel rv">
+                    <h4>THE CHALLENGE</h4>
+                    <p style="font-size:16.5px;color:var(--ink)"><b>"Design a Netflix-like video streaming
+                            platform."</b></p>
+                    <div class="tblwrap" style="margin:10px 0 0">
+                        <table class="t">
+                            <thead>
+                                <tr>
+                                    <th>DIMENSION</th>
+                                    <th>REQUIREMENT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><b>Registered users</b></td>
+                                    <td>50 million</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Daily active users</b></td>
+                                    <td>10 million</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Concurrent viewers</b></td>
+                                    <td>2 million at peak</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Geography</b></td>
+                                    <td>Global (multi-region)</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Availability</b></td>
+                                    <td>99.9% for playback gate; video degrades gracefully</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Performance</b></td>
+                                    <td>Video startup &lt; 2s; metadata API p99 &lt; 200 ms</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Security</b></td>
+                                    <td>Subscription gating, signed URLs, anti-sharing</td>
+                                </tr>
+                                <tr>
+                                    <td><b>Growth</b></td>
+                                    <td>2× concurrent viewers within 18 months</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p style="margin-top:12px"><b>Your solution must cover 16 parts:</b> Requirements, assumptions,
+                        scale estimation, high-level architecture, main data flow, storage, CDN, database, caching,
+                        search, video processing, scaling, failure handling, security, cost, and trade-offs.</p>
+                    <button class="btn" style="margin-top:14px"
+                        onclick="this.parentNode.querySelector('.ans').style.display=(this.parentNode.querySelector('.ans').style.display=='block'?'none':'block')">REVEAL
+                        SUGGESTED ARCHITECT SOLUTION</button>
+                    <div class="ans"
+                        style="display:none;margin-top:16px;padding:16px 18px;background:var(--card2);border-radius:4px;border-left:3px solid var(--teal);font-size:15px">
+                        <h4 style="color:var(--ink);margin-bottom:10px">SUGGESTED ARCHITECT SOLUTION</h4>
+                        <ol class="nlist" style="margin-left:0">
+                            <li><b>Requirements:</b> Registration/login, browse/search/detail, playback with adaptive
+                                quality, continue-watching, watch history, recommendations, multi-device.
+                                Non-functional: 2M concurrent, &lt;2s startup, 99.9% gate, global, subscription-secure.
+                            </li>
+                            <li><b>Assumptions:</b> 50M registered, 10M DAU, 2M concurrent peak, 5 Mbps avg, 90-min
+                                sessions, ~20K titles, 4 quality rungs.</li>
+                            <li><b>Scale:</b> ~10 Tbps peak bandwidth; ~3.4 PB/day delivered; ~200 TB base storage (×2–3
+                                with replicas/intermediates); API ~5–10K QPS peaks, tiny vs video.</li>
+                            <li><b>High-level:</b> Clients → API Gateway → core services
+                                (auth/catalog/search/profile/history) → DB+cache; video pipeline → object storage → CDN.
+                                Sharp core/edge divide.</li>
+                            <li><b>Main flow:</b> Play = API authorizes + returns signed URL → CDN streams segments →
+                                adaptive quality switching client-side. Video never through the API.</li>
+                            <li><b>Storage:</b> Object storage for masters/qualities/segments/thumbnails/captions;
+                                database for metadata + pointer keys only.</li>
+                            <li><b>CDN:</b> Global edge network; prewarm popular + launch content; multi-CDN when a
+                                single provider's outage = real revenue loss.</li>
+                            <li><b>Database:</b> Relational; strong consistency for user/subscription/entitlement;
+                                eventual for history/ratings; read replicas + async history writes.</li>
+                            <li><b>Caching:</b> Movie details, home rails, prefs, hot search, precomputed recs; don't
+                                cache entitlement or money data.</li>
+                            <li><b>Search:</b> Dedicated index, async updates from catalog, degradable (browse still
+                                works).</li>
+                            <li><b>Video processing:</b> Async transcode into quality ladder + segments, idempotent,
+                                retry, DLQ, worker autoscaling; pre-process launches.</li>
+                            <li><b>Scaling:</b> API horizontal; DB vertical→replicas→(later shard); search/processing
+                                horizontal; storage+CDN auto.</li>
+                            <li><b>Failure:</b> The 14-scenario library; graceful degradation (recs→popular,
+                                search→browse, CDN region→neighbor).</li>
+                            <li><b>Security:</b> Managed auth, entitlement check at play, signed short-lived URLs, TLS +
+                                at-rest encryption, device/stream limits, gateway rate limiting.</li>
+                            <li><b>Cost:</b> Bandwidth-dominant; hit-rate, adaptive bitrate, cold tiers, encode-once;
+                                grow B→C on evidence.</li>
+                            <li><b>Trade-offs:</b> Object-storage over DB, CDN over direct, eventual-over-strong for
+                                non-money, precompute-over-realtime recs, multi-region only when global.</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 22 -->
+            <section class="sec" id="p22">
+                <div class="sec-kicker">PART 22 — DEFEND IT</div>
+                <h2 class="sec-title rv">Architecture Defense: 15 Tough Questions</h2>
+                <p class="sec-lead rv">You've presented the design. Now the interviewer leans forward. Answer each out
+                    loud, then check the model answer guide.</p>
+                <div class="panel rv">
+                    <h4>THE 15 FOLLOW-UP QUESTIONS</h4>
+                    <ol class="nlist">
+                        <li>"What happens if 10 million users start watching the same movie at once?"</li>
+                        <li>"What happens if the database becomes unavailable?"</li>
+                        <li>"Why not store the video in the database?"</li>
+                        <li>"Why do you need a CDN?"</li>
+                        <li>"What happens if the CDN is unavailable?"</li>
+                        <li>"How would you reduce cost?"</li>
+                        <li>"What happens during a regional outage?"</li>
+                        <li>"Which component would you scale first?"</li>
+                        <li>"How would you identify the bottleneck?"</li>
+                        <li>"What would you simplify if the budget were cut by 40%?"</li>
+                        <li>"Why does watch history need eventual consistency — isn't exact position important?"</li>
+                        <li>"Why two CDNs if your provider is already redundant?"</li>
+                        <li>"How do you know the API won't become the bottleneck?"</li>
+                        <li>"What is your single biggest risk, honestly?"</li>
+                        <li>"If you could only keep three components, which survive?"</li>
+                    </ol>
+                    <button class="btn" style="margin-top:14px"
+                        onclick="this.parentNode.querySelector('.ans').style.display=(this.parentNode.querySelector('.ans').style.display=='block'?'none':'block')">REVEAL
+                        MODEL ANSWER GUIDE</button>
+                    <div class="ans"
+                        style="display:none;margin-top:16px;padding:16px 18px;background:var(--card2);border-radius:4px;border-left:3px solid var(--teal);font-size:15px">
+                        <h4 style="color:var(--ink);margin-bottom:10px">MODEL ANSWER GUIDE</h4>
+                        <ol class="nlist" style="margin-left:0">
+                            <li><b>10M one title:</b> The perfect CDN case — prewarm makes the first request a hit;
+                                edges serve 10M. Danger is cold-start + the detail-API burst; prewarm both.</li>
+                            <li><b>DB down:</b> Failover to promoted replica; existing sessions may continue from
+                                cache/CDN; the playback gate is the critical path so it has the read replica + tested
+                                failover.</li>
+                            <li><b>Video in DB:</b> Refuse on cost/scale/perf/backup — video is write-once-read-many
+                                binary for object storage; DB holds metadata + pointer.</li>
+                            <li><b>Why CDN:</b> Geography (latency) + origin protection (one copy per miss, not per
+                                viewer). The 3.4 PB/day must flow at edges, not through one building.</li>
+                            <li><b>CDN down:</b> Region-affected viewers reroute to neighbor edge/origin; multi-CDN +
+                                origin failover; the product degrades but doesn't die.</li>
+                            <li><b>Cut cost:</b> Bandwidth first (hit-rate, adaptive bitrate, drop idle 4K), then
+                                storage tiers, then compute (encode once), then observability sampling.</li>
+                            <li><b>Regional outage:</b> Active-active; re-route to healthy region; data replication
+                                keeps state; users get slightly higher latency, not an outage.</li>
+                            <li><b>Scale first:</b> The API — cheapest, fastest, stateless horizontal scale; DB and
+                                processing have bigger engineering costs, defer until measured.</li>
+                            <li><b>Find bottleneck:</b> Edge hit-ratio → API p99/errors → cache hit-ratio → DB
+                                latency/pool/queue. Trace the slow Play hop-by-hop.</li>
+                            <li><b>40% cut:</b> Grade-down 4K→on-demand, cold-tier old titles, fewer encode rungs,
+                                sample logs; never cut entitlement gate, cache, or prewarm.</li>
+                            <li><b>History consistency:</b> Exact at the <i>end of</i> a session matters (write
+                                authoritative on stop/exit); intra-playback ticks can lag — a second of staleness is
+                                invisible, a DB write storm is not.</li>
+                            <li><b>Two CDNs:</b> A "redundant" provider can still fail globally (config, DNS, routing).
+                                Multi-CDN is break-glass insurance for when streaming stops = revenue loss.</li>
+                            <li><b>API bottleneck proof:</b> It's metadata-only (tiny vs video), stateless (scales
+                                horizontally), and cached (reads offloaded); the write path is rate-managed. The numbers
+                                say it scales, not faith.</li>
+                            <li><b>Biggest risk:</b> Entitlement gate or CDN cost spiral at 2M concurrent — name one,
+                                with its metric (e.g., cache hit-ratio below threshold → cost explosion).</li>
+                            <li><b>Keep three:</b> Object storage + CDN (video lives) + auth/catalog API (gate +
+                                discovery). Search/recs/history degrade to nothing and the core product still works.
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 23 / RULES -->
+            <section class="mindset" id="p23">
+                <div class="mindset-in">
+                    <div class="sec-kicker">DAY 22 — CLOSE</div>
+                    <h2 class="sec-title rv" style="margin-bottom:14px">15 Things I Must Remember</h2>
+                    <p class="sec-lead rv">The distilled wisdom of designing a video platform at scale. Short,
+                        practical, earned.</p>
+                    <div class="rule rv">
+                        <div class="rule-num">01</div>
+                        <div>
+                            <h3>Ask before you draw.</h3>
+                            <p>Concurrent viewers, geography, catalog size — three numbers that reshape the entire
+                                design. Get them first.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">02</div>
+                        <div>
+                            <h3>Video and metadata are two different systems.</h3>
+                            <p>Tiny bytes (auth, catalog) vs massive bytes (video). Treat them with different scaling,
+                                storage, and failure rules.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">03</div>
+                        <div>
+                            <h3>Bandwidth dominates storage.</h3>
+                            <p>You move 3.4 PB/day but store only hundreds of TB. Delivery is the hard, expensive part —
+                                design for it.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">04</div>
+                        <div>
+                            <h3>Never stream video through the API.</h3>
+                            <p>The API authorizes and hands off a signed URL; the CDN delivers the bytes. Two machines,
+                                two jobs.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">05</div>
+                        <div>
+                            <h3>Video lives in object storage, not the database.</h3>
+                            <p>Large, binary, write-once-read-many → object storage. Small, structured, transactional →
+                                database. Never confuse them.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">06</div>
+                        <div>
+                            <h3>The CDN is your biggest cost and your salvation.</h3>
+                            <p>It absorbs the flood at the edge and it's the top line item. Every optimization is
+                                hit-rate engineering.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">07</div>
+                        <div>
+                            <h3>Transcode in the background, before launch.</h3>
+                            <p>Heavy, non-urgent work belongs in an async idempotent pipeline — never in the upload
+                                request, never at launch midnight.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">08</div>
+                        <div>
+                            <h3>Adaptive bitrate is the resilience trick.</h3>
+                            <p>Multiple qualities + segments = start low, step up, survive shaky networks. It's why
+                                smooth playback survives bad internet.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">09</div>
+                        <div>
+                            <h3>Strong for money, eventual for everything else.</h3>
+                            <p>Entitlement/subscription: strong. Watch history, ratings, recommendations: eventual. The
+                                line is "will a user notice/care".</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">10</div>
+                        <div>
+                            <h3>Protect the database from write storms.</h3>
+                            <p>2M hearts = 2M position updates. Queue and batch history writes; the primary stays calm
+                                while viewers stream.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">11</div>
+                        <div>
+                            <h3>Search and recommendations are degradable.</h3>
+                            <p>When they fail, browse still works, popular still shows. Not every subsystem deserves a
+                                99.9% budget — know which do.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">12</div>
+                        <div>
+                            <h3>Precompute the home page, don't compute it live.</h3>
+                            <p>Recommendations and popular rails are built offline and cached, so the busiest screen is
+                                always instant.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">13</div>
+                        <div>
+                            <h3>Start at Option B, grow toward C.</h3>
+                            <p>Object storage + CDN + monolith is the correct minimum. Distributed services are earned
+                                by measured pain, not ambition.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">14</div>
+                        <div>
+                            <h3>Security IS the business model.</h3>
+                            <p>A paid service's revenue is "only entitled users watch." Signed URLs, entitlement checks,
+                                device limits — core, not afterthought.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">15</div>
+                        <div>
+                            <h3>Cost is a design output.</h3>
+                            <p>Do not assume the most expensive architecture is best. Name the biggest cost (bandwidth)
+                                and design every choice to bend it down.</p>
+                        </div>
+                    </div>
+
+                    <div class="callout co-key rv" style="margin-top:44px"><span class="co-label">THE 60-SECOND
+                            INTERVIEW ANSWER: "How would you design a Netflix-like system?"</span>
+                        <p><b>"The insight is that a streaming platform is really two systems wearing one brand. The
+                                first is a small, normal application — accounts, catalog, search, profiles — handling
+                                millions of lightweight metadata requests a second. The second is a delivery problem —
+                                moving petabytes of video daily. So I keep them separate: a standard stateless API over
+                                a relational database for the metadata, and object storage plus a global CDN for the
+                                video. When a user hits Play, the API checks their subscription and hands back a signed
+                                short-lived URL, and the CDN streams segments near the viewer at whatever quality their
+                                connection can handle — the API never touches a single video byte. That separation is
+                                what lets a hundred API servers serve tens of millions of users, because the heavy
+                                lifting happens at the edge, not in the core. Video is transcoded asynchronously into
+                                several qualities before release; watch history and recommendations are eventually
+                                consistent and precomputed so the busiest screens stay instant; and the whole thing is
+                                designed around one brutal cost law — bandwidth is the bill, so every choice, from
+                                adaptive bitrate to edge caching to dropping idle 4K, is made to bend that number
+                                down."</b></p>
+                    </div>
+                    <div class="callout co-ok rv" style="margin-top:20px"><span class="co-label">THE ARCHITECT'S POWER
+                            STATEMENT</span>
+                        <p><b>"At scale you don't design for handling requests — you design for moving oceans of data
+                                efficiently, while every byte that never reaches your core is a byte you didn't pay for
+                                and a server you didn't have to protect."</b></p>
+                    </div>
+                    <p class="mind-close rv">You've now walked a real-world system from a blank whiteboard to a defended
+                        design. The craft is the same whether it's video, money, or messages: separate the heavy from
+                        the transactional, push bytes to the edge, precompute the expensive, and protect the truth. End
+                        of Day 22.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 22 / 30 — DESIGN A NETFLIX-LIKE VIDEO STREAMING
+                SYSTEM</div>
+            <div class="f-r">WEEK 4 · <b>DAY 23 AVAILABLE IN TRACK</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $(s) { return document.querySelector(s); } function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19', 'p20', 'p21', 'p22', 'p23']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day22-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day22-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function (e) { li.classList.toggle('qopen'); }); }); });
+    </script>
+</body>
+
+</html>

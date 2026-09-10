@@ -1,0 +1,3279 @@
+<!DOCTYPE html>
+<html lang="en" option="B">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description"
+        content="Day 21 of the 30-Day Technical Architect Track: Architecture Presentation and Communication. Learn to explain, simplify, and defend your architecture to any audience — developers, managers, CTOs, and business stakeholders." />
+    <title>Day 21 — Architecture Presentation &amp; Communication · 30-Day Architect Track</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M8 24 L16 8 L24 24 M11.5 18.5 H20.5' stroke='%23F6F2E9' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700;9..144,900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet" />
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --card2: #F3EEE1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --line2: #CBC0A5;
+            --accent: #C2571B;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --teal: #2F6D5C;
+            --blue: #2C5D77;
+            --red: #8C2F39;
+            --gold: #7A6416;
+            --ok: #2F6D5C;
+            --warnbg: rgba(140, 47, 57, .07);
+            --tipbg: rgba(44, 93, 119, .07);
+            --keybg: rgba(32, 41, 58, .05);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --grid: rgba(32, 41, 58, .055);
+            --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+            --disp: 'Fraunces', Georgia, serif;
+            --body: 'Source Sans 3', system-ui, sans-serif
+        }
+
+        body.dark {
+            --paper: #141924;
+            --paper2: #10141D;
+            --card: #1B2231;
+            --card2: #181F2C;
+            --ink: #E8E3D5;
+            --ink2: #A7AEC2;
+            --ink3: #79819a;
+            --line: #2A3348;
+            --line2: #39435C;
+            --accent: #E57A36;
+            --accent-tint: rgba(229, 122, 54, .1);
+            --teal: #5FA98F;
+            --blue: #6FA3C4;
+            --red: #D97A86;
+            --gold: #C9B45E;
+            --warnbg: rgba(217, 122, 134, .1);
+            --tipbg: rgba(111, 163, 196, .1);
+            --keybg: rgba(232, 227, 213, .05);
+            --shadow: 0 18px 40px -24px rgba(0, 0, 0, .7);
+            --grid: rgba(232, 227, 213, .045)
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 16.5px;
+            line-height: 1.66;
+            -webkit-font-smoothing: antialiased
+        }
+
+        ::selection {
+            background: var(--accent);
+            color: #F6F2E9
+        }
+
+        a {
+            color: inherit
+        }
+
+        button {
+            font-family: inherit;
+            cursor: pointer
+        }
+
+        svg {
+            display: block;
+            max-width: 100%
+        }
+
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 200;
+            opacity: .05;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.55'/%3E%3C/svg%3E")
+        }
+
+        .progress {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            z-index: 120
+        }
+
+        .progress i {
+            display: block;
+            height: 100%;
+            background: var(--accent);
+            transform: scaleX(0);
+            transform-origin: left
+        }
+
+        .topbar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--paper);
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 12px 26px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            min-width: 0
+        }
+
+        .b-mark {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .22em;
+            color: var(--ink2);
+            white-space: nowrap
+        }
+
+        .day-badge {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            background: var(--ink);
+            color: var(--paper);
+            padding: 4px 10px;
+            border-radius: 3px;
+            white-space: nowrap
+        }
+
+        .tb-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center
+        }
+
+        .btn {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            border: 1px solid var(--line2);
+            background: transparent;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 3px;
+            transition: all .25s
+        }
+
+        .btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+            transform: translateY(-1px)
+        }
+
+        .icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px
+        }
+
+        #tocToggle {
+            display: none
+        }
+
+        .hero {
+            position: relative;
+            overflow: hidden;
+            border-bottom: 1px solid var(--line)
+        }
+
+        .hero::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+            background-size: 30px 30px
+        }
+
+        .hero-in {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 72px 28px 56px;
+            display: grid;
+            grid-template-columns: 1.05fr .95fr;
+            gap: 54px;
+            align-items: center
+        }
+
+        .hero-kicker {
+            font-family: var(--mono);
+            font-size: 11.5px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 24px
+        }
+
+        .hero-kicker::before {
+            content: "";
+            width: 38px;
+            height: 1px;
+            background: var(--accent)
+        }
+
+        .hero-title {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: clamp(37px, 5.3vw, 68px);
+            line-height: 1.02;
+            letter-spacing: -.015em
+        }
+
+        .hero-title .mask {
+            display: block;
+            overflow: hidden;
+            padding-bottom: .06em
+        }
+
+        .hero-title .line {
+            display: block;
+            transform: translateY(112%);
+            animation: rise 1s cubic-bezier(.19, .74, .22, 1) forwards
+        }
+
+        .hero-title .line.d1 {
+            animation-delay: .1s
+        }
+
+        .hero-title .line.d2 {
+            animation-delay: .24s
+        }
+
+        @keyframes rise {
+            to {
+                transform: translateY(0)
+            }
+        }
+
+        .hero-title em {
+            font-style: italic;
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .hero-sub {
+            margin-top: 22px;
+            max-width: 575px;
+            font-size: 18px;
+            color: var(--ink2)
+        }
+
+        .hero-sub b {
+            color: var(--ink)
+        }
+
+        .hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 24px
+        }
+
+        .chip {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .12em;
+            border: 1px solid var(--line2);
+            padding: 6px 11px;
+            border-radius: 3px;
+            color: var(--ink2);
+            background: var(--card)
+        }
+
+        .chip.hot {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .howto {
+            margin-top: 32px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 18px 20px;
+            max-width: 575px
+        }
+
+        .howto h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .2em;
+            color: var(--ink3);
+            margin-bottom: 12px
+        }
+
+        .howto ol {
+            list-style: none;
+            display: grid;
+            gap: 9px
+        }
+
+        .howto li {
+            display: flex;
+            gap: 12px;
+            align-items: baseline;
+            font-size: 15px;
+            color: var(--ink2)
+        }
+
+        .howto li b {
+            font-family: var(--mono);
+            color: var(--accent);
+            font-weight: 600;
+            font-size: 12px;
+            min-width: 22px
+        }
+
+        .hero-stats {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .17em;
+            color: var(--ink3);
+            margin-top: 24px
+        }
+
+        .sketch {
+            position: relative;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            border-radius: 4px;
+            padding: 14px;
+            box-shadow: var(--shadow)
+        }
+
+        .sketch svg {
+            width: 100%;
+            height: auto
+        }
+
+        .sketch svg text {
+            font-family: var(--mono)
+        }
+
+        .sketch .fr {
+            fill: none;
+            stroke: var(--line2)
+        }
+
+        .sketch .tick,
+        .sketch .thin {
+            stroke: var(--ink3);
+            fill: none
+        }
+
+        .sketch .dash {
+            stroke: var(--teal);
+            fill: none;
+            stroke-dasharray: 4 4
+        }
+
+        .sketch .box {
+            fill: var(--card);
+            stroke: var(--ink)
+        }
+
+        .sketch .box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .sketch .box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .sketch .box.ext {
+            stroke-dasharray: 5 4
+        }
+
+        .sketch .t1 {
+            fill: var(--ink)
+        }
+
+        .sketch .t3 {
+            fill: var(--ink3)
+        }
+
+        .sketch .ta {
+            fill: var(--accent)
+        }
+
+        .sketch .tt {
+            fill: var(--teal)
+        }
+
+        .sketch .tr {
+            fill: var(--red)
+        }
+
+        .sketch .arr {
+            fill: var(--ink3)
+        }
+
+        .sketch .st2 {
+            font-size: 8.2px
+        }
+
+        .pillars-strip {
+            position: relative;
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px 52px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px
+        }
+
+        .pstrip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            padding: 14px 15px;
+            text-decoration: none;
+            transition: all .28s
+        }
+
+        .pstrip:hover {
+            transform: translateY(-3px);
+            border-color: var(--pc);
+            box-shadow: var(--shadow)
+        }
+
+        .pstrip .p-ico {
+            color: var(--pc);
+            flex: none
+        }
+
+        .p-nm {
+            font-weight: 700;
+            font-size: 14.5px;
+            line-height: 1.2
+        }
+
+        .p-tg {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .08em;
+            color: var(--ink3);
+            margin-top: 3px
+        }
+
+        .shell {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 0 28px;
+            display: grid;
+            grid-template-columns: 248px minmax(0, 1fr);
+            gap: 56px
+        }
+
+        .toc {
+            position: sticky;
+            top: 70px;
+            align-self: start;
+            max-height: calc(100vh - 90px);
+            overflow: auto;
+            padding: 34px 0 30px
+        }
+
+        .toc-title {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .24em;
+            color: var(--ink3);
+            margin-bottom: 14px
+        }
+
+        .tn {
+            display: flex;
+            gap: 10px;
+            align-items: baseline;
+            text-decoration: none;
+            font-size: 13.5px;
+            color: var(--ink2);
+            padding: 6px 10px;
+            border-left: 2px solid transparent;
+            transition: all .22s;
+            line-height: 1.4
+        }
+
+        .tn span {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            color: var(--ink3);
+            min-width: 22px
+        }
+
+        .tn:hover {
+            color: var(--ink);
+            border-left-color: var(--line2)
+        }
+
+        .tn.on {
+            color: var(--accent);
+            border-left-color: var(--accent);
+            background: var(--accent-tint)
+        }
+
+        .tn.on span {
+            color: var(--accent)
+        }
+
+        .doc {
+            min-width: 0;
+            padding-bottom: 40px
+        }
+
+        .sec {
+            padding: 72px 0 10px;
+            border-top: 1px solid var(--line)
+        }
+
+        .sec:first-child {
+            border-top: 0;
+            padding-top: 54px
+        }
+
+        .sec-kicker {
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .26em;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px
+        }
+
+        .sec-kicker::after {
+            content: "";
+            flex: 1;
+            height: 1px;
+            background: var(--line)
+        }
+
+        .sec-title {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(29px, 3.6vw, 45px);
+            line-height: 1.06;
+            letter-spacing: -.01em;
+            max-width: 860px
+        }
+
+        .sec-lead {
+            margin-top: 18px;
+            font-size: 19px;
+            color: var(--ink2);
+            max-width: 790px
+        }
+
+        .sec-lead b {
+            color: var(--ink)
+        }
+
+        .sec h3 {
+            font-family: var(--disp);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 42px 0 14px
+        }
+
+        .sec p {
+            margin: 14px 0;
+            max-width: 820px
+        }
+
+        .sec p b {
+            font-weight: 700
+        }
+
+        .sec ol.nlist,
+        .sec ul.nlist {
+            margin: 12px 0 0 22px;
+            max-width: 820px;
+            color: var(--ink2)
+        }
+
+        .sec ol.nlist li,
+        .sec ul.nlist li {
+            margin: 8px 0;
+            font-size: 15.5px
+        }
+
+        .sec ol.nlist li b,
+        .sec ul.nlist li b {
+            color: var(--ink)
+        }
+
+        code {
+            font-family: var(--mono);
+            font-size: .86em;
+            background: var(--card2);
+            border: 1px solid var(--line);
+            padding: 1px 6px;
+            border-radius: 3px
+        }
+
+        .rv {
+            opacity: 0;
+            transform: translateY(24px);
+            transition: opacity .7s ease, transform .7s ease
+        }
+
+        .rv.in {
+            opacity: 1;
+            transform: none
+        }
+
+        .callout {
+            border-left: 3px solid var(--accent);
+            background: var(--accent-tint);
+            padding: 18px 22px;
+            border-radius: 0 6px 6px 0;
+            margin: 26px 0;
+            max-width: 840px
+        }
+
+        .callout .co-label {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            display: block;
+            margin-bottom: 8px
+        }
+
+        .callout p {
+            margin: 4px 0;
+            font-size: 15.5px
+        }
+
+        .co-warn {
+            border-left-color: var(--red);
+            background: var(--warnbg)
+        }
+
+        .co-warn .co-label {
+            color: var(--red)
+        }
+
+        .co-tip {
+            border-left-color: var(--blue);
+            background: var(--tipbg)
+        }
+
+        .co-tip .co-label {
+            color: var(--blue)
+        }
+
+        .co-key {
+            border-left-color: var(--ink);
+            background: var(--keybg)
+        }
+
+        .co-key .co-label {
+            color: var(--ink)
+        }
+
+        .co-ok {
+            border-left-color: var(--ok);
+            background: rgba(47, 109, 92, .06)
+        }
+
+        .co-ok .co-label {
+            color: var(--ok)
+        }
+
+        .tblwrap {
+            overflow-x: auto;
+            margin: 26px 0;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: var(--card)
+        }
+
+        table.t {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14.5px;
+            min-width: 600px
+        }
+
+        .t th {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            text-align: left;
+            padding: 14px 18px;
+            border-bottom: 2px solid var(--ink);
+            color: var(--ink);
+            background: var(--card2)
+        }
+
+        .t td {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+            color: var(--ink2)
+        }
+
+        .t tr:last-child td {
+            border-bottom: 0
+        }
+
+        .t td b {
+            color: var(--ink)
+        }
+
+        .t td .pros {
+            color: var(--ok)
+        }
+
+        .t td .cons {
+            color: var(--red)
+        }
+
+        .t td.cat {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            background: var(--accent-tint);
+            font-weight: 600
+        }
+
+        .topic-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 26px 0
+        }
+
+        .topic {
+            border-top: 1px solid var(--line);
+            padding: 18px 24px
+        }
+
+        .topic:nth-child(-n+2) {
+            border-top: 0
+        }
+
+        .topic:nth-child(odd) {
+            border-right: 1px solid var(--line)
+        }
+
+        .topic b {
+            display: block;
+            font-family: var(--mono);
+            font-size: 11px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 7px
+        }
+
+        .topic span {
+            font-size: 14.5px;
+            color: var(--ink2)
+        }
+
+        .figbox {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 14px;
+            margin: 26px 0
+        }
+
+        .figbox svg {
+            width: 100%;
+            height: auto
+        }
+
+        .figcap {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .14em;
+            color: var(--ink3);
+            text-transform: uppercase;
+            padding: 10px 6px 2px
+        }
+
+        .s-box {
+            fill: var(--card);
+            stroke: var(--ink);
+            stroke-width: 1.3
+        }
+
+        .s-box.ext {
+            stroke-dasharray: 6 4
+        }
+
+        .s-box.hot {
+            fill: var(--accent-tint);
+            stroke: var(--accent)
+        }
+
+        .s-box.ok {
+            fill: rgba(47, 109, 92, .1);
+            stroke: var(--ok)
+        }
+
+        .s-box.bad {
+            fill: var(--warnbg);
+            stroke: var(--red);
+            stroke-dasharray: 5 4
+        }
+
+        .s-lab {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            fill: var(--ink);
+            letter-spacing: .05em;
+            font-weight: 600
+        }
+
+        .s-sub {
+            font-family: var(--mono);
+            font-size: 8.8px;
+            fill: var(--ink3)
+        }
+
+        .s-note {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            fill: var(--accent);
+            letter-spacing: .06em
+        }
+
+        .s-line {
+            stroke: var(--ink3);
+            stroke-width: 1.2;
+            fill: none
+        }
+
+        .s-lbl {
+            font-family: var(--mono);
+            font-size: 8.5px;
+            fill: var(--ink2);
+            letter-spacing: .08em
+        }
+
+        .dash-t {
+            stroke: var(--teal);
+            stroke-dasharray: 5 4;
+            fill: none;
+            stroke-width: 1.2
+        }
+
+        .panel {
+            border: 1px solid var(--line);
+            border-top: 3px solid var(--accent);
+            background: var(--card);
+            border-radius: 0 6px 6px 0;
+            padding: 24px 26px;
+            margin: 28px 0
+        }
+
+        .panel h4 {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .22em;
+            color: var(--accent);
+            margin-bottom: 16px
+        }
+
+        .framework {
+            counter-reset: step;
+            list-style: none;
+            max-width: 860px
+        }
+
+        .framework li {
+            position: relative;
+            padding: 0 0 22px 58px;
+            border-left: 2px solid var(--line2);
+            margin-left: 22px
+        }
+
+        .framework li:last-child {
+            border-left-color: transparent
+        }
+
+        .framework li::before {
+            counter-increment: step;
+            content: counter(step, decimal-leading-zero);
+            position: absolute;
+            left: -21px;
+            top: -2px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--paper);
+            border: 2px solid var(--accent);
+            font-family: var(--mono);
+            font-size: 12px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600
+        }
+
+        .framework li b {
+            display: block;
+            font-size: 16.5px;
+            color: var(--ink);
+            margin-bottom: 4px
+        }
+
+        .framework li span {
+            font-size: 14.5px;
+            color: var(--ink2);
+            display: block
+        }
+
+        .framework li .fr-hint {
+            font-family: var(--mono);
+            font-size: 10px;
+            letter-spacing: .08em;
+            color: var(--accent);
+            margin-top: 6px;
+            display: block
+        }
+
+        .qlist {
+            list-style: none;
+            counter-reset: q;
+            max-width: 860px;
+            margin: 20px 0
+        }
+
+        .qlist li {
+            counter-increment: q;
+            position: relative;
+            padding: 16px 20px 16px 62px;
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.4;
+            cursor: pointer
+        }
+
+        .qlist li::before {
+            content: "Q" counter(q);
+            position: absolute;
+            left: 18px;
+            top: 18px;
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--accent)
+        }
+
+        .qlist li .qt {
+            display: inline-block;
+            font-family: var(--mono);
+            font-size: 9px;
+            letter-spacing: .14em;
+            padding: 2px 7px;
+            border-radius: 3px;
+            margin-left: 10px;
+            vertical-align: 2px;
+            border: 1px solid var(--line2);
+            color: var(--ink3)
+        }
+
+        .qlist li .qt.warm {
+            border-color: var(--ok);
+            color: var(--ok)
+        }
+
+        .qlist li .qt.deep {
+            border-color: var(--blue);
+            color: var(--blue)
+        }
+
+        .qlist li .qt.curve {
+            border-color: var(--red);
+            color: var(--red)
+        }
+
+        .qh-btn {
+            display: block;
+            margin-top: 10px;
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ink3);
+            transition: color .2s
+        }
+
+        .qlist li:hover .qh-btn,
+        .qlist li.qopen .qh-btn {
+            color: var(--accent)
+        }
+
+        .qh {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 16px;
+            border: 1px dashed var(--line2);
+            border-radius: 4px;
+            font-weight: 400;
+            font-size: 14px;
+            color: var(--ink2);
+            background: var(--card2)
+        }
+
+        .qlist li.qopen .qh {
+            display: block
+        }
+
+        .qh b {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 6px
+        }
+
+        .calc-card {
+            border: 1px solid var(--line);
+            background: var(--card);
+            border-radius: 6px;
+            padding: 22px 24px;
+            margin: 18px 0;
+            max-width: 860px;
+            border-top: 3px solid var(--teal)
+        }
+
+        .calc-card h4 {
+            font-family: var(--disp);
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 12px
+        }
+
+        .calc-card .step {
+            font-family: var(--body);
+            font-size: 14.5px;
+            color: var(--ink2);
+            line-height: 1.8;
+            padding: 4px 0
+        }
+
+        .calc-card .step b {
+            color: var(--ink);
+            font-weight: 700
+        }
+
+        .calc-card .step .res {
+            color: var(--accent);
+            font-weight: 700
+        }
+
+        .calc-card .step .note {
+            color: var(--ink3);
+            font-style: italic;
+            font-size: 13px
+        }
+
+        .ans {
+            border-left-color: var(--teal)
+        }
+
+        .sayw {
+            border: 1px solid var(--line);
+            background: var(--warnbg);
+            border-left: 3px solid var(--red);
+            padding: 14px 18px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 14.5px
+        }
+
+        .sayw .lbl {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--red);
+            display: block;
+            margin-bottom: 5px
+        }
+
+        .sayb {
+            border: 1px solid var(--line);
+            background: var(--tipbg);
+            border-left: 3px solid var(--blue);
+            padding: 14px 18px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 14.5px
+        }
+
+        .sayb .lbl {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--blue);
+            display: block;
+            margin-bottom: 5px
+        }
+
+        .saya {
+            border: 1px solid var(--line);
+            background: rgba(47, 109, 92, .06);
+            border-left: 3px solid var(--ok);
+            padding: 14px 18px;
+            border-radius: 0 4px 4px 0;
+            margin: 10px 0;
+            font-size: 14.5px
+        }
+
+        .saya .lbl {
+            font-family: var(--mono);
+            font-size: 9.5px;
+            letter-spacing: .16em;
+            color: var(--ok);
+            display: block;
+            margin-bottom: 5px
+        }
+
+        .sayw,
+        .sayb,
+        .saya {
+            color: var(--ink2)
+        }
+
+        .sayw b,
+        .sayb b,
+        .saya b {
+            color: var(--ink)
+        }
+
+        .mindset {
+            background: var(--paper2);
+            border-top: 2px solid var(--ink);
+            margin-top: 80px
+        }
+
+        .mindset-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 78px 28px 70px
+        }
+
+        .rule {
+            display: grid;
+            grid-template-columns: 120px 1fr;
+            gap: 30px;
+            padding: 34px 0;
+            border-top: 1px solid var(--line2);
+            align-items: start
+        }
+
+        .rule:first-of-type {
+            border-top: 2px solid var(--ink)
+        }
+
+        .rule-num {
+            font-family: var(--disp);
+            font-weight: 900;
+            font-size: 64px;
+            line-height: .9;
+            color: var(--accent)
+        }
+
+        .rule h3 {
+            font-family: var(--disp);
+            font-size: clamp(22px, 2.4vw, 29px);
+            font-weight: 700;
+            margin: 0 0 8px
+        }
+
+        .rule p {
+            font-size: 16px;
+            color: var(--ink2);
+            max-width: 730px;
+            margin: 0
+        }
+
+        .mind-close {
+            font-family: var(--disp);
+            font-style: italic;
+            font-size: 21px;
+            color: var(--ink);
+            margin-top: 44px;
+            max-width: 730px
+        }
+
+        .scorep {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            font-size: 15px
+        }
+
+        .scorep:last-of-type {
+            border-bottom: 0
+        }
+
+        .scorep span {
+            color: var(--ink2)
+        }
+
+        .scorep b {
+            font-family: var(--mono);
+            font-size: 13px;
+            color: var(--accent)
+        }
+
+        .foot {
+            border-top: 2px solid var(--ink)
+        }
+
+        .foot-in {
+            max-width: 1240px;
+            margin: 0 auto;
+            padding: 34px 28px;
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            align-items: center
+        }
+
+        .foot .f-l,
+        .foot .f-r {
+            font-family: var(--mono);
+            font-size: 10.5px;
+            letter-spacing: .16em;
+            color: var(--ink3)
+        }
+
+        .foot .f-r b {
+            color: var(--accent)
+        }
+
+        #toTop {
+            position: fixed;
+            right: 24px;
+            bottom: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--line2);
+            background: var(--card);
+            color: var(--ink);
+            z-index: 110;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(12px);
+            transition: all .35s;
+            box-shadow: var(--shadow)
+        }
+
+        #toTop.show {
+            opacity: 1;
+            pointer-events: auto;
+            transform: none
+        }
+
+        #toTop:hover {
+            border-color: var(--accent);
+            color: var(--accent)
+        }
+
+        .scrim {
+            position: fixed;
+            inset: 0;
+            background: rgba(20, 25, 36, .45);
+            z-index: 90;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s
+        }
+
+        .scrim.on {
+            opacity: 1;
+            pointer-events: auto
+        }
+
+        @media(max-width:1100px) {
+            .hero-in {
+                grid-template-columns: 1fr;
+                gap: 38px
+            }
+
+            .sketch {
+                max-width: 560px
+            }
+
+            .pillars-strip {
+                grid-template-columns: repeat(3, 1fr)
+            }
+        }
+
+        @media(max-width:920px) {
+            .shell {
+                grid-template-columns: 1fr;
+                gap: 0
+            }
+
+            #tocToggle {
+                display: inline-flex
+            }
+
+            .toc {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100%;
+                width: 300px;
+                max-height: none;
+                background: var(--paper);
+                z-index: 95;
+                transform: translateX(-105%);
+                transition: transform .35s ease;
+                padding: 80px 22px 30px;
+                border-right: 1px solid var(--line)
+            }
+
+            .toc.open {
+                transform: none
+            }
+
+            .b-mark {
+                display: none
+            }
+        }
+
+        @media(max-width:720px) {
+            body {
+                font-size: 15.5px
+            }
+
+            .hero-in {
+                padding: 48px 20px 38px
+            }
+
+            .pillars-strip,
+            .topic-grid {
+                grid-template-columns: 1fr
+            }
+
+            .topic:nth-child(odd) {
+                border-right: 0
+            }
+
+            .topic:nth-child(n) {
+                border-top: 1px solid var(--line)
+            }
+
+            .topic:first-child {
+                border-top: 0
+            }
+
+            .framework li {
+                padding-left: 44px
+            }
+
+            .rule {
+                grid-template-columns: 64px 1fr;
+                gap: 16px
+            }
+
+            .rule-num {
+                font-size: 42px
+            }
+        }
+
+        @media(prefers-reduced-motion:reduce) {
+            html {
+                scroll-behavior: auto
+            }
+
+            *,
+            *::before,
+            *::after {
+                animation: none !important;
+                transition: none !important
+            }
+
+            .hero-title .line {
+                transform: none
+            }
+
+            .rv {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        @media print {
+
+            .topbar,
+            .progress,
+            #toTop,
+            .scrim,
+            .tb-actions {
+                display: none !important
+            }
+
+            body {
+                background: #fff;
+                color: #111;
+                font-size: 12px
+            }
+
+            body::after,
+            .hero::before {
+                display: none
+            }
+
+            .rv {
+                opacity: 1 !important
+            }
+
+            .toc {
+                display: none
+            }
+
+            .shell {
+                grid-template-columns: 1fr
+            }
+
+            .sec {
+                page-break-inside: avoid
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="progress"><i id="progressBar"></i></div>
+    <header class="topbar">
+        <div class="brand">
+            <button class="btn icon-btn" id="tocToggle" aria-label="Open contents"><svg width="15" height="13"
+                    viewBox="0 0 15 13" fill="none">
+                    <path d="M1 1.5h13M1 6.5h13M1 11.5h9" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" />
+                </svg></button>
+            <span class="b-mark">30-DAY TECHNICAL ARCHITECT TRACK</span>
+            <span class="day-badge" onclick="window.location.href='../pages/day0-roadmap.html#roadmap'">DAY 21 /
+                30</span>
+        </div>
+        <div class="tb-actions">
+            <button class="btn icon-btn" id="themeBtn" aria-label="Toggle dark mode"><svg class="ic-moon" width="15"
+                    height="15" viewBox="0 0 24 24" fill="none">
+                    <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" stroke="currentColor"
+                        stroke-width="1.8" stroke-linejoin="round" />
+                </svg><svg class="ic-sun" width="15" height="15" viewBox="0 0 24 24" fill="none" style="display:none">
+                    <circle cx="12" cy="12" r="4.4" stroke="currentColor" stroke-width="1.8" />
+                    <path
+                        d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"
+                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg></button>
+            <button class="btn" id="printBtn">PRINT</button>
+        </div>
+    </header>
+    <div class="scrim" id="scrim"></div>
+    <section class="hero">
+        <div class="hero-in">
+            <div>
+                <div class="hero-kicker">30-DAY TECHNICAL ARCHITECT TRACK — DAY 21 / 30 · PRESENTATION &amp;
+                    COMMUNICATION</div>
+                <h1 class="hero-title">
+                    <span class="mask"><span class="line d1">A great design is</span></span>
+                    <span class="mask"><span class="line d2">half the job.</span></span>
+                    <span class="mask"><span class="line d2" style="animation-delay:.36s">The rest is <em>explaining
+                                it.</em></span></span>
+                </h1>
+                <p class="hero-sub">Architects are not hired only to design systems. They are hired to make complex
+                    systems <b>easy to understand</b>. Today you learn to present any architecture in 10 minutes,
+                    explain every box's reason to exist, defend trade-offs under pressure, and adapt the same design to
+                    a developer, a manager, and a CTO — without changing a single box.</p>
+                <div class="hero-meta"><span class="chip hot">10-MINUTE FORMAT</span><span class="chip">3
+                        AUDIENCES</span><span class="chip">STORYTELLING</span><span class="chip">WHITEBOARD
+                        FLOW</span><span class="chip">20 INTERVIEW Qs</span></div>
+                <div class="howto">
+                    <h4>HOW TO STUDY THIS SESSION</h4>
+                    <ol>
+                        <li><b>01</b> Parts 1–5: Audiences, the 10-minute structure, opening lines, diagram
+                            walkthroughs, and "why is this here".</li>
+                        <li><b>02</b> Parts 6–11: Trade-off phrasing, technical vs business voice, storytelling, hard
+                            questions, "I don't know", disagreement.</li>
+                        <li><b>03</b> Parts 12–19: Full presentation example, whiteboard flow, 15 mistakes, 20 interview
+                            Qs, exercises, scorecard.</li>
+                    </ol>
+                </div>
+                <div class="hero-stats">19 PARTS · 14 HARD QUESTIONS · 15 MISTAKES · 20 INTERVIEW QUESTIONS · 3
+                    EXERCISES · 1 SCORECARD</div>
+            </div>
+            <div class="sketch" aria-hidden="true">
+                <svg viewBox="0 0 520 400" fill="none">
+                    <rect class="fr" x="10" y="10" width="500" height="380" stroke-width="1" />
+                    <path class="tick"
+                        d="M10 26h12M26 10v12M510 26h-12M494 10v12M10 374h12M26 390v-12M510 374h-12M494 390v-12"
+                        stroke-width="1" />
+                    <text x="36" y="42" class="ta" font-size="9">DAY 21 → THE ARCHITECT'S VOICE</text>
+                    <text x="484" y="42" class="t3" font-size="8" text-anchor="end">FIG. 21.0 — ONE DESIGN, THREE
+                        LANGUAGES</text>
+                    <rect class="box hot" x="36" y="58" width="210" height="46" rx="3" /><text x="141" y="78"
+                        font-size="10" class="ta" text-anchor="middle">ONE ARCHITECTURE</text><text x="141" y="94"
+                        font-size="7.5" class="t3" text-anchor="middle">the boxes never change</text>
+                    <path class="thin" d="M141 104 V120 M141 120 H84 M141 120 H141 M141 120 H198" />
+                    <rect class="box ok" x="40" y="132" width="88" height="56" rx="3" /><text x="84" y="152"
+                        font-size="9" class="tt" text-anchor="middle">DEVELOPER</text><text x="84" y="166"
+                        font-size="7.5" class="t3" text-anchor="middle">interfaces · queues</text><text x="84" y="178"
+                        font-size="7.5" class="t3" text-anchor="middle">schemas · retries</text>
+                    <rect class="box" x="141" y="132" width="88" height="56" rx="3" /><text x="185" y="152"
+                        font-size="9" class="t1" text-anchor="middle">MANAGER</text><text x="185" y="166"
+                        font-size="7.5" class="t3" text-anchor="middle">delivery · reliability</text><text x="185"
+                        y="178" font-size="7.5" class="t3" text-anchor="middle">team · cost</text>
+                    <rect class="box hot" x="242" y="132" width="88" height="56" rx="3" /><text x="286" y="152"
+                        font-size="9" class="ta" text-anchor="middle">BUSINESS</text><text x="286" y="166"
+                        font-size="7.5" class="t3" text-anchor="middle">customers · money</text><text x="286" y="178"
+                        font-size="7.5" class="t3" text-anchor="middle">risk · speed</text>
+                    <rect class="fr" x="36" y="206" width="448" height="52" rx="3" />
+                    <text x="52" y="226" font-size="9.5" class="ta">THE 10-MINUTE FORMAT:</text>
+                    <text x="52" y="244" font-size="8.5" class="t1">PROBLEM → REQUIREMENTS → DESIGN → FLOW → SCALE →
+                        TRADE-OFFS → RISKS → COST</text>
+                    <rect class="box" x="36" y="276" width="448" height="44" rx="3" />
+                    <text x="52" y="296" font-size="9" class="t1">EVERY BOX ANSWERS: "WHY IS THIS HERE?"</text>
+                    <text x="52" y="311" font-size="8.5" class="tt">No component exists without a reason you can defend
+                        in one sentence.</text>
+                    <rect class="fr" x="36" y="334" width="448" height="30" rx="3" />
+                    <text x="52" y="353" font-size="8.5" class="tr">WEAKEST OPENING: "SO THIS IS THE TECH STACK…" ·
+                        STRONGEST: "HERE IS THE PROBLEM…"</text>
+                </svg>
+            </div>
+        </div>
+        <div class="pillars-strip">
+            <a class="pstrip" href="#p2" style="--pc:var(--teal)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">10-Minute Format</span><span class="p-tg">THE PRESENTATION
+                        MAP</span></span></a>
+            <a class="pstrip" href="#p5" style="--pc:var(--blue)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.6" />
+                    <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.33c-.65.25-.9.65-.9 1.17v.5M12 16.5h.01" stroke="currentColor"
+                        stroke-width="1.6" stroke-linecap="round" />
+                </svg><span><span class="p-nm">Explain the "Why"</span><span class="p-tg">EVERY BOX
+                        JUSTIFIED</span></span></a>
+            <a class="pstrip" href="#p9" style="--pc:var(--red)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path
+                        d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"
+                        stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Hard Questions</span><span class="p-tg">14 UNDER
+                        PRESSURE</span></span></a>
+            <a class="pstrip" href="#p13" style="--pc:var(--accent)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M4 20h16M6 16l3-9 4 6 2-3 3 6" stroke="currentColor" stroke-width="1.6"
+                        stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Whiteboard Flow</span><span class="p-tg">30-MIN LIVE
+                        DESIGN</span></span></a>
+            <a class="pstrip" href="#p18" style="--pc:var(--gold)"><svg class="p-ico" width="24" height="24"
+                    viewBox="0 0 24 24" fill="none">
+                    <path d="M9 11l3 3L22 4M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor"
+                        stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                </svg><span><span class="p-nm">Final Assignment</span><span class="p-tg">100-PT
+                        SCORECARD</span></span></a>
+        </div>
+    </section>
+    <div class="shell">
+        <aside class="toc" id="toc" aria-label="Contents">
+            <div class="toc-title">ON THIS PAGE</div>
+            <a class="tn" href="#p1" data-spy="p1"><span>01</span> Why communication matters</a>
+            <a class="tn" href="#p2" data-spy="p2"><span>02</span> 10-minute structure</a>
+            <a class="tn" href="#p3" data-spy="p3"><span>03</span> Strong openings</a>
+            <a class="tn" href="#p4" data-spy="p4"><span>04</span> Explaining diagrams</a>
+            <a class="tn" href="#p5" data-spy="p5"><span>05</span> Explain the "why"</a>
+            <a class="tn" href="#p6" data-spy="p6"><span>06</span> Explaining trade-offs</a>
+            <a class="tn" href="#p7" data-spy="p7"><span>07</span> Technical vs business voice</a>
+            <a class="tn" href="#p8" data-spy="p8"><span>08</span> Architecture storytelling</a>
+            <a class="tn" href="#p9" data-spy="p9"><span>09</span> Hard questions</a>
+            <a class="tn" href="#p10" data-spy="p10"><span>10</span> "I don't know"</a>
+            <a class="tn" href="#p11" data-spy="p11"><span>11</span> Handling disagreement</a>
+            <a class="tn" href="#p12" data-spy="p12"><span>12</span> Full 10-min example</a>
+            <a class="tn" href="#p13" data-spy="p13"><span>13</span> Whiteboard technique</a>
+            <a class="tn" href="#p14" data-spy="p14"><span>14</span> 15 mistakes</a>
+            <a class="tn" href="#p15" data-spy="p15"><span>15</span> 20 interview Q&amp;A</a>
+            <a class="tn" href="#p16" data-spy="p16"><span>16</span> Speaking exercise</a>
+            <a class="tn" href="#p17" data-spy="p17"><span>17</span> Defense exercise</a>
+            <a class="tn" href="#p18" data-spy="p18"><span>18</span> Final assignment</a>
+            <a class="tn" href="#p19" data-spy="p19"><span>19</span> Rules &amp; close</a>
+        </aside>
+        <main class="doc">
+
+            <!-- PART 1 -->
+            <section class="sec" id="p1">
+                <div class="sec-kicker">PART 1 — WHY IT MATTERS</div>
+                <h2 class="sec-title rv">Why Architecture Communication Matters</h2>
+                <p class="sec-lead rv">A design that nobody understands is a design nobody approves, nobody funds, and
+                    nobody builds correctly. <b>Your architecture only exists to the company when it exists in other
+                        people's heads.</b></p>
+                <h3>Why a technically good design can still fail</h3>
+                <ul class="nlist rv">
+                    <li><b>No budget:</b> The CTO never understood why the caching layer was needed, so it was cut. The
+                        system collapses at launch traffic — the design was right, the explanation was absent.</li>
+                    <li><b>Wrong implementation:</b> Developers didn't understand the module boundaries you designed, so
+                        they built a couple of shared shortcuts "just for now". Six months later, the architecture you
+                        designed exists only in your document.</li>
+                    <li><b>Lost trust:</b> One confusing answer in a leadership review — "well, it's complicated, it's
+                        basically event-driven with…" — and the next big decision goes to someone who speaks clearly.
+                    </li>
+                    <li><b>Hidden risk:</b> You knew the queue could back up under 10× traffic. You never said it in
+                        plain language. When it happened, leadership asked "why weren't we warned?"</li>
+                </ul>
+                <h3>One design, six audiences — what each actually wants</h3>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:780px">
+                        <thead>
+                            <tr>
+                                <th style="width:20%">AUDIENCE</th>
+                                <th>WHAT THEY ACTUALLY WANT TO KNOW</th>
+                                <th>WHAT THEY CARE ABOUT</th>
+                                <th>WHAT TO LEAVE OUT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Developer</b></td>
+                                <td>Interfaces, contracts, queues, schemas, how modules call each other, how to test.
+                                </td>
+                                <td>"How does this affect my code?"</td>
+                                <td>Business finances, pricing models, board politics.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Technical Lead</b></td>
+                                <td>Why these boundaries, failure modes, integration points, deployment shape,
+                                    operational risk.</td>
+                                <td>"Will this hold up in production?"</td>
+                                <td>Marketing language, revenue forecasts.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Engineering Manager</b></td>
+                                <td>Team structure mapping, release speed, what skills are needed, hiring profile,
+                                    delivery timeline.</td>
+                                <td>"Can my team build and run this?"</td>
+                                <td>Queue mechanics, payload formats.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Product Manager</b></td>
+                                <td>What users get, what's fast, what's delayed, what limits exist, what features become
+                                    possible.</td>
+                                <td>"What can I promise customers?"</td>
+                                <td>Everything below the API layer.</td>
+                            </tr>
+                            <tr>
+                                <td><b>CTO</b></td>
+                                <td>Strategic fit, total cost direction, risk exposure, team scalability, reversibility
+                                    of the decision.</td>
+                                <td>"Is this the right bet for 18 months?"</td>
+                                <td>Class diagrams, endpoint lists.</td>
+                            </tr>
+                            <tr>
+                                <td><b>Business stakeholder</b></td>
+                                <td>Cost, revenue impact, customer experience, risk to the business, when it ships.</td>
+                                <td>"What do I get, what does it cost, what breaks?"</td>
+                                <td>All technology names. Every single one.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE ONLY SKILL THAT MATTERS HERE</span>
+                    <p><b>Change the level of detail, never the decision.</b> The architecture is identical for every
+                        audience — you are adjusting the <i>zoom</i>, not the boxes. Developers get the microscope.
+                        Business gets the map from 10,000 feet. If you change the actual design per audience, you will
+                        be caught; if you change only the vocabulary, you will be trusted.</p>
+                </div>
+            </section>
+
+            <!-- PART 2 -->
+            <section class="sec" id="p2">
+                <div class="sec-kicker">PART 2 — THE FORMAT</div>
+                <h2 class="sec-title rv">The 10-Minute Architecture Presentation</h2>
+                <p class="sec-lead rv">Ten minutes is the standard architecture-review slot: a design review meeting, an
+                    interview whiteboard debrief, a CTO update. This structure never fails.</p>
+                <ol class="framework rv">
+                    <li><b>Minute 1 — The business problem</b><span>One sentence, no technology: "Our order system slows
+                            to a halt every month-end, because reporting and checkout share one database." If you open
+                            with tech, you have lost 90% of the room in the first 30 seconds.</span><span
+                            class="fr-hint">SAY: "The problem we are solving is…"</span></li>
+                    <li><b>Minute 2 — Requirements</b><span>What must the system do? Tenants × users × core operations.
+                            Numbers, not adjectives: "10,000 companies, 1 million users, 50,000 orders a
+                            day."</span><span class="fr-hint">SAY: "Here is what it must do, in numbers…"</span></li>
+                    <li><b>Minute 3 — Non-functional requirements</b><span>The qualities that shape everything:
+                            availability, performance, security, growth. "Checkout under 300 ms, 99.9% uptime, 5× growth
+                            in 18 months."</span><span class="fr-hint">SAY: "These three constraints drive most of the
+                            design…"</span></li>
+                    <li><b>Minute 4 — High-level architecture</b><span>The whole picture in 5–7 boxes maximum: clients,
+                            API, core modules, database, cache, queue, reporting store. No arrows-to-arrows detail yet.
+                            The audience should get the shape in 20 seconds.</span><span class="fr-hint">SAY: "At the
+                            top level, it's a modular monolith with three external companions…"</span></li>
+                    <li><b>Minute 5 — Main business flow</b><span>Walk one user action end to end: "A customer places an
+                            order." Follow it through API, validation, payment, inventory, confirmation. This is where
+                            the audience verifies the design actually works.</span><span class="fr-hint">SAY: "Let me
+                            take one order across the system…"</span></li>
+                    <li><b>Minute 6 — Data flow</b><span>Where data is born, who owns it, where it is read. "Orders are
+                            written here; report data is replicated there, ten seconds behind." This answers the silent
+                            question in every review: whose data is whose?</span><span class="fr-hint">SAY: "Now, where
+                            does the data live and who owns it…"</span></li>
+                    <li><b>Minute 7 — Scalability and performance</b><span>How each number from minute 2 is met:
+                            horizontal instances, cache for hot reads, queue for spikes, read replica for reporting. Tie
+                            every mechanism to a number from earlier.</span><span class="fr-hint">SAY: "Here's how the
+                            5× growth lands safely…"</span></li>
+                    <li><b>Minute 8 — Security and reliability</b><span>What is protected and what happens when things
+                            break: payment isolation, encryption, health checks, failover, rollback. One failure story
+                            is worth five normal-path diagrams.</span><span class="fr-hint">SAY: "And when this box
+                            dies, here's what happens…"</span></li>
+                    <li><b>Minute 9 — Trade-offs and rejected options</b><span>The honesty minute. Two options you
+                            rejected and why. "We rejected full microservices because one DevOps engineer cannot run
+                            twelve services." Nothing builds credibility faster than naming what your design does
+                            <i>not</i> do.</span><span class="fr-hint">SAY: "We considered two alternatives and rejected
+                            both, here's why…"</span></li>
+                    <li><b>Minute 10 — Risks, cost, conclusion</b><span>Kill the suspense: the biggest risk, the monthly
+                            cost, and one sentence of recommendation. "Biggest risk is queue backlog at 10× — it's
+                            measured here. Cost is about $1,300 a month. My recommendation is we proceed."</span><span
+                            class="fr-hint">SAY: "In closing — one risk, one cost, one recommendation…"</span></li>
+                </ol>
+                <div class="callout co-tip rv"><span class="co-label">WHY THIS ORDER WORKS</span>
+                    <p>Every minute answers the question the previous minute raises. Problem → what does it take → so
+                        here's the design → does it work on one flow → does the data agree → does it scale → does it
+                        break → what did you give up → what do you recommend. The audience never has to hold an
+                        unanswered question for more than a minute. That is what "clear structure" feels like from the
+                        listener's side.</p>
+                </div>
+            </section>
+
+            <!-- PART 3 -->
+            <section class="sec" id="p3">
+                <div class="sec-kicker">PART 3 — THE FIRST SENTENCE</div>
+                <h2 class="sec-title rv">How to Start an Architecture Presentation</h2>
+                <p class="sec-lead rv">The first 20 seconds decide whether the room leans in or checks their phones.
+                    Here are five openings, each at three levels.</p>
+
+                <div class="calc-card rv">
+                    <h4>1 · Explaining the business problem</h4>
+                    <div class="sayw rv"><span class="lbl">WEAK OPENING</span>"So today I'm going to talk about the
+                        architecture of the order system."</div>
+                    <div class="sayb rv"><span class="lbl">BETTER OPENING</span>"Last month-end, during month-end
+                        reporting, our checkout queue timing out 40% of orders. That's the problem I'll solve today."
+                    </div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT-LEVEL OPENING</span>"Every month-end we lose
+                        roughly $60,000 in abandoned orders — not because the system is broken, but because reporting
+                        and checkout are fighting over one database. I'm going to show you a design that ends that fight
+                        for about $350 a month."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>2 · Explaining the goal</h4>
+                    <div class="sayw rv"><span class="lbl">WEAK OPENING</span>"The goal is to make the system better and
+                        more modern."</div>
+                    <div class="sayb rv"><span class="lbl">BETTER OPENING</span>"Our target: checkout under 300
+                        milliseconds and up to 5× growth, without hiring anyone new."</div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT-LEVEL OPENING</span>"Success looks like three
+                        numbers by Q3: checkout at 300 ms, zero month-end failures, and the same five people running it.
+                        Everything I'm about to show you is shaped by those three numbers."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>3 · Explaining the architecture decision</h4>
+                    <div class="sayw rv"><span class="lbl">WEAK OPENING</span>"I decided to go with a modular monolith."
+                    </div>
+                    <div class="sayb rv"><span class="lbl">BETTER OPENING</span>"I'm recommending a modular monolith
+                        instead of microservices, and I'll show you exactly why that is the right call for this team."
+                    </div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT-LEVEL OPENING</span>"The decision everyone will ask
+                        about is why we did <i>not</i> go microservices. Short answer: twelve developers and one
+                        platform engineer can't run fifteen services. Long answer: the rest of this presentation."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>4 · Explaining constraints</h4>
+                    <div class="sayw rv"><span class="lbl">WEAK OPENING</span>"We don't have a big budget, so we did
+                        what we could."</div>
+                    <div class="sayb rv"><span class="lbl">BETTER OPENING</span>"Three constraints shaped this design: a
+                        $5,000 monthly ceiling, one platform engineer, and a Q4 launch."</div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT-LEVEL OPENING</span>"This design made three
+                        promises before I drew a single box: under $5K a month, operable by the team we have today, and
+                        live in October. Judge every choice you're about to see against those."</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>5 · Explaining what the presentation covers</h4>
+                    <div class="sayw rv"><span class="lbl">WEAK OPENING</span>"Let me walk you through the diagram."
+                    </div>
+                    <div class="sayb rv"><span class="lbl">BETTER OPENING</span>"In ten minutes: the problem, the
+                        design, why I chose it, what I rejected, and what could still go wrong."</div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT-LEVEL OPENING</span>"By minute ten you'll know
+                        three things: why this design fits our constraints, which two alternatives I rejected and why,
+                        and the one risk I'm watching closest. That's the whole agenda."</div>
+                </div>
+
+                <div class="callout co-key rv"><span class="co-label">THE PATTERN IN ALL FIVE</span>
+                    <p>Weak openings announce <b>you</b>. Better openings announce the <b>topic</b>. Architect-level
+                        openings announce the <b>stakes</b> — a number, a deadline, a consequence. Get the stakes out in
+                        sentence one; earn the right to be technical in minute two.</p>
+                </div>
+            </section>
+
+            <!-- PART 4 -->
+            <section class="sec" id="p4">
+                <div class="sec-kicker">PART 4 — READING THE PICTURE ALOUD</div>
+                <h2 class="sec-title rv">Explaining an Architecture Diagram</h2>
+                <p class="sec-lead rv">A diagram is not read like a book — it is walked like a path. Keep one finger on
+                    the request and move it with the story.</p>
+                <div class="figbox rv">
+                    <svg viewBox="0 0 680 210" fill="none">
+                        <rect class="s-box" x="20" y="20" width="110" height="40" rx="3" /><text x="75" y="44"
+                            class="s-lab" text-anchor="middle" font-size="10">CLIENT</text>
+                        <path class="s-line" d="M130 40 H160" />
+                        <path d="M156 36 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box" x="160" y="20" width="110" height="40" rx="3" /><text x="215" y="44"
+                            class="s-lab" text-anchor="middle" font-size="10">API</text>
+                        <path class="s-line" d="M270 40 H300" />
+                        <path d="M296 36 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box hot" x="300" y="20" width="170" height="40" rx="3" /><text x="385" y="44"
+                            class="s-lab" text-anchor="middle" font-size="10">BUSINESS MODULES</text>
+                        <path class="s-line" d="M470 40 H500" />
+                        <path d="M496 36 l8 4 -8 4 z" fill="var(--ink3)" />
+                        <rect class="s-box ok" x="500" y="20" width="160" height="40" rx="3" /><text x="580" y="44"
+                            class="s-lab" text-anchor="middle" font-size="10">DATABASE</text>
+                        <path class="dash-t" d="M385 60 V100 H320" />
+                        <path d="M324 96 l-8 4 8 4 z" fill="var(--teal)" />
+                        <rect class="s-box ok" x="240" y="100" width="120" height="40" rx="3" /><text x="300" y="124"
+                            class="s-lab" text-anchor="middle" font-size="10">CACHE · REDIS</text>
+                        <path class="dash-t" d="M385 60 V140 H460" />
+                        <path d="M464 136 l-8 4 8 4 z" fill="var(--teal)" />
+                        <rect class="s-box" x="400" y="140" width="130" height="40" rx="3" /><text x="465" y="164"
+                            class="s-lab" text-anchor="middle" font-size="10">QUEUE + WORKERS</text>
+                        <path class="s-line" d="M530 160 H560 V100 H580 V60" />
+                        <path d="M584 64 l-4 -8 -4 8 z" fill="var(--ink3)" />
+                        <rect class="s-box ext" x="540" y="140" width="130" height="40" rx="3" /><text x="605" y="164"
+                            class="s-lab" text-anchor="middle" font-size="10">EXTERNAL APIs</text>
+                        <path class="dash-t" d="M465 180 H540 V170" />
+                        <path d="M540 166 l8 4 -8 4 z" fill="var(--teal)" />
+                        <text x="20" y="200" font-size="8.5" class="t3">SOLID = THE REQUEST PATH · DASHED = SIDE PATHS
+                            (CACHE, QUEUE) · EXTERNAL = OUTSIDE YOUR CONTROL</text>
+                    </svg>
+                    <div class="figcap">FIG. 21.1 — TALK THROUGH THE PATH, DON'T TOUR THE BOXES</div>
+                </div>
+                <h3>The seven-question walkthrough</h3>
+                <ol class="nlist rv">
+                    <li><b>Where the request starts:</b> "Everything begins at the client — web and mobile hit one API
+                        entry point, nothing reaches the inside directly."</li>
+                    <li><b>How it moves:</b> "The API authenticates and routes the call into the business modules — the
+                        module for that domain takes over from here."</li>
+                    <li><b>Which component performs each responsibility:</b> "The order module owns order rules,
+                        inventory owns stock, payment owns charging — each has one job and its own data."</li>
+                    <li><b>Where data is stored:</b> "Persistent truth lives in the SQL database — per-module schemas.
+                        Nothing important lives only in memory."</li>
+                    <li><b>Where asynchronous processing happens:</b> "Anything that doesn't need to block the customer
+                        — emails, shipping labels — goes to the queue and is processed by workers in the background."
+                    </li>
+                    <li><b>Where failures can occur:</b> "Three places to watch: the external payment provider, the
+                        database, and the queue falling behind. Each has a plan — retries, failover, and alerts."</li>
+                    <li><b>Why each major component exists:</b> "The cache exists because catalog reads were 95% of
+                        traffic; the queue exists because we don't make customers wait for an email; the read replica
+                        exists because reports must never touch the order database."</li>
+                </ol>
+                <div class="callout co-warn rv"><span class="co-label">WHY YOU MUST NOT EXPLAIN EVERY BOX</span>
+                    <p>The moment you narrate box eight, your audience forgets box two. Diagrams at presentation level
+                        should hold <b>five to seven boxes</b>; the rest is appendix. If someone asks about a small box,
+                        answer — but never volunteer a guided tour of your own complexity. Detail you don't skip reads
+                        as detail you can't see. <b>Confidence is what you leave out.</b></p>
+                </div>
+            </section>
+
+            <!-- PART 5 -->
+            <section class="sec" id="p5">
+                <div class="sec-kicker">PART 5 — EVERY BOX NEEDS A REASON</div>
+                <h2 class="sec-title rv">Explain the "Why" for Every Component</h2>
+                <p class="sec-lead rv">"Why is this here?" is the single most-asked question in architecture reviews.
+                    Here are eight components, answered at three levels.</p>
+
+                <div class="calc-card rv">
+                    <h4>Why an API Gateway?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"It's the entry point for requests."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"It's a single place that handles authentication,
+                        rate limiting and routing, so services don't each implement them."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Without it, we implement auth, throttling, and
+                        version routing in every module — and change them all separately the day a rule changes. One
+                        gateway, one audit log of what was attempted and by whom. It also gives us a single enforcement
+                        point for per-tenant rate limiting, which is our answer to the noisy-tenant problem."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why Redis?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"For caching — it's fast."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"Ninety-five percent of traffic is catalog reads,
+                        so we serve them from Redis in milliseconds instead of hammering the database."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"At 5,000 RPS with an 80/20 read-write split,
+                        the database was our single point of failure — every read hit it. Redis absorbs the repeating
+                        reads, cutting database load by roughly 70%. The trade I accept: cache invalidation discipline
+                        and a small monthly cost, in exchange for the database staying healthy at peak."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why a message broker?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"For asynchronous communication."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"It decouples services — order creation doesn't
+                        wait on emails or inventory calls, and failures in one don't crash another."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Two deliverable guarantees a broker buys us:
+                        the customer gets an answer in 300 ms even if email or shipping is slow, and a provider outage
+                        pauses instead of loses the work — messages wait and retry. The cost is eventual consistency,
+                        which matters almost nowhere in this flow — but we chose sync for the two places it does:
+                        payment and stock."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why separate reporting?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"Reports are slow, so we made them separate."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"Heavy report queries were competing with checkout
+                        on the same database, so reports go to a read replica now."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Month-end, report scans locked the tables
+                        checkout writes to — we were losing sales so analysts could get spreadsheets faster. Routing
+                        reports to a replica ends the conflict for $300 a month. The accepted trade: report data lags a
+                        few seconds behind, which a dashboard can comfortably live with. Analytics-heavy BI may deserve
+                        a warehouse later; that's a named future decision, not today's problem."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why database replication?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"For high availability."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"A replica takes over if the primary fails, and it
+                        absorbs report reads the rest of the time."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Two jobs, one replica. Silver:
+                        minutes-not-hours recovery if the primary dies — the RTO promise we make in the SLA. Gold: those
+                        same replicas serve all analytical reads, so 'high availability' also removes our
+                        reporting-vs-checkout contention. One box, two problems, that's why it's in the design."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why a modular monolith?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"Microservices were too complex for us."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"We get clean boundaries and team ownership inside
+                        one deployment — without paying for distributed-system overhead."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Our bottleneck was coupling, not deployment:
+                        anyone could touch anything in the old codebase. Modules with enforced boundaries fix that in
+                        one binary — in-memory calls, atomic transactions, one pipeline. Microservices would buy us
+                        independent deploys we don't need yet, at a network and operational cost we can't justify with
+                        one platform engineer. And every boundary is placed so a module can be lifted out later if a
+                        team or a scaling profile ever earns its own service."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why microservices?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"For scalability — it's the modern standard."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"Six autonomous teams ship independently, and the
+                        search engine scales 20× separately from billing at half the cost of scaling the whole app."
+                    </div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"At our size, the real blockers were
+                        organizational: 40 engineers, shared release trains, and one slow component forcing the entire
+                        system to scale together. We split at exactly two seams — search and payments — because those
+                        two have extreme profiles everything else doesn't share. The rest stays a monolith. We bought
+                        independence precisely where it pays rent, and refused it where it's rent-only."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>Why asynchronous processing?</h4>
+                    <div class="sayw"><span class="lbl">WEAK</span>"To make things faster with background jobs."</div>
+                    <div class="sayb"><span class="lbl">STRONG</span>"Slow, non-critical work — notifications, shipping
+                        booking, analytics — happens after the user gets their answer."</div>
+                    <div class="saya"><span class="lbl">ARCHITECT</span>"Everything the user must know immediately is
+                        synchronous: Was your card charged? Is there stock? Everything else can be eventual: confirm by
+                        email in ten seconds, print the label in a minute. That one split is what keeps checkout at 300
+                        ms while the system quietly does twice as much work behind the scenes. Where the delay would
+                        cost real money — stock reservation — we're synchronous, no debate."</div>
+                </div>
+            </section>
+
+            <!-- PART 6 -->
+            <section class="sec" id="p6">
+                <div class="sec-kicker">PART 6 — THE HONEST SENTENCES</div>
+                <h2 class="sec-title rv">Explaining Trade-offs</h2>
+                <p class="sec-lead rv">A trade-off explanation has five parts: <b>what we chose, what we rejected, what
+                        we gain, what we accept, and the risk we keep.</b> Here are eight ready-made patterns — notice
+                    none of them hide the cost.</p>
+                <ol class="nlist rv">
+                    <li><b>Asynchronous notifications:</b> "We chose to send notifications via a queue instead of inline
+                        in checkout. We gain a 300 ms order response and resilience to provider outages; we accept
+                        notifications arrive up to a minute later. The accepted risk is queue backlog at extreme spikes
+                        — we alert on queue age."</li>
+                    <li><b>Redis for the catalog:</b> "We chose Redis over letting the database answer every read. We
+                        gain millisecond product pages and a healthy database; we accept needing invalidation rules and
+                        a few seconds of possible staleness. The risk is stale pricing during flash sales — mitigated by
+                        event-driven invalidation on price change."</li>
+                    <li><b>Modular monolith over microservices:</b> "We chose one well-structured deployment over
+                        fifteen services. We gain atomic transactions, in-memory speed, and one pipeline; we accept that
+                        modules share a runtime, so a bad module can slow the others. Risk accepted: less failure
+                        isolation — mitigated by heartbeats, circuit boundaries, and restart automation."</li>
+                    <li><b>PostgreSQL over Cosmos DB:</b> "We chose relational over a distributed document store. We
+                        gain transactions across order, payment, and inventory plus reporting joins; we accept a
+                        single-writer ceiling. Risk accepted: write scale at extreme growth — we have replicas today and
+                        a documented sharding trigger before it becomes an emergency."</li>
+                    <li><b>Read replica for reports:</b> "We chose a replica over the production database for analytics.
+                        We gain checkout latency at month-end; we accept report data up to a few seconds behind. Risk
+                        accepted: replica lag under heavy write bursts — we monitor lag and alert at five seconds."</li>
+                    <li><b>Managed identity (Auth0) over building:</b> "We chose buying over building authentication. We
+                        gain enterprise SSO and MFA in week one; we accept vendor dependency and a per-user fee. Risk
+                        accepted: price changes at scale — we export data and keep the protocol standard so migration is
+                        a config change, not a rewrite."</li>
+                    <li><b>App Service over Kubernetes:</b> "We chose a managed platform over a cluster. We gain
+                        one-engineer operability and blue-green deploys; we accept less control over networking
+                        granularity. Risk accepted: PaaS limits at very high scale — containers are ready, migration is
+                        a platform swap, not a redesign."</li>
+                    <li><b>Eventual consistency for dashboards:</b> "We chose near-real-time over real-time dashboard
+                        data. We gain a pressure-free checkout database; we accept dashboards up to ten seconds behind.
+                        Risk accepted: a manager making a decision on twelve-second-old numbers — we stamp 'updated
+                        12:03:42' on every widget so delay is visible, not hidden."</li>
+                </ol>
+                <div class="callout co-key rv"><span class="co-label">MEMORIZE THE SHAPE</span>
+                    <p><b>"We chose A because of X. We rejected B because it would cost us Y in this context. We accept
+                            Z, and we watch it with this metric."</b> If every trade-off you explain follows that
+                        sentence, you will never sound like you're selling — you will sound like someone who has
+                        liability, options, and consequences all in one head.</p>
+                </div>
+            </section>
+
+            <!-- PART 7 -->
+            <section class="sec" id="p7">
+                <div class="sec-kicker">PART 7 — ONE DECISION, THREE VOICES</div>
+                <h2 class="sec-title rv">Technical vs Business Explanation</h2>
+                <p class="sec-lead rv">The decision: <b>send order notifications asynchronously</b>. Watch the identical
+                    facts wear three different suits.</p>
+                <div class="calc-card rv">
+                    <h4>THE BUILD EXPLAINED</h4>
+                    <div class="sayw rv"><span class="lbl">DEVELOPER EXPLANATION</span>"Checkout publishes an
+                        OrderPlaced event to the bus with the outbox pattern, so the event and the DB write commit
+                        together. Notification workers consume it with retry policies and dead-lettering — a poison
+                        message quarantines instead of blocking the queue. Idempotency keys make replays safe, so
+                        at-least-once delivery never double-sends an email."</div>
+                    <div class="sayb rv"><span class="lbl">MANAGER EXPLANATION</span>"Checkout no longer waits for
+                        emails, so response time stays flat even when providers are slow. Reliability goes up: a
+                        provider outage queues notifications instead of failing orders. The maintenance cost is one more
+                        queue to monitor — we already have the dashboard for it. No new hires needed; the team that owns
+                        retries today owns this."</div>
+                    <div class="saya rv"><span class="lbl">BUSINESS EXPLANATION</span>"Customers finish buying in under
+                        a second even at peak — that's fewer abandoned carts. If our email provider has a bad hour,
+                        sales continue uninterrupted and confirmations catch up automatically. Worst case scenario: a
+                        customer gets their confirmation email five minutes late. Best case: we stop losing
+                        $50,000-a-month traffic-holiday orders."</div>
+                </div>
+                <p class="rv">Why the wording changes: the developer needs <b>protocols and failure semantics</b>, the
+                    manager needs <b>operability and headcount implications</b>, the business needs <b>customer outcomes
+                        in currency</b>. Same pipes. Same flows. The risk of mixing them: developers get bored by
+                    revenue talk and businesspeople get lost in outbox patterns.</p>
+            </section>
+
+            <!-- PART 8 -->
+            <section class="sec" id="p8">
+                <div class="sec-kicker">PART 8 — TELL THE STORY</div>
+                <h2 class="sec-title rv">Architecture Storytelling</h2>
+                <p class="sec-lead rv">Decisions people understand are decisions people remember. The story format:
+                    <b>Problem → Goal → Constraints → Options → Decision → Reason → Result → Risk.</b>
+                </p>
+
+                <div class="calc-card rv">
+                    <h4>STORY 1 — The Cache Nobody Wanted to Buy</h4>
+                    <div class="step"><b>Problem:</b> Product pages were taking 2 seconds at peak, and the database CPU
+                        graph looked like a heart attack every lunch hour.</div>
+                    <div class="step"><b>Goal:</b> Sub-300 ms catalog reads without buying a bigger database.</div>
+                    <div class="step"><b>Constraints:</b> Budget ¥300/month extra, no new infra team, stale pricing
+                        cannot exceed one minute.</div>
+                    <div class="step"><b>Options:</b> Bigger DB instance ($2,000/mo), read replicas ($800), Redis cache
+                        ($180).</div>
+                    <div class="step"><b>Decision:</b> Redis with event-driven invalidation and a 60-second safety TTL.
+                    </div>
+                    <div class="step"><b>Reason:</b> 95% of traffic was reads repeated thousands of times a minute — a
+                        cache answers that, a bigger database just survives it.</div>
+                    <div class="step"><b>Result:</b> p95 catalog latency: 2,000 ms → 40 ms. Database CPU at peak: 91% →
+                        38%.</div>
+                    <div class="step"><b>Risk:</b> A price change can be cached stale for up to one minute; we log and
+                        measure every staleness window, and marketing now knows to sync big price drops with cache
+                        invalidation, not against it.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>STORY 2 — The Microservices We Refused</h4>
+                    <div class="step"><b>Problem:</b> Management, after a competitor's keynote, asked why our system was
+                        "just a monolith" — release cadence was once a day and risk-averse.</div>
+                    <div class="step"><b>Goal:</b> Multiple deploys per day, safer changes, without exploding
+                        operational cost.</div>
+                    <div class="step"><b>Constraints:</b> One platform engineer; compliance review every deploy cycle;
+                        25 engineers with zero Kubernetes fluency.</div>
+                    <div class="step"><b>Options:</b> Full microservices split, stay put, or a modular monolith with
+                        feature flags and module-level tests.</div>
+                    <div class="step"><b>Decision:</b> Modular monolith. Deploy full binary, but release features behind
+                        flags so cadence is decoupled from deployment.</div>
+                    <div class="step"><b>Reason:</b> Deployment frequency was a process gap, not an architecture gap —
+                        microservices would have bought $8,000/month of overhead to fix a $0 CI/CD flagging change.
+                    </div>
+                    <div class="step"><b>Result:</b> Deploys: 1/day → 6/day. Rollback: flags off, no redeploy. Infra
+                        bill: unchanged.</div>
+                    <div class="step"><b>Risk:</b> If two product teams later demand true isolation, the extraction path
+                        exists — every module boundary was drawn for it.</div>
+                </div>
+
+                <div class="calc-card rv">
+                    <h4>STORY 3 — The Database We Didn't Shard</h4>
+                    <div class="step"><b>Problem:</b> Orders table passed 800 million rows; queries slowed and everyone
+                        said "sharding, obviously."</div>
+                    <div class="step"><b>Goal:</b> Sub-second order history queries and a stop to the bloat — no
+                        rewrite, no downtime.</div>
+                    <div class="step"><b>Constraints:</b> Live system with 99.9% SLA; one DBA consultant; our roadmap
+                        already had six months of features packed.</div>
+                    <div class="step"><b>Options:</b> Shard by tenant, archive old orders to cheaper cold tables, or
+                        throw hardware at it.</div>
+                    <div class="step"><b>Decision:</b> Archive: 90% of rows were orders older than two years, read twice
+                        a year. Move them to compressed archive tables in the same database with a weekly job.</div>
+                    <div class="step"><b>Reason:</b> The pain was volume-of-dead-data, not write throughput. Sharding
+                        answers a write problem we didn't have — at a cost of every query being tenant-aware forever.
+                    </div>
+                    <div class="step"><b>Result:</b> Hot table shrank from 800M to 90M rows. Query p99: 4.2 s → 180 ms.
+                        Sharding conversation: closed, with a documented trigger if write rate ever triples.</div>
+                    <div class="step"><b>Risk:</b> Archive access is slow (2–4 s), acceptable because compliance reads
+                        are rare — stated plainly in the audit report, and the auditors signed it.</div>
+                </div>
+                <p class="rv">Notice the discipline in all three: <b>a number opens, a rejected option appears, a result
+                        is measured, a risk is kept on the record.</b> That is the anatomy of a story that wins design
+                    reviews.</p>
+            </section>
+
+            <!-- PART 9 -->
+            <section class="sec" id="p9">
+                <div class="sec-kicker">PART 9 — UNDER PRESSURE</div>
+                <h2 class="sec-title rv">Handling Challenging Questions</h2>
+                <p class="sec-lead rv">A challenge is not an attack — it's a request for the layer below your summary.
+                    Every hard question has three layers: what they asked, what they mean, and the answer that serves
+                    both.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:860px">
+                        <thead>
+                            <tr>
+                                <th style="width:22%">QUESTION</th>
+                                <th>WHAT THEY'RE REALLY ASKING</th>
+                                <th>HOW TO THINK</th>
+                                <th>STRONG RESPONSE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>"Why did you choose this?"</b></td>
+                                <td>Did you compare alternatives, or follow habit/hype?</td>
+                                <td>Never defend in isolation — frame against alternatives.</td>
+                                <td>"Against our top three constraints — team size, budget, 5× growth — this scored
+                                    best. The runner-up failed on X specifically."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Why not simpler?"</b></td>
+                                <td>Are you over-engineering for your CV or the company's benefit?</td>
+                                <td>Show what "simpler" would break, concretely.</td>
+                                <td>"Simpler — direct DB, no cache, no queue — fails two measured requirements: 300 ms
+                                    checkout and 5K peak RPS. I'll happily simplify when our traffic lets us; here's the
+                                    trigger."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Do we even need this component?"</b></td>
+                                <td>Is it load-bearing or decoration?</td>
+                                <td>Remove it in your head: what breaks?</td>
+                                <td>"Without the queue, checkout waits on shipping's API; when that API hiccups, we stop
+                                    selling. For those two reasons it's load-bearing. Happy to show the flow with and
+                                    without."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Isn't this too expensive?"</b></td>
+                                <td>Is the cost justified by business protection or is it gold-plating?</td>
+                                <td>Translate cost into the thing it prevents.</td>
+                                <td>"$1,300 a month. The alternative saved $500 and reintroduces the month-end sack of
+                                    orders that was costing us around $60K in abandoned checkouts yearly. In that ratio:
+                                    cheap insurance."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What if this service goes down?"</b></td>
+                                <td>Have you designed for failure or chalked it in afterward?</td>
+                                <td>State the failure mode, detection, and recovery time.</td>
+                                <td>"If the queue's consumer dies, messages pile up safely; alerting fires at 60 seconds
+                                    of lag; we restart via health checks and drain the backlog. Order creation is
+                                    untouched during all of that."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What happens at 10× traffic?"</b></td>
+                                <td>Does the design bend or snap?</td>
+                                <td>Walk the bottleneck chain, in order, with numbers.</td>
+                                <td>"First the cache absorbs reads; at 3× it saturates and we scale it. Writes are the
+                                    real wall at about 8× — that's when the read replica already helps, and the
+                                    documented trigger for tenant sharding is at that exact point."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What if Redis fails?"</b></td>
+                                <td>Is the cache a hidden single point of failure?</td>
+                                <td>Never let the accelerator be a critical-path dependency.</td>
+                                <td>"The API degrades to database reads — slower, not dead. Product pages go from 40 ms
+                                    to 300 ms, alerting fires, and we restore the cache. Nothing critical is
+                                    cached-only: the database remains the source of truth."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What if the broker fails?"</b></td>
+                                <td>Do you lose data when the async layer dies?</td>
+                                <td>Broker persistence + outbox = no data loss possible.</td>
+                                <td>"Messages are persisted before acceptance, and publishers use the outbox — DB commit
+                                    and message write can't disagree. A full broker outage pauses notifications; we lose
+                                    minutes of delay, never a single message."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Why not just one database?"</b></td>
+                                <td>Is the split a real need or ceremony?</td>
+                                <td>Point to the specific contention the split removes.</td>
+                                <td>"It <i>is</i> one database engine — one primary plus replica copies. What we split
+                                    was <i>traffic</i>: checkout writes to one, analytics reads from the other. The
+                                    contention that was freezing checkout at month-end disappears."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"Why microservices / why not modular monolith?"</b></td>
+                                <td>Is this doctrine, or matched to team reality?</td>
+                                <td>Frame with team size, scaling divergence, and ops maturity.</td>
+                                <td>"Six autonomous teams shipping daily is organizational scale — that justifies
+                                    network overhead. A modular monolith would re-couple their deploy trains; we keep
+                                    everything that isn't under team contention monolithic."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"How much will it cost?"</b></td>
+                                <td>Do you know your own numbers, or will finance find them first?</td>
+                                <td>Give the range, the driver, and the breakeven logic.</td>
+                                <td>"About $1,300 a month today; the biggest swing factor is database sizing at 5×
+                                    growth — here's the tier we'd hit and at what revenue it pays for itself."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"How long will it take?"</b></td>
+                                <td>Is your rollout planned, or a hope with a wireframe?</td>
+                                <td>Phase it, with what de-risks each phase.</td>
+                                <td>"Three phases: database separation in week 2, cache in week 4, queue in week 6. Each
+                                    phase ships independently and each has a rollback in one command. The six-week
+                                    number includes a week of load-testing margin."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What's the biggest risk?"</b></td>
+                                <td>Can you be honest about your own design's fragile edge?</td>
+                                <td>Name the risk honestly — then show the metric watching it.</td>
+                                <td>"Queue backpressure at 10×. If consumers can't drain, order confirmations delay —
+                                    not lost, but delayed. It's instrumented: queue-age alert at 60 seconds, and runbook
+                                    step one is spin up double consumers."</td>
+                            </tr>
+                            <tr>
+                                <td><b>"What would you cut if budget halved?"</b></td>
+                                <td>Do you know what's load-bearing vs nice-to-have?</td>
+                                <td>Reveal your priority ordering under pressure.</td>
+                                <td>"In order: non-production envs shrink, reporting-instance tier drops, the
+                                    warm-standby goes cold. What never gets cut: the cache — it's carrying 70% of read
+                                    load — and the backup schedule."</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-warn rv"><span class="co-label">THE COMMON MISTAKE</span>
+                    <p>Getting defensive. A question about your queue is not an accusation about <i>you</i>. The
+                        architect's reflex: thank them for finding the edge of the design, answer the edge, and note it
+                        in the risk register. "Good catch — that's exactly the scenario our alert covers" beats any
+                        amount of confident hand-waving.</p>
+                </div>
+            </section>
+
+            <!-- PART 10 -->
+            <section class="sec" id="p10">
+                <div class="sec-kicker">PART 10 — HONESTY WITHOUT MELTDOWN</div>
+                <h2 class="sec-title rv">Handling "I Don't Know"</h2>
+                <p class="sec-lead rv">Interviewers and CTOs both test this: do you invent certainty, or do you state
+                    what you know and how you'd close the gap? Uncertainty handled well builds more trust than bluffing
+                    handled badly.</p>
+
+                <div class="calc-card rv">
+                    <h4>1 · "What throughput can that database actually hold?"</h4>
+                    <div class="sayw rv"><span class="lbl">BAD RESPONSE</span>"Thousands per second, easily."
+                        <i>(Invented fact — a follow-up question ends your credibility.)</i>
+                    </div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT RESPONSE</span>"I don't have the bench number for
+                        this exact tier and workload, so I won't invent one. What I do know: our profile is 80/20
+                        read-write with indexed lookups, which is the profile this engine handles well. Before go-live,
+                        I'd validate with a two-hour load test at current and 5× volumes — I'd rather quote a measured
+                        number next week than estimate on-stage today."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>2 · "How does our pricing change if we triple the user base?"</h4>
+                    <div class="sayw rv"><span class="lbl">BAD RESPONSE</span>"It stays roughly the same because it
+                        scales." <i>(Costs almost never scale flat.)</i></div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT RESPONSE</span>"Assuming storage and traffic grow
+                        proportionally, compute grows linearly but database is the wildcard — I can't tell you whether
+                        that needs one tier up or three until we check our growth curve against real usage. Assumption:
+                        per-tenant usage stays the same. Verification: pull last quarter's active-tenant-per-user ratio
+                        and price both tiers. I can have real numbers by Friday."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>3 · "Is our queue ordered for independent consumers?"</h4>
+                    <div class="sayw rv"><span class="lbl">BAD RESPONSE</span>"Yes, queues are ordered by default."
+                        <i>(Most brokers offer ordering guarantees only within a partition/queue with caveats — a wrong
+                            yes here is expensive.)</i>
+                    </div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT RESPONSE</span>"I don't want to assert ordering
+                        without checking — broker ordering guarantees vary a lot by configuration. Two things I believe:
+                        if any message ordering matters, we should sequence-key messages and design consumers
+                        idempotently so order mistakes don't corrupt anything. Let me confirm the exact guarantee for
+                        our setup and answer you with the config in hand."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>4 · "What's the recovery process if the region goes down mid-transaction?"</h4>
+                    <div class="sayw rv"><span class="lbl">BAD RESPONSE</span>"Failover is automatic, no downtime."
+                        <i>(Regional failovers are rarely invisible; RPO during failover matters and you haven't stated
+                            it.)</i>
+                    </div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT RESPONSE</span>"I know the intended path —
+                        synchronous replica, automated failover, and the app re-pointing via health-checked endpoints —
+                        but I won't claim zero in-flight transactions affected. In-flight transactions at the failover
+                        second can roll back; our idempotency design means clients get a clean retry, not duplicate
+                        bookings. The precise RPO is a configuration check; I'll verify it against the documented SLA
+                        before I state it."</div>
+                </div>
+                <div class="calc-card rv">
+                    <h4>5 · "How would you do this with a third of the current team?"</h4>
+                    <div class="sayw rv"><span class="lbl">BAD RESPONSE</span>"It would still be fine, honestly." <i>(It
+                            would not be fine.)</i></div>
+                    <div class="saya rv"><span class="lbl">ARCHITECT RESPONSE</span>"Straight answer: I don't know how
+                        fine it would be — I've never run this system with nine engineers. What I'd evaluate: which
+                        components trade operability for scale, and at that headcount I'd likely cut the queue provider
+                        for an in-process outbox loop and consolidate environments. That's a proposal under a
+                        constraint, not a guarantee; the real question is which business guarantees we'd consciously
+                        relax, and management must sign that list."</div>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE FORMULA</span>
+                    <p><b>"I don't want to invent that number. Here is what I do know, here is the assumption I'd design
+                            on, and here is exactly how I'd verify it."</b> Three sentences. That sounds senior in any
+                        room on earth, because seniority is calibrated certainty — not certainty itself.</p>
+                </div>
+            </section>
+
+            <!-- PART 11 -->
+            <section class="sec" id="p11">
+                <div class="sec-kicker">PART 11 — DISAGREEMENT, PROFESSIONALLY HANDLED</div>
+                <h2 class="sec-title rv">Handling Disagreement</h2>
+                <p class="sec-lead rv">Architecture is decided in rooms full of smart people with different goals. How
+                    you handle being challenged decides how often your designs get built.</p>
+                <div class="topic-grid rv">
+                    <div class="topic"><b>Developer: "This boundary is wrong, let me bypass it."</b><span><b>Wrong:</b>
+                            "It's the architecture, follow it."<br><b>Better:</b> "Tell me what's painful about the
+                            boundary — if it's forcing bad code, I'll change it; if it's protecting us from a coupling
+                            bug we've had before, help me make the pain explicit in a DSL or helper so the complaint
+                            goes away."</span></div>
+                    <div class="topic"><b>Product Manager: "Can we skip the queue and ship this
+                            week?"</b><span><b>Wrong:</b> "No, bad idea, the architecture needs it."<br><b>Better:</b>
+                            "We can, with one explicit trade: when a provider hiccups, checkout slows by up to five
+                            seconds on those requests — roughly 8% more abandoned carts in our data. Sign off that trade
+                            in writing with the date we re-add the queue, and it's a business decision I'm happy to
+                            execute."</span></div>
+                    <div class="topic"><b>Manager: "Cut cost 30% now."</b><span><b>Wrong:</b> "We can't, everything is
+                            critical."<br><b>Better:</b> "Absolutely. In order: non-prod tiers shrink, cold disaster
+                            recovery replaces warm, redundant replicas for reporting go to on-demand. What's protected
+                            is cache and primary DB — those carry revenue. I'll send you the three-line dial-down and
+                            the list of what gets slower as a result."</span></div>
+                    <div class="topic"><b>Security: "Design rejected — exposed token."</b><span><b>Wrong:</b> Argue for
+                            the design as-is.<br><b>Better:</b> "Rejecting the design is fair; help me understand the
+                            requirement as written, because there are three ways to satisfy it: managed identity, header
+                            signing at gateway, or short-lived tokens — all keep every key out of services. Which of
+                            these fits the company policy you published? I'll adapt the design around whichever
+                            guarantees the audit sees."</span></div>
+                    <div class="topic"><b>Operations: "Too hard to run."</b><span><b>Wrong:</b> "It's your job to run
+                            what we design."<br><b>Better:</b> "Fair criticism. Complexity I own is in these two
+                            components — let's walk your on-call runbook through both. If either can't be governed at 3
+                            a.m., it's my bug, and I'll simplify it until a tired engineer can act without calling me.
+                            Complexity is a cost; you're a customer of this design."</span></div>
+                    <div class="topic"><b>Business: "Add AI that summarizes every order."</b><span><b>Wrong:</b> "That's
+                            architecturally inappropriate."<br><b>Better:</b> "Customers will get real value from
+                            summarized orders — here's the cheapest honest path: managed summarization API as an async
+                            enrichment, zero checkout impact, cost per order about $0.002. If volume explodes past a
+                            million orders a month, we revisit with batch mode. What I won't do is put it in the
+                            checkout path — latency is our revenue."</span></div>
+                </div>
+                <div class="callout co-key rv"><span class="co-label">THE COMMON THREAD</span>
+                    <p>Every architect response does the same three things: <b>accept the goal</b> (cost, speed,
+                        security are legitimate), <b>quantify the trade</b> in their language, and <b>offer a path</b>
+                        that serves the goal without wrecking the guarantees. You win disagreement by being the person
+                        who translates positions into options — never the person who translates options into a wall.</p>
+                </div>
+            </section>
+
+            <!-- PART 12 -->
+            <section class="sec" id="p12">
+                <div class="sec-kicker">PART 12 — THE FULL DEMONSTRATION</div>
+                <h2 class="sec-title rv">A Complete 10-Minute Presentation</h2>
+                <p class="sec-lead rv">This is what the finished craft sounds like: the Multi-Company Inventory &amp;
+                    Order Management System, ten minutes, natural speech. Deliver it out loud once; it fits almost
+                    word-for-word.</p>
+                <div class="panel rv">
+                    <h4>MINUTES 1–3 · PROBLEM, REQUIREMENTS, CONSTRAINTS</h4>
+                    <p style="font-size:15px">"Every month-end, checkout degrades to the point we lose real orders — not
+                        because the platform is weak, but because two bosses fight for one database: transactions and
+                        reports. Ten thousand companies, a million registered users, roughly fifty thousand orders a
+                        day. Three constraints I want you to hold me to: checkout under 300 milliseconds, 99.9 percent
+                        availability, 5× growth inside eighteen months — with the team we have today."</p>
+                    <p class="fr-hint">WHAT THIS DOES · Stakes first, numbers early, constraints stated as promises.</p>
+                </div>
+                <div class="panel rv">
+                    <h4>MINUTES 4–6 · ARCHITECTURE, MAIN FLOW, DATA</h4>
+                    <p style="font-size:15px">"At the top it's a modular monolith: one deployment, seven encapsulated
+                        modules — order, inventory, payment, product, customer, notification, reporting — each with its
+                        own schema in one relational database. Around it, three companions: Redis in front of the
+                        catalog read path, a queue for every side-effect that doesn't need to block the customer, and a
+                        read replica that takes every analytical query.</p>
+                    <p style="font-size:15px">One order walks like this: the API authenticates and stamps per-tenant
+                        limits; the order module validates and reserves stock <i>synchronously</i> — overselling is a
+                        real-money failure we refuse; then payment via the provider, still synchronous; confirmation
+                        returns instantly under three hundred milliseconds. After that line of code says 'done', the
+                        queue picks up: email, shipping label, analytics events.</p>
+                    <p style="font-size:15px">Data rule, bold version: the database is the only truth. Cache answers hot
+                        reads but stores no money. The replica serves reports, lagging a few seconds — visible on every
+                        dashboard with a timestamp."</p>
+                    <p class="fr-hint">WHAT THIS DOES · One vitroscopic flow with sync/async line visible; data
+                        ownership in one breath.</p>
+                </div>
+                <div class="panel rv">
+                    <h4>MINUTES 7–8 · SCALE, SECURITY &amp; RELIABILITY</h4>
+                    <p style="font-size:15px">"Against the constraints: reads scale via the cache and the replicas,
+                        which absorb catalog and analytics traffic — that's seventy percent of load gone before the
+                        database sees it. Horizontal app instances handle the rest behind a load balancer. Write growth
+                        is the honest concern at 5×: triggers documented — reserved write capacity at 50% sustained,
+                        then tenant-sharding, which our tenant isolation model already supports.</p>
+                    <p style="font-size:15px">Security: authentication via managed identity service, per-tenant rate
+                        limits at the gateway for noisy neighbors, payment data never touches our storage — provider
+                        tokens only. Reliability: readiness checks remove sick instances, Redis failure degrades to
+                        slower reads — never zero orders — queue failure pauses notifications with durable persistence,
+                        and the one drill we run quarterly is primary database failover: under five minutes to promoted
+                        replica."</p>
+                    <p class="fr-hint">WHAT THIS DOES · Every constraint from minute 1 gets an owner; failure stories
+                        are named, not hidden.</p>
+                </div>
+                <div class="panel rv">
+                    <h4>MINUTES 9–10 · TRADE-OFFS, RISKS, COST, CLOSE</h4>
+                    <p style="font-size:15px">"Two rejected options, so you know what we weighed: full microservices —
+                        right for a bigger org, but twelve services against one platform engineer is operational
+                        self-harm and distributed order consistency gets expensive where we need money to be exact. And
+                        'just buy the biggest database' — it survives the graph but fixes no contention and costs more
+                        monthly than this whole design combined.</p>
+                    <p style="font-size:15px">Biggest risk, honestly: queue consumer throughput when marketing sends a
+                        million notifications — mitigated with scalable consumers and a queue-age alert at sixty
+                        seconds. Cost: around $1,300 a month; the largest future swing is database tiering at 5×, which
+                        pays for itself at a fraction of revenue lost today. Recommendation: build it. The design
+                        replaces a month-end revenue fire with reliable, boring weekends."</p>
+                    <p class="fr-hint">WHAT THIS DOES · Rejections with logic, risk with a metric, cost with an anchor,
+                        close with momentum.</p>
+                </div>
+            </section>
+
+            <!-- PART 13 -->
+            <section class="sec" id="p13">
+                <div class="sec-kicker">PART 13 — DESIGN LIVE, OUT LOUD</div>
+                <h2 class="sec-title rv">Whiteboard Interview Technique</h2>
+                <p class="sec-lead rv">The whiteboard isn't a drawing test — it's a <b>thinking test performed in
+                        public</b>. Time guidance, what to draw, what to say, and how to behave when they change the
+                    rules.</p>
+                <h3>The 30-minute whiteboard flow</h3>
+                <div class="tblwrap rv">
+                    <table class="t">
+                        <thead>
+                            <tr>
+                                <th>TIME</th>
+                                <th>WHAT YOU DRAW/SAY</th>
+                                <th>KEY MOVE</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>0–5 min</b></td>
+                                <td>Write requirements across the top: users, orders/day, peak RPS, critical ops. Ask 3
+                                    questions: "What's the peak factor? Which of these is the money path? What may be
+                                    eventually consistent?"</td>
+                                <td><b>Interviewer hears:</b> you design against numbers, not vibes.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5–8 min</b></td>
+                                <td>Draw 5–7 boxes: client → gateway → modules → database, with one line each for what
+                                    lives inside.</td>
+                                <td><b>Draw first, annotate fast.</b> Boxes beat essays.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8–14 min</b></td>
+                                <td>Add companions with dashes: cache in front of reads, queue off to the side, replica
+                                    feeding reports, external provider in a dotted box.</td>
+                                <td><b>Say the why aloud as each arrives:</b> "…and this exists because catalog is 95%
+                                    reads."</td>
+                            </tr>
+                            <tr>
+                                <td><b>14–20 min</b></td>
+                                <td>Walk the business flow with your pen: 1 2 3 4 through the boxes for one complete
+                                    order.</td>
+                                <td><b>Number the steps on the board</b> — makes it easy to reference and shows you can
+                                    tell a story.</td>
+                            </tr>
+                            <tr>
+                                <td><b>20–24 min</b></td>
+                                <td>Failure walk: point at each box — "this dies: behavior…" — queue pays off here.</td>
+                                <td><b>Don't wait to be asked.</b> Volunteering failure modes is a senior signal.</td>
+                            </tr>
+                            <tr>
+                                <td><b>24–28 min</b></td>
+                                <td>Scale: mark 2 read replicas, per-tenant shard line, horizontal instance scaling.
+                                </td>
+                                <td><b>Tie each scale move to a traffic trigger, not to a wish.</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>28–30 min</b></td>
+                                <td>Close with the trade-off sentence and the biggest measured risk. Stop.</td>
+                                <td><b>End on a recommendation</b>, not on sketch four of a third microservice.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <h3>Questions you must ask in the room</h3>
+                <ol class="nlist rv">
+                    <li><b>"How does load distribute?"</b> — read/write ratio, peak factor. This single answer dictates
+                        cache, replicas, and write scaling.</li>
+                    <li><b>"Which flow makes money?"</b> — that flow gets the strictest consistency, the most
+                        monitoring, and zero tolerance for delay.</li>
+                    <li><b>"What may be eventually consistent?"</b> — this is a permission slip they hand you for queues
+                        and replicas; ask for it explicitly.</li>
+                    <li><b>"Hard constraints?"</b> — data residency, offline tolerance, compliance. One hidden
+                        constraint invalidates the cleanest design five minutes in.</li>
+                </ol>
+                <h3>Behavioral rules</h3>
+                <ul class="nlist rv">
+                    <li><b>Stop drawing after seven boxes</b> — if you need more, you need to collapse. Detail belongs
+                        in words, not in layer 8.</li>
+                    <li><b>Requirement change mid-draw?</b> Don't erase: "Great — that changes the consistency
+                        requirement, so this queue moves to sync for that specific path." Show the change survives. They
+                        test flexibility because architecture is re-evaluated weekly in real life.</li>
+                    <li><b>Label assumptions visibly:</b> corner of the board, "ASSUME: 80/20 read, 40× peak, queue
+                        acceptable for notifications." When you're wrong about one, they correct in seconds instead of
+                        watching you design on sand for ten minutes.</li>
+                    <li><b>Speak while drawing.</b> Silence is what juniors do while panicking; senior architects
+                        narrate their decisions as each line lands.</li>
+                </ul>
+            </section>
+
+            <!-- PART 14 -->
+            <section class="sec" id="p14">
+                <div class="sec-kicker">PART 14 — THE GRAVEYARD OF GOOD IDEAS</div>
+                <h2 class="sec-title rv">15 Architecture Presentation Mistakes</h2>
+                <p class="sec-lead rv">Each of these has destroyed more designs than any technical flaw. Learn them by
+                    counter-example.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:800px">
+                        <thead>
+                            <tr>
+                                <th style="width:26%">MISTAKE</th>
+                                <th>WHY IT HURTS</th>
+                                <th>BETTER APPROACH</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>1. Start with technology</b></td>
+                                <td>"We use Kafka, Redis, Kubernetes…" tells the room you're enthusiasm-led, not
+                                    problem-led.</td>
+                                <td>Open with the business problem and stakes. Tech earns its place in minute 4, named
+                                    in minute 9, justified every time.</td>
+                            </tr>
+                            <tr>
+                                <td><b>2. Draw every box you know</b></td>
+                                <td>Twenty components = the audience holds zero. Density reads as inability to
+                                    prioritize.</td>
+                                <td>Five to seven boxes max. The rest live in the appendix. Never volunteer the detailed
+                                    tour.</td>
+                            </tr>
+                            <tr>
+                                <td><b>3. Technical detail beyond need</b></td>
+                                <td>Serialization formats at a CTO review mark you as a builder who can't zoom out.</td>
+                                <td>Match detail to room: contracts for devs, trade-offs for leads, cost/risk for
+                                    executives.</td>
+                            </tr>
+                            <tr>
+                                <td><b>4. Skip the requirements</b></td>
+                                <td>The design becomes unfalsifiable — there's nothing to judge it against.</td>
+                                <td>Requirements on the wall, numbers included. Every design choice names the
+                                    requirement it serves.</td>
+                            </tr>
+                            <tr>
+                                <td><b>5. Never ask questions</b></td>
+                                <td>Interview: answering the wrong question perfectly. Reviews: designing on
+                                    assumptions.</td>
+                                <td>Ask the load/revenue/consistency questions in the first five minutes — it's
+                                    professional, not hesitation.</td>
+                            </tr>
+                            <tr>
+                                <td><b>6. Hide the trade-offs</b></td>
+                                <td>Over-claiming perfection turns every later question into a credibility hit.</td>
+                                <td>Own the rejected options in minute 9. "Here's what we accepted" earns more trust
+                                    than "here's why we're great".</td>
+                            </tr>
+                            <tr>
+                                <td><b>7. Ignore cost</b></td>
+                                <td>Engineering credibility survives a wrong estimate; it doesn't survive no estimate.
+                                </td>
+                                <td>Every deck ends with monthly cost, the cost driver, and the cost at next year's
+                                    scale.</td>
+                            </tr>
+                            <tr>
+                                <td><b>8. No failure cases</b></td>
+                                <td>Happy-path diagrams are myth diagrams. Everyone's first question will be failure —
+                                    answer before they ask.</td>
+                                <td>One deliberate failure walk per critical dependency, with detection time and
+                                    recovery time.</td>
+                            </tr>
+                            <tr>
+                                <td><b>9. Speak too fast</b></td>
+                                <td>Speed reads as fear or filler; it also steals the audience's chance to picture each
+                                    point.</td>
+                                <td>Talk slower than feels natural; pause after every claim; let the diagram absorb into
+                                    the room's heads.</td>
+                            </tr>
+                            <tr>
+                                <td><b>10. Memorized textbook lines</b></td>
+                                <td>"Best practice says" rings hollow from a human who hasn't told us what it protects
+                                    against.</td>
+                                <td>Every preference expressed as consequence: "I prefer the queue <i>here</i> because a
+                                    provider outage loses money there."</td>
+                            </tr>
+                            <tr>
+                                <td><b>11. Defend a bad decision</b></td>
+                                <td>Doubling down under better evidence makes you the constraint, not the architect.
+                                </td>
+                                <td>"That's a flaw — good catch. Two ways to fix it: prefer the small one, or the
+                                    cleaner one if cost allows. Which pain do we accept?"</td>
+                            </tr>
+                            <tr>
+                                <td><b>12. "Best practice" as a reason</b></td>
+                                <td>Cargo cult in two words. It's an appeal to authority where numbers belong.</td>
+                                <td>Replace every "best practice" with "because the alternative costs us X" — say X or
+                                    don't say anything.</td>
+                            </tr>
+                            <tr>
+                                <td><b>13. Jargon when a plain word exists</b></td>
+                                <td>Each unexplained acronym loses one more person in the room; multiply by your
+                                    audience.</td>
+                                <td>Translate each term on first use: "circuit breaker — it stops calling a sick service
+                                    for a while."</td>
+                            </tr>
+                            <tr>
+                                <td><b>14. No summary</b></td>
+                                <td>Ten minutes of material and no close means the room retains whichever minute sounded
+                                    the loudest.</td>
+                                <td>Final thirty seconds: problem, decision, biggest risk, recommendation. Four
+                                    sentences, always.</td>
+                            </tr>
+                            <tr>
+                                <td><b>15. Skip confirming concerns</b></td>
+                                <td>Unaddressed stakeholder worries quietly resurrect next quarter as "why is this even
+                                    happening?"</td>
+                                <td>End with: "What did I not address?" — and answer every raised point in the minutes
+                                    that follow, visibly.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- PART 15 -->
+            <section class="sec" id="p15">
+                <div class="sec-kicker">PART 15 — THE INTERVIEW</div>
+                <h2 class="sec-title rv">20 Communication Interview Questions</h2>
+                <p class="sec-lead rv">Click each question for what the interviewer tests, the weak answer, the strong
+                    answer, and the common mistake.</p>
+                <ol class="qlist rv">
+                    <li>How do you explain a complex architecture to a non-technical person?<span
+                            class="qt warm">COMMUNICATION</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Translation ability, not simplification-by-lying.<br><b>Weak
+                                answer:</b> "I simplify it a lot."<br><b>Strong answer:</b> "I use analogy with zero
+                            tech names, and tie everything to money, customer experience, or risk they'd feel. 'Think of
+                            the database as our one cash register: reports and checkout were sharing it, so lines
+                            formed. We added a second register just for reading — now checkout never queues.' Then I
+                            validate with one question: 'Is there a part worth walking again?'"<br><b>Common
+                                mistake:</b> Dumbing it down so far it becomes false ("nothing can ever break").</span>
+                    </li>
+                    <li>How do you defend an architecture decision?<span class="qt">DEFENSE</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>Testing:</b> Evidence-over-ego.<br><b>Weak answer:</b>
+                            "I explain the pros again, louder."<br><b>Strong answer:</b> "Three anchors: the constraint
+                            the decision serves, the alternatives I rejected and their specific failures, and the
+                            trigger at which I'd change my mind. Defense is a spreadsheet of consequences, not a fencing
+                            match — if new data shows my premise wrong, I update the design in the meeting rather than
+                            defend a stale diagram."<br><b>Common mistake:</b> Defending the choice as identity — being
+                            right yesterday beats being right today.</span></li>
+                    <li>What do you do when stakeholders disagree?<span class="qt">NEGOTIATION</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Process before
+                            preference.<br><b>Weak answer:</b> "I try to convince them."<br><b>Strong answer:</b> "First
+                            find out what their refusal protects — cost, risk, timeline — because most disagreements are
+                            mismatched priorities, not technical disputes. Then re-present the same design with their
+                            priority as the headline: when the CFO hears about cost first, the same box becomes 'the
+                            $1,300 design' instead of 'the technology stack'. If disagreement survives, I put the trade
+                            on paper and let the paying signatory choose."<br><b>Common mistake:</b> Re-explaining the
+                            design when the actual mismatch is value weighting.</span></li>
+                    <li>How do you present trade-offs?<span class="qt warm">TRADE-OFFS</span><span class="qh-btn">▸ VIEW
+                            ANSWER</span><span class="qh"><b>Testing:</b> Can you talk like a decision-maker, not a
+                            brochure?<br><b>Weak answer:</b> "I list pros and cons on a slide."<br><b>Strong answer:</b>
+                            "Each trade-off gets one sentence in a five-part shape: what I chose, what I rejected, what
+                            I gain, what I accept, and the metric that watches the accepted risk. Five sentences per
+                            major decision, max. The room remembers structures, not fourteen bullet points that blur
+                            with the next meeting."<br><b>Common mistake:</b> Presenting pros/cons without attaching the
+                            accepted risk to a watch.</span></li>
+                    <li>How do you communicate architecture risks?<span class="qt">RISK</span><span class="qh-btn">▸
+                            VIEW ANSWER</span><span class="qh"><b>Testing:</b> Candor with accountability
+                            attached.<br><b>Weak answer:</b> "I flag the big ones."<br><b>Strong answer:</b> "Risk
+                            register, three columns: what could happen, what it costs us in business terms, and what
+                            watches/mitigates it today. I present the top three risks before I'm asked; hiding risks
+                            never denies failure, it deletes my warning privileges when failure arrives."<br><b>Common
+                                mistake:</b> Naming risk without the watch — a warning with no alarm attached.</span>
+                    </li>
+                    <li>How do you explain cost to leadership?<span class="qt warm">BUSINESS</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Financial fluency of an
+                            architect.<br><b>Weak answer:</b> "I quote the cloud bill."<br><b>Strong answer:</b> "Three
+                            numbers: monthly spent now, biggest cost driver and how it moves with scale, and cost of the
+                            incident we'd pay for without the design. '$1,300 a month; the swing is database tiering at
+                            5×; against a $60K-a-year revenue loss we were experiencing — the design runs on recovered
+                            revenue.' Cost becomes a value ratio, not a bill."<br><b>Common mistake:</b> Presenting cost
+                            without the counter-factual — the design it replaced.</span></li>
+                    <li>An interviewer says "that's overcomplicated." What now?<span
+                            class="qt deep">PRESSURE</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Grace under adversarial challenge.<br><b>Weak answer:</b> "It's
+                            actually not."<br><b>Strong answer:</b> "Grand test. 'Which piece looks heavy to you?' — I
+                            take the critique component by component, showing each one's job. If they name one real
+                            redundancy, I adapt live: 'True — that can die if we accept 60 seconds of staleness there
+                            instead of 10. Shall I draw it?' Their push wins either way: the design gets simpler or the
+                            design gets defended with more clarity."<br><b>Common mistake:</b> Treating simplification
+                            pressure as an attack rather than a second designer offering free review.</span></li>
+                    <li>How do you communicate uncertainty in a boardroom?<span class="qt deep">MATURITY</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Honesty calibrated for
+                            authority.<br><b>Weak answer:</b> "I'm not sure."<br><b>Strong answer:</b> "'At this
+                            confidence level: the cache reduces database load between 60–80% — we've measured similar
+                            load profiles elsewhere, but this workload's exact number gets measured week one in
+                            production; the design is correct either way at that savings floor.' Every uncertainty I
+                            state travels with the data I'd measure to resolve it and when. Uncertainty presented as a
+                            measurement plan sounds like control."<br><b>Common mistake:</b> Eliminating uncertainty
+                            language entirely — it deflates instantly under the first hard follow-up.</span></li>
+                    <li>How much detail should you include in a design review?<span class="qt warm">DEPTH</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Audience
+                            modeling.<br><b>Weak answer:</b> "All of it — better to be thorough."<br><b>Strong
+                                answer:</b> "Depth belongs to the person who must act on it. Developers acting on
+                            contracts get contracts. Management acting on budget, schedule, and supportability get
+                            those. Executives acting on risk and strategy get those. If I'm not sure, I open at high
+                            level and ask: 'Want the why or the how on this part?' — the audience tells me their use
+                            case, I serve it."<br><b>Common mistake:</b> Answering every question at maximum depth —
+                            turns a 20-minute review into a hostage situation.</span></li>
+                    <li>A senior engineer publicly calls your design a mistake. How do you respond?<span
+                            class="qt curve">CONFLICT</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Ego control before a room.<br><b>Weak answer:</b> "We should take
+                            this offline."<br><b>Strong answer:</b> "In the room: 'Fair — let's test it: name the
+                            failure mode you're picturing.' If they show a real crack, I say so and update the design on
+                            the spot — public correction is demo of judgment, not defeat. It's their seniority reviewing
+                            mine: respond in data, never in rank. A design that can't survive one smart colleague
+                            questioning it was never going to survive production either."<br><b>Common mistake:</b>
+                            Escalating to authority — wins the meeting, loses the engineering room forever.</span></li>
+                    <li>How do you explain eventual consistency to a stakeholder?<span class="qt">CLARITY</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Precision without
+                            jargon.<br><b>Weak answer:</b> "The data syncs eventually."<br><b>Strong answer:</b> "'Your
+                            dashboard's sales number updates a few seconds after the sale happens — like a thermometer
+                            that lags a minute behind the room. The cash register itself (orders, payments) never lags:
+                            the money side is exact at write time. Anything that could be a few seconds behind has a
+                            visible timestamp so nobody acts on hidden staleness.' Most stakeholders accept delay
+                            happily when they can see it."<br><b>Common mistake:</b> Hiding the lag from business —
+                            discovered staleness always costs more trust than announced staleness.</span></li>
+                    <li>How do you end a whiteboard interview?<span class="qt">CLOSE</span><span class="qh-btn">▸ VIEW
+                            ANSWER</span><span class="qh"><b>Testing:</b> Can you land a plane, not just fly
+                            circles?<br><b>Weak answer:</b> Keep drawing until the timer stops.<br><b>Strong answer:</b>
+                            "Ninety-second close, always: 'Requirements checked — read-heavy with 50K orders a day
+                            justified the cache and queue. Biggest accepted risk is write-scale at 5×, and this line is
+                            the documented sharding trigger. Rejected: full microservices, because today the deploy
+                            pipeline is the bottleneck, not the network. That's the design — what would you like me to
+                            stress-test first?' Landing with an invitation converts the last minute into
+                            collaboration."<br><b>Common mistake:</b> Ending inside a detail — the room remembers the
+                            last sentence, so make it the conclusion.</span></li>
+                    <li>When would you skip the architecture explanation entirely?<span
+                            class="qt deep">JUDGEMENT</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Knowing when detail is waste.<br><b>Weak answer:</b> "Never —
+                            it's always good to explain."<br><b>Strong answer:</b> "When the room needs a decision, not
+                            a design. 'Should we ship Friday?' needs risk, rollback, and confidence level — sixty
+                            seconds. The architecture is the evidence file behind the decision; I bring it if asked.
+                            Architects who can't calibrate become the 'long meeting people' whose deep-dives get
+                            rescheduled."<br><b>Common mistake:</b> Full presentation by default — reading the room
+                            beats reading the slides.</span></li>
+                    <li>How do you handle "I didn't understand anything"?<span class="qt warm">EMPATHY</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Recovery with
+                            humility.<br><b>Weak answer:</b> "Let me repeat it slower."<br><b>Strong answer:</b> "Own
+                            it: 'That's on me, I buried you in boxes. Let me restart with the one thing that matters:
+                            checkout was dying at month-end; the fix is moving report traffic off the money database. If
+                            you remember only that sentence, you understand the design.' Then check what they retained —
+                            one sentence at a time, stopping at the first confusion point instead of pushing
+                            on."<br><b>Common mistake:</b> Same explanation, more volume — repetition without re-framing
+                            fails twice.</span></li>
+                    <li>How do you present to a mixed audience (devs + execs)?<span class="qt deep">STAGING</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Layered delivery — one
+                            talk, two rooms' attention.<br><b>Weak answer:</b> Aim at the middle and satisfy
+                            nobody.<br><b>Strong answer:</b> "Interval architecture: exec layer first at minute 0–2
+                            (stakes, cost, risk) so they can step out; deep layer at minute 3–8 (flows, failure modes)
+                            for engineers; close with the exec layer in plain language again at minute 9–10. Each
+                            audience gets what they're owed, and nobody sits through tech details they can't use. The
+                            agenda announces this contract in sentence one."<br><b>Common mistake:</b> Serving the most
+                            senior person in the room only — costly when everyone with approval power also needs your
+                            design shaped correctly.</span></li>
+                    <li>Tell me about a time your presentation went badly. What did you do?<span
+                            class="qt curve">SELF-AWARENESS</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Failure metabolized rather than denied.<br><b>Weak answer:</b>
+                            "It went fine once I explained more."<br><b>Strong answer:</b> "Real example: a redundancy
+                            design I presented to leadership broke down at question three when a sysadmin pointed at the
+                            failover time we'd never measured. I didn't fill the gap — I said 'fair, unmeasured that is
+                            a promise with a pin in it, I'll bring measured numbers by Thursday' — and from then on my
+                            design docs have a 'measured vs assumed' column for every claim. The story they remember
+                            isn't the stumble; it's the defense becoming bulletproof after."<br><b>Common mistake:</b>
+                            Choosing a fake weakness story ('I cared too much about detail') — architecture reviewers
+                            smell rehearsed humility instantly.</span></li>
+                    <li>How do you answer "what if everything fails at once?"<span class="qt deep">PRESSURE</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Disentangling realism
+                            from doomsday.<br><b>Weak answer:</b> "That won't happen."<br><b>Strong answer:</b> "That's
+                            the independent vs correlated failure question. Design gives me independent failures at once
+                            with defined behavior: DB down = reads only from replica + queue catches writes. But
+                            correlated catastrophic failure — region flood + provider bankruptcy — that's disaster
+                            territory, answered by RPO/RTO targets, off-site backups, and a war-game drill calendar.
+                            Design me normal probability; Business Continuity plans the catastrophe. Mixing the two
+                            conversations up is where good architects get talked into disaster-cost numbers with no
+                            incident attached."<br><b>Common mistake:</b> Building for the apocalypse in the production
+                            budget — and a CFO correctly rejecting insurance priced above the house.</span></li>
+                    <li>How do you keep people awake during a long design review?<span
+                            class="qt warm">DELIVERY</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Recognizing that attention is earned by design, not
+                            assumed.<br><b>Weak answer:</b> Pictures and colors."<br><b>Strong answer:</b> "Change the
+                            sensory channel every two minutes: diagram, then number on the wall, then a failure story,
+                            then a question to the room. Questions hack attention: 'Hands up — who thinks we should pay
+                            for a second node?' makes people suddenly invested in the next slide. If you can make the
+                            audience vote once per segment, they can't check their email."<br><b>Common mistake:</b>
+                            Interactivity at the end — participation has to start before minute three or the room is
+                            already gone.</span></li>
+                    <li>How do you explain the same architecture three weeks in a row?<span
+                            class="qt">REPETITION</span><span class="qh-btn">▸ VIEW ANSWER</span><span
+                            class="qh"><b>Testing:</b> Patience with organizational reality.<br><b>Weak answer:</b>
+                            "Same slides, same angles."<br><b>Strong answer:</b> "Organizationally, that's the job —
+                            adoption is a communication-cost per stakeholder, and each new audience legitimately needs
+                            their own walk-through. I keep one canonical document that evolves, so I never present
+                            versions out of sync, and track who has signed off where. Every repetition is also honest
+                            rehearsal — around week three you start answering the tough questions before they're
+                            asked."<br><b>Common mistake:</b> Treating repeat-explanation as an insult — it's the
+                            subscription fee of architecture being approved by distributed organizations.</span></li>
+                    <li>Why does architecture communication fail in companies?<span class="qt deep">SYSTEMS</span><span
+                            class="qh-btn">▸ VIEW ANSWER</span><span class="qh"><b>Testing:</b> Over-the-horizon
+                            systemic thinking.<br><b>Weak answer:</b> "People don't care."<br><b>Strong answer:</b>
+                            "Three failure modes, repeatedly: documents designed before but not maintained after (the
+                            design drifts from its document until nobody trusts either); explainers presenting their own
+                            mental model instead of the listener's vocabulary; and decisions without decision records —
+                            six months later the reason is gone, the person is gone, and the new team inherits a box
+                            with no context. ADRs, vocabulary-by-audience, and docs-that-age-with-code fix all three;
+                            I've yet to see a company failure that wasn't at least two of these at work."<br><b>Common
+                                mistake:</b> Blaming the audience — when communication fails, the failure belongs to the
+                            communicator, by definition.</span></li>
+                </ol>
+            </section>
+
+            <!-- PART 16 -->
+            <section class="sec" id="p16">
+                <div class="sec-kicker">PART 16 — SAY IT IN THREE CLOCKS</div>
+                <h2 class="sec-title rv">Practical Speaking Exercise</h2>
+                <p class="sec-lead rv">Same diagram from Part 4 (Client → API → Modules → Database · Redis cache · Queue
+                    + workers · External APIs). Explain the entire architecture out loud at three time budgets. What
+                    fits, and what gets cut.</p>
+                <div class="tblwrap rv">
+                    <table class="t" style="min-width:820px">
+                        <thead>
+                            <tr>
+                                <th style="width:16%">BUDGET</th>
+                                <th>INCLUDE</th>
+                                <th>LEAVE OUT</th>
+                                <th>MODEL ANSWER</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>60 seconds<br><span style="font-weight:400">~140 words</span></b></td>
+                                <td>Problem, shape, one flow, one trade-off.</td>
+                                <td>Scale numbers, failure stories, second trade-off, cost.</td>
+                                <td>"Checkout was dying at month-end because reports and orders shared one database. The
+                                    design: a modular monolith — one deploy, seven domain modules, own schemas — with a
+                                    Redis cache for catalog reads and a queue for everything the customer doesn't need
+                                    to wait on. One order runs: API, validate, sync payment, instant confirmation; queue
+                                    does the rest. Biggest trade: eventual consistency on dashboards in exchange for
+                                    checkout at 300 ms."</td>
+                            </tr>
+                            <tr>
+                                <td><b>3 minutes<br><span style="font-weight:400">~400 words</span></b></td>
+                                <td>Problem, requirements, system shape, one full flow, data ownership, scale headline,
+                                    one rejection, one risk.</td>
+                                <td>Second flow, full failure walks per component, monthly cost tiering, migration plan.
+                                </td>
+                                <td>60-second version + numbers (50K orders/day, 5K peak RPS), data rule ("database is
+                                    the only truth; cache carries no money"), scale story (cache + replica cover 70%
+                                    reads), one rejection (microservices — one platform engineer), one risk (queue age
+                                    at spike, alert at 60 s).</td>
+                            </tr>
+                            <tr>
+                                <td><b>10 minutes<br><span style="font-weight:400">the full form</span></b></td>
+                                <td>Everything in the Part 2 format: problem → NFRs → design → flow → data → scale →
+                                    security/reliability → trade-offs → risks/cost → conclusion.</td>
+                                <td>Only deep implementation detail: specific EF mappings, exact queue payloads, CI
+                                    pipeline internals.</td>
+                                <td>The Part 12 demonstration — use it as the reference recording. Practice pacing so
+                                    minute 9 hits at minute 9, not minute 14.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="callout co-tip rv"><span class="co-label">THE DISCIPLINE</span>
+                    <p>Record yourself. If the 60-second version takes 95 seconds, your problem is not knowledge — it's
+                        selection. The most useful cut target: adjectives about technology ("life-saving", "powerful",
+                        "bleeding-edge") — every one costs a second and pays back nothing.</p>
+                </div>
+            </section>
+
+            <!-- PART 17 -->
+            <section class="sec" id="p17">
+                <div class="sec-kicker">PART 17 — THE PRESSURE SIMULATION</div>
+                <h2 class="sec-title rv">Architecture Defense Exercise</h2>
+                <p class="sec-lead rv">You have designed the Multi-Company Inventory &amp; Order Management System. I'm
+                    the interviewer. Fifteen questions, escalating. Answer each out loud before opening the Model Answer
+                    Guide.</p>
+                <div class="panel rv">
+                    <h4>THE 15 CHALLENGE QUESTIONS</h4>
+                    <ol class="nlist">
+                        <li>"Why this architecture at all — what was broken that you're fixing?"</li>
+                        <li>"Why is this not over-engineered for companies your size?"</li>
+                        <li>"Why a modular monolith — why not just clean the old monolith in place?"</li>
+                        <li>"Why microservices would be wrong here — argue that as if you were me."</li>
+                        <li>"Why Redis, given your whole design is supposed to keep things simple?"</li>
+                        <li>"Why asynchronous processing — and where exactly did you draw the sync/async line?"</li>
+                        <li>"Why separate reporting — can't I just add indexes to the main database?"</li>
+                        <li>"Why not one database per company — since tenants are your natural boundary?"</li>
+                        <li>"What happens when Redis fails at peak lunch-hour traffic?"</li>
+                        <li>"What happens when the primary database fails mid-checkout?"</li>
+                        <li>"What happens when a single tenant floods the system — can they take others down?"</li>
+                        <li>"Traffic grows 10× in a year. Walk me through what bends first, in order."</li>
+                        <li>"How much does this cost today — and what's the number that would change my mind?"</li>
+                        <li>"Budget gets cut 30% tomorrow. What dies, and why is that survivable?"</li>
+                        <li>"If the user count doubles but revenue drops, what changes architecturally vs financially?"
+                        </li>
+                    </ol>
+                    <button class="btn" style="margin-top:14px"
+                        onclick="this.parentNode.querySelector('.ans').style.display=(this.parentNode.querySelector('.ans').style.display=='block'?'none':'block')">REVEAL
+                        MODEL ANSWER GUIDE</button>
+                    <div class="ans"
+                        style="display:none;margin-top:16px;padding:16px 18px;background:var(--card2);border-radius:4px;border-left:3px solid var(--teal);font-size:15px">
+                        <h4 style="color:var(--ink);margin-bottom:10px">MODEL ANSWER GUIDE — DIRECTION, NOT SCRIPTS</h4>
+                        <ol class="nlist" style="margin-left:0">
+                            <li><b>1:</b> Name the measurable pain: month-end checkout degradation caused by reporting
+                                contention. All architecture exists to end that fight.</li>
+                            <li><b>2:</b> Each box maps to a requirement — cache to 5K catalog RPS, queue to 300 ms
+                                checkout, replica to reports. Offer to delete any box they can overload for free; none
+                                go.</li>
+                            <li><b>3:</b> Cleaning in place leaves coupling unenforced — no compiler or test guard.
+                                Modular monolith adds boundaries with enforcement (NetArchTest, schema walls) at zero
+                                extra infrastructure cost.</li>
+                            <li><b>4:</b> Steal their argument: microservices win at org scale and divergence — we have
+                                neither. List its taxes and show none map to a current pain we can measure.</li>
+                            <li><b>5:</b> Redis is the simplicity story: 95% repeating reads means a $180 cache replaces
+                                a $2,000 database upgrade and an operations burden.</li>
+                            <li><b>6:</b> The line is money: anything post-answer that a customer never feels (email,
+                                labels, analytics) is async; stock and charge synchronise because wrong-now is revenue
+                                loss, not inconvenience.</li>
+                            <li><b>7:</b> Indexes speed reads up but reports still scan the hot tables and compete for
+                                connections and I/O. Replicas fix the structural conflict indexes can't.</li>
+                            <li><b>8:</b> 10,000 DBs — one per tenant — is 10,000 migrations, 10,000 backups,
+                                twenty-plus minutes just provisioning one tenant. Schema sharing is the correct cost
+                                point; trigger documented for dedicated-DB extraction of top tenants.</li>
+                            <li><b>9:</b> Graceful degradation: product pages go from 40 ms to ~300 ms, all orders still
+                                complete. The DB is now at higher load — auto-scale app tier, alert loudly, restore
+                                cache; measure DB p95.</li>
+                            <li><b>10:</b> In-flight transaction rolls back, client gets a safe retry via idempotency
+                                key — no double charges. Automate failover to replica inside five minutes (quarterly
+                                drill, timed).</li>
+                            <li><b>11:</b> Per-tenant rate limits at the gateway + noisy-neighbor per-tenant metrics
+                                dashboards. Worst case: that tenant is throttled; others unharmed. Per-tenant isolation
+                                stories answered with counters, not hope.</li>
+                            <li><b>12:</b> First: cache hit ratio falls, scale cache (trivial). Third: app tier maxes,
+                                add instances (trivial). Fifth: DB write ceiling approaches, enable write scaling:
+                                reserved write node, then tenant-shard by the documented trigger. Bends, never snaps,
+                                with the trigger written before it fires.</li>
+                            <li><b>13:</b> ~$1,300/mo. Threshold: if cost per order exceeds revenue per order
+                                contribution margin, architecture policy changes. Far trigger today, named clearly.</li>
+                            <li><b>14:</b> Downscale in reverse-for-revenue order: stage envs shrink → standby replica
+                                goes cold → log retention to 15 days. Untouched: cache, primary DB, backups — they carry
+                                revenue. Trade accepted: slower recoveries, less test fidelity — stated out loud.</li>
+                            <li><b>15:</b> Architecturally: keep scaling stateless reads, tighten retention, add
+                                object-storage archive to cap database egress and size. Financially: re-negotiate
+                                pricing (charging for volume, free tiers for small tenants) — that's a business answer,
+                                not a box move: prove architects speak both dialects.</li>
+                        </ol>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PART 18 -->
+            <section class="sec" id="p18">
+                <div class="sec-kicker">PART 18 — YOUR PERFORMANCE, GRADED</div>
+                <h2 class="sec-title rv">Final 10-Minute Presentation Assignment</h2>
+                <p class="sec-lead rv">No script this time. Prepare and deliver <b>your own</b> 10-minute presentation
+                    of the Multi-Company Inventory &amp; Order Management System — as if presenting to a CTO and an
+                    Engineering Manager in the same room. Then score yourself against the rubric.</p>
+                <div class="panel rv">
+                    <h4>THE ASSIGNMENT</h4>
+                    <p>Audience: CTO (wants strategy, cost, risk, reversibility) + Engineering Manager (wants
+                        deliverability, team fit, operability). Duration: 10 minutes maximum. Language: simple English,
+                        every term explained at first use. No code.</p>
+                    <ul class="nlist">
+                        <li><b>01</b> Business problem — a measurable pain with a number attached.</li>
+                        <li><b>02</b> Requirements — the inputs your design must satisfy (numbers: tenants, users,
+                            orders/day, growth).</li>
+                        <li><b>03</b> Non-functional requirements — three constraints you promise and must tie to later
+                            slides.</li>
+                        <li><b>04</b> High-level architecture — 5–7 boxes, one sentence per box explaining why it
+                            exists.</li>
+                        <li><b>05</b> One main business flow — walk it end to end; mark the sync/async line explicitly.
+                        </li>
+                        <li><b>06</b> Data ownership — source of truth, cache rules, replica lag policy.</li>
+                        <li><b>07</b> Scaling — tie the 5× growth promise to one mechanism per layer, with a named
+                            trigger for the ceiling.</li>
+                        <li><b>08</b> Security and reliability — at least one named failure per critical dependency,
+                            plus detection and recovery.</li>
+                        <li><b>09</b> Trade-offs and rejected options — at least two alternatives, each with a specific
+                            rejection reason in this context.</li>
+                        <li><b>10</b> Risks, cost, and a recommendation — exactly one risk you watch closest, a monthly
+                            cost figure, one closing sentence.</li>
+                    </ul>
+                    <p style="margin-top:10px;font-size:14.5px;color:var(--ink3)">Deliver it twice if possible: once to
+                        a technical friend, once to a non-technical one. Both must be able to repeat back: the problem,
+                        the shape in three boxes, and your answer to "but what's the risk?"</p>
+                </div>
+                <h3>Evaluation Scorecard — Grade Yourself Out of 100</h3>
+                <div class="panel rv">
+                    <h4>SCORECARD</h4>
+                    <div class="scorep"><span>Business understanding — did you open with a measurable pain in business
+                            terms?</span><b>10</b></div>
+                    <div class="scorep"><span>Requirement understanding — numbers present, and every box maps to
+                            one?</span><b>10</b></div>
+                    <div class="scorep"><span>Architecture clarity — could a listener re-draw your design in four boxes
+                            afterwards?</span><b>15</b></div>
+                    <div class="scorep"><span>Technical reasoning — every significant component answered "why is it
+                            here" concretely?</span><b>15</b></div>
+                    <div class="scorep"><span>Trade-offs — two real alternatives rejected with specific in-context
+                            reasons?</span><b>10</b></div>
+                    <div class="scorep"><span>Scalability — the growth numbers get a mechanism per layer, plus a named
+                            ceiling trigger?</span><b>10</b></div>
+                    <div class="scorep"><span>Reliability — named failures, detection, recovery; not just the happy
+                            path?</span><b>10</b></div>
+                    <div class="scorep"><span>Security — isolation, tenancy, payment data handling touched without
+                            jargon?</span><b>5</b></div>
+                    <div class="scorep"><span>Cost awareness — a number now, a driver later, and a breakeven
+                            story?</span><b>5</b></div>
+                    <div class="scorep"><span>Communication — pacing, plain English, a 30-second close, room for
+                            questions?</span><b>10</b></div>
+                    <div class="scorep" style="border-top:2px solid var(--ink);padding-top:16px"><span
+                            style="color:var(--ink);font-weight:700">TOTAL</span><b style="font-size:16px">100</b></div>
+                    <p style="margin-top:14px;font-size:14.5px;color:var(--ink2)"><b>Grading bands:</b> 85–100 =
+                        interview-ready for principal roles. 70–84 = strong, tighten the trade-off and close. 50–69 =
+                        review Parts 2, 6, 9 again. Under 50 = re-present after one more week of the track.</p>
+                </div>
+            </section>
+
+            <!-- PART 19 / RULES -->
+            <section class="mindset" id="p19">
+                <div class="mindset-in">
+                    <div class="sec-kicker">DAY 21 — CLOSE</div>
+                    <h2 class="sec-title rv" style="margin-bottom:14px">10 Rules for Explaining Architecture</h2>
+                    <p class="sec-lead rv">Short, sharp, and earned. Say these aloud until they're reflexes.</p>
+                    <div class="rule rv">
+                        <div class="rule-num">01</div>
+                        <div>
+                            <h3>Open with the problem and the stakes.</h3>
+                            <p>A number in sentence one buys you ten minutes of attention. "We're losing $50K a month
+                                here" outlasts any diagram.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">02</div>
+                        <div>
+                            <h3>Change the zoom, never the design.</h3>
+                            <p>Developer, manager, CTO — same boxes, different resolution. Consistency is your
+                                credibility; adapt vocabulary, never architecture.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">03</div>
+                        <div>
+                            <h3>Every box earns its rent.</h3>
+                            <p>If you can't say "why is it here" in one sentence, the box is decoration. A listener
+                                should be able to delete what has no owner.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">04</div>
+                        <div>
+                            <h3>Say what you gave up.</h3>
+                            <p>Rejected options are not admissions of weakness — they are receipts that you did the
+                                comparison. The five-part trade-off sentence, every time.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">05</div>
+                        <div>
+                            <h3>Volunteer the failure story.</h3>
+                            <p>The design's first enemy will be named within 90 seconds of any review. Name it first,
+                                with detection and recovery attached, and you keep the steering wheel.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">06</div>
+                        <div>
+                            <h3>Numbers before adjectives.</h3>
+                            <p>"5,000 requests per second" beats "heavy traffic". "At 60 seconds we alert" beats "we
+                                monitor it". Adjectives are debt; numbers are paying.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">07</div>
+                        <div>
+                            <h3>Never bluff.</h3>
+                            <p>"I don't have that measured yet — here is the assumption and here is how I'll verify" is
+                                the single most senior sentence in technical communication. Credibility compounds on it.
+                            </p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">08</div>
+                        <div>
+                            <h3>Accept the challenge, keep the goal.</h3>
+                            <p>Disagreement means someone cares. Meet the goal they protect — cost, speed, safety — and
+                                translate it into an option. Position vs position ends careers; option vs option ships
+                                software.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">09</div>
+                        <div>
+                            <h3>Explain one decision three ways.</h3>
+                            <p>Same facts for developer, manager, business. If you can't wear three voices convincingly,
+                                the design is hostage to whoever can, and that is somebody else.</p>
+                        </div>
+                    </div>
+                    <div class="rule rv">
+                        <div class="rule-num">10</div>
+                        <div>
+                            <h3>Close with the decision.</h3>
+                            <p>Problem, decision, biggest risk, recommendation. Four sentences. Leave the room knowing
+                                what you asked them for — or the architecture died in a decorated deck.</p>
+                        </div>
+                    </div>
+
+                    <div class="callout co-key rv" style="margin-top:44px"><span class="co-label">THE 60-SECOND
+                            INTERVIEW ANSWER: "How do you explain a complex architecture to a business
+                            stakeholder?"</span>
+                        <p><b>"I drop every technology name and rebuild the design from money and risk outward. I open
+                                with the business problem it solves in plain terms — 'checkout was losing orders because
+                                reports and sales were fighting over the same database' — then explain the shape using
+                                everyday analogies: the database is our one cash register, the queue is a to-do list
+                                workers process after the customer leaves. Then I answer the three questions that every
+                                business stakeholder is silently asking: what does it cost, what could break, and what
+                                happens to us if it does. Finally, I leave them one sentence and one metric — 'sales no
+                                longer stall at month-end' and 'checkout under 300 milliseconds'. They don't need to
+                                know how the engine works; they need to know whether it's worth paying for, and what it
+                                costs when it fails. I never avoid the failure question — confidence is showing them the
+                                backup plans before they ask."</b></p>
+                    </div>
+                    <div class="callout co-ok rv" style="margin-top:20px"><span class="co-label">THE ARCHITECT'S POWER
+                            STATEMENT</span>
+                        <p><b>"An architecture that takes a diagram to justify has already failed its first review: the
+                                one in somebody else's head. My job is to make complexity legible — because systems you
+                                can't explain don't get funded, don't get built right, and don't get defended when it
+                                matters."</b></p>
+                    </div>
+                    <p class="mind-close rv">Design is the architecture of systems. Communication is the architecture of
+                        trust. Master both, and companies build what you draw. End of Day 21.</p>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <footer class="foot">
+        <div class="foot-in">
+            <div class="f-l">30-DAY TECHNICAL ARCHITECT TRACK · DAY 21 / 30 — ARCHITECTURE PRESENTATION &amp;
+                COMMUNICATION</div>
+            <div class="f-r">WEEK 3 · <b>DAY 22 AVAILABLE IN TRACK</b> · CTRL+P TO PRINT</div>
+        </div>
+    </footer>
+    <button id="toTop" aria-label="Back to top"><svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+            <path d="M12 20V5M5 12l7-7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round" />
+        </svg></button>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script>
+        (function () { if (window.jQuery) return; function Q(l) { this.el = [].slice.call(l || []); this.length = this.el.length; } Q.prototype = { each: function (f) { this.el.forEach(function (e, i) { f.call(e, i, e); }); return this; }, on: function (v, f) { return this.each(function (i, e) { e.addEventListener(v, f); }); }, addClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.add(x); }); }); }, removeClass: function (c) { return this.each(function (i, e) { c.split(' ').forEach(function (x) { e.classList.remove(x); }); }); }, toggleClass: function (c, f) { return this.each(function (i, e) { if (f === undefined) e.classList.toggle(c); else e.classList.toggle(c, f); }); }, closest: function (s) { var e = this.el[0]; return new Q(e ? [e.closest(s)] : []); } }; function $(s) { if (typeof s === 'function') { if (document.readyState !== 'loading') s(); else document.addEventListener('DOMContentLoaded', s); return; } if (s instanceof Element || s === window || s === document) return new Q([s]); if (Array.isArray(s) || s instanceof NodeList) return new Q(s); return new Q(document.querySelectorAll(s)); } window.jQuery = window.$ = $; })();
+    </script>
+    <script>
+        $(function () { function $(s) { return document.querySelector(s); } function $$(s) { return [].slice.call(document.querySelectorAll(s)); } var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches; var bar = document.getElementById('progressBar'), toTop = document.getElementById('toTop'); var spyIds = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8', 'p9', 'p10', 'p11', 'p12', 'p13', 'p14', 'p15', 'p16', 'p17', 'p18', 'p19']; var tocLinks = $$('.tn[data-spy]'), ticking = false; function onScroll() { if (ticking) return; ticking = true; requestAnimationFrame(function () { var doc = document.documentElement, max = doc.scrollHeight - window.innerHeight, y = window.scrollY || doc.scrollTop; if (bar) bar.style.transform = 'scaleX(' + (max > 0 ? (y / max) : 0) + ')'; if (toTop) toTop.classList.toggle('show', y > 900); var cur = ''; spyIds.forEach(function (id) { var el = document.getElementById(id); if (el && el.getBoundingClientRect().top <= 150) cur = id; }); tocLinks.forEach(function (a) { a.classList.toggle('on', a.getAttribute('data-spy') === cur); }); ticking = false; }); } window.addEventListener('scroll', onScroll, { passive: true }); window.addEventListener('resize', onScroll); onScroll(); toTop.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: reduced ? 'auto' : 'smooth' }); }); var rvs = $$('.rv'); if (reduced || !('IntersectionObserver' in window)) { rvs.forEach(function (el) { el.classList.add('in'); }); } else { var io = new IntersectionObserver(function (es) { es.forEach(function (en) { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }); }, { threshold: .08, rootMargin: '0px 0px -40px 0px' }); rvs.forEach(function (el) { io.observe(el); }); } var themeBtn = document.getElementById('themeBtn'); function applyTheme(d) { document.body.classList.toggle('dark', d); var m = themeBtn.querySelector('.ic-moon'), s = themeBtn.querySelector('.ic-sun'); if (m && s) { m.style.display = d ? 'none' : ''; s.style.display = d ? '' : 'none'; } } var st = null; try { st = localStorage.getItem('arch-day21-theme'); } catch (e) { } applyTheme(st === 'dark'); themeBtn.addEventListener('click', function () { var d = document.body.classList.toggle('dark'); try { localStorage.setItem('arch-day21-theme', d ? 'dark' : 'light'); } catch (e) { } }); var toc = document.getElementById('toc'), scrim = document.getElementById('scrim'); function closeToc() { toc.classList.remove('open'); scrim.classList.remove('on'); } document.getElementById('tocToggle').addEventListener('click', function () { var o = toc.classList.toggle('open'); scrim.classList.toggle('on', o); }); scrim.addEventListener('click', closeToc); toc.addEventListener('click', function (e) { if (e.target && e.target.tagName === 'A') closeToc(); }); document.getElementById('printBtn').addEventListener('click', function () { window.print(); }); $$('.qlist li').forEach(function (li) { li.addEventListener('click', function (e) { li.classList.toggle('qopen'); }); }); });
+    </script>
+</body>
+
+</html>
