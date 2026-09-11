@@ -149,7 +149,7 @@
             z-index: 1000;
             transform: translateY(100%);
             transition: transform .35s cubic-bezier(.4, 0, .2, 1);
-            box-shadow: 0 -4px 30px rgba(0,0,0,.3);
+            box-shadow: 0 -4px 30px rgba(0, 0, 0, .3);
         }
 
         .queue-bar.visible {
@@ -199,8 +199,8 @@
         }
 
         .queue-bar .q-controls button {
-            background: rgba(255,255,255,.1);
-            border: 1px solid rgba(255,255,255,.15);
+            background: rgba(255, 255, 255, .1);
+            border: 1px solid rgba(255, 255, 255, .15);
             color: #fff;
             font-family: var(--mono);
             font-size: 11px;
@@ -211,12 +211,12 @@
         }
 
         .queue-bar .q-controls button:hover {
-            background: rgba(255,255,255,.2);
+            background: rgba(255, 255, 255, .2);
         }
 
         .queue-bar .q-controls button.q-clear {
             color: var(--security);
-            border-color: rgba(140,47,57,.4);
+            border-color: rgba(140, 47, 57, .4);
         }
 
         .queue-bar .q-progress {
@@ -541,7 +541,7 @@
         .player-track {
             position: relative;
             height: 6px;
-            background: rgba(255,255,255,.12);
+            background: rgba(255, 255, 255, .12);
             border-radius: 3px;
             cursor: pointer;
             overflow: hidden;
@@ -556,7 +556,7 @@
             top: 0;
             left: 0;
             height: 100%;
-            background: rgba(255,255,255,.18);
+            background: rgba(255, 255, 255, .18);
             border-radius: 3px;
             transition: width .4s;
             pointer-events: none;
@@ -578,7 +578,7 @@
             justify-content: space-between;
             font-family: var(--mono);
             font-size: 10px;
-            color: rgba(255,255,255,.5);
+            color: rgba(255, 255, 255, .5);
         }
 
         .player-vol {
@@ -591,14 +591,14 @@
         .player-vol svg {
             width: 16px;
             height: 16px;
-            fill: rgba(255,255,255,.6);
+            fill: rgba(255, 255, 255, .6);
             cursor: pointer;
         }
 
         .vol-track {
             width: 60px;
             height: 4px;
-            background: rgba(255,255,255,.12);
+            background: rgba(255, 255, 255, .12);
             border-radius: 2px;
             cursor: pointer;
             position: relative;
@@ -615,8 +615,8 @@
         .player-speed {
             font-family: var(--mono);
             font-size: 10px;
-            background: rgba(255,255,255,.1);
-            border: 1px solid rgba(255,255,255,.15);
+            background: rgba(255, 255, 255, .1);
+            border: 1px solid rgba(255, 255, 255, .15);
             color: #fff;
             padding: 3px 8px;
             border-radius: 3px;
@@ -625,7 +625,7 @@
         }
 
         .player-speed:hover {
-            background: rgba(255,255,255,.18);
+            background: rgba(255, 255, 255, .18);
         }
 
         /* ── Video Player ── */
@@ -650,7 +650,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            background: rgba(0,0,0,.4);
+            background: rgba(0, 0, 0, .4);
             transition: opacity .3s;
         }
 
@@ -686,7 +686,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background: linear-gradient(transparent, rgba(0,0,0,.8));
+            background: linear-gradient(transparent, rgba(0, 0, 0, .8));
             padding: 20px 14px 10px;
             opacity: 0;
             transition: opacity .3s;
@@ -700,7 +700,7 @@
         .video-progress-track {
             position: relative;
             height: 4px;
-            background: rgba(255,255,255,.2);
+            background: rgba(255, 255, 255, .2);
             border-radius: 2px;
             cursor: pointer;
             margin-bottom: 8px;
@@ -715,7 +715,7 @@
             top: 0;
             left: 0;
             height: 100%;
-            background: rgba(255,255,255,.25);
+            background: rgba(255, 255, 255, .25);
             border-radius: 2px;
             pointer-events: none;
         }
@@ -750,7 +750,7 @@
         .video-bottom .v-times {
             font-family: var(--mono);
             font-size: 10.5px;
-            color: rgba(255,255,255,.7);
+            color: rgba(255, 255, 255, .7);
             flex: 1;
         }
 
@@ -771,7 +771,7 @@
             height: 30px;
             border-radius: 50%;
             border: none;
-            background: rgba(255,255,255,.1);
+            background: rgba(255, 255, 255, .1);
             color: #fff;
             cursor: pointer;
             display: flex;
@@ -782,7 +782,7 @@
         }
 
         .btn-fullscreen:hover {
-            background: rgba(255,255,255,.25);
+            background: rgba(255, 255, 255, .25);
         }
 
         .btn-fullscreen svg {
@@ -917,836 +917,861 @@
 
     <!-- SVG Icons (hidden) -->
     <svg style="display:none">
-        <symbol id="ico-play" viewBox="0 0 24 24"><polygon points="6,3 20,12 6,21"/></symbol>
-        <symbol id="ico-pause" viewBox="0 0 24 24"><rect x="5" y="3" width="4" height="18"/><rect x="15" y="3" width="4" height="18"/></symbol>
-        <symbol id="ico-vol" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5z"/></symbol>
-        <symbol id="ico-mute" viewBox="0 0 24 24"><path d="M3 9v6h4l5 5V4L7 9H3zm13 .83v.34A3.5 3.5 0 0117.5 12a3.5 3.5 0 01-1.5 1.83v.34L18.59 12 16 9.83z"/><line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2"/></symbol>
-        <symbol id="ico-fs-enter" viewBox="0 0 24 24"><path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z"/></symbol>
-        <symbol id="ico-fs-exit" viewBox="0 0 24 24"><path d="M9 3v6H3v-2h4V3h2zm6 0h2v4h4v2h-6V3zM3 15h6v6H7v-4H3v-2zm12 6v-6h6v2h-4v4h-2z"/></symbol>
+        <symbol id="ico-play" viewBox="0 0 24 24">
+            <polygon points="6,3 20,12 6,21" />
+        </symbol>
+        <symbol id="ico-pause" viewBox="0 0 24 24">
+            <rect x="5" y="3" width="4" height="18" />
+            <rect x="15" y="3" width="4" height="18" />
+        </symbol>
+        <symbol id="ico-vol" viewBox="0 0 24 24">
+            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0014 8.5v7a4.49 4.49 0 002.5-3.5z" />
+        </symbol>
+        <symbol id="ico-mute" viewBox="0 0 24 24">
+            <path
+                d="M3 9v6h4l5 5V4L7 9H3zm13 .83v.34A3.5 3.5 0 0117.5 12a3.5 3.5 0 01-1.5 1.83v.34L18.59 12 16 9.83z" />
+            <line x1="20" y1="4" x2="4" y2="20" stroke="currentColor" stroke-width="2" />
+        </symbol>
+        <symbol id="ico-fs-enter" viewBox="0 0 24 24">
+            <path d="M3 3h6v2H5v4H3V3zm12 0h6v6h-2V5h-4V3zM3 15h2v4h4v2H3v-6zm16 4h-4v2h6v-6h-2v4z" />
+        </symbol>
+        <symbol id="ico-fs-exit" viewBox="0 0 24 24">
+            <path d="M9 3v6H3v-2h4V3h2zm6 0h2v4h4v2h-6V3zM3 15h6v6H7v-4H3v-2zm12 6v-6h6v2h-4v4h-2z" />
+        </symbol>
     </svg>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script>
-    $(function () {
+        $(function () {
 
-        // ─── Day Data ───
-        var days = [
-            {
-                day: 1, title: "Architecture Mindset",
-                desc: "Functional vs NFR, scalability, availability, reliability, maintainability, and cost. Design a multi-tenant SaaS platform.",
-                page: "pages/day1-v1.html",
-                audio: [
-                    { src: "audio/Day_1_-_Architect_Mindset_Hindi.m4a", lang: "Hindi" },
-                    { src: "media/The_human_side_of_technical_leadership (1).m4a", lang: "English", label: "The Human Side of Technical Leadership" }
-                ],
-                video: [
-                    { src: "video/Day_1_-_Architect_Midset_Hindi.mp4", lang: "Hindi" },
-                    { src: "video/Day_1_-_The_Architect_Mindset.mp4", lang: "English" }
-                ],
-                images: []
-            },
-            {
-                day: 2, title: "Scaling Basics",
-                desc: "Load balancing, horizontal scaling, vertical scaling, caching, CDN, and database scaling. Design for 1M users and 100K concurrent.",
-                page: "pages/day2-v1.html",
-                audio: [{ src: "audio/Day_2_-_Scaling_basic_Hindi.m4a", lang: "Hindi" }],
-                video: [
-                    { src: "video/Day_2_-_Scaling_basic_Hindi.mp4", lang: "Hindi" },
-                    { src: "video/Day_2_-_Scaling_basics.mp4", lang: "English" }
-                ],
-                images: []
-            },
-            {
-                day: 3, title: "Databases",
-                desc: "SQL vs NoSQL, indexing, partitioning, replication, sharding, read replicas, and consistency. SQL Server vs PostgreSQL vs MongoDB vs Cosmos DB.",
-                page: "pages/day3-v1.html",
-                audio: [{ src: "audio/Day_3_-_Databases_Selection.m4a", lang: "English" }],
-                video: [{ src: "video/Day_3_-_Databases_Selection.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 4, title: "Distributed Systems",
-                desc: "CAP, consistency, availability, eventual consistency, and distributed transactions. Explain Order to Payment to Inventory to Notification.",
-                page: "pages/day4-v1.html",
-                audio: [{ src: "audio/Day_4_-_Distributed_systems.m4a", lang: "English" }],
-                video: [{ src: "video/Day_4_-_Distributed_systems.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 5, title: "Caching",
-                desc: "Cache-aside, write-through, write-behind, TTL, invalidation, cache stampede, and distributed cache failure. Use Redis outage as interview case.",
-                page: "pages/day5-v1.html",
-                audio: [
-                    { src: "audio/Day_5_-_Caching_Architect_Hindi.m4a", lang: "Hindi" },
-                    { src: "audio/Day_5_-_Caching_English.m4a", lang: "English" }
-                ],
-                video: [{ src: "video/Day_5_-_Caching_Architecture.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 6, title: "Messaging",
-                desc: "RabbitMQ, Kafka, Azure Service Bus, queues vs topics, retry, DLQ, and idempotency.",
-                page: "pages/day6-v1.html",
-                audio: [{ src: "audio/Day_6_-_Messaging_Debate-Hindi.m4a", lang: "Hindi" }],
-                video: [
-                    { src: "video/Day_6_-_Messaging.mp4", lang: "English" },
-                    { src: "video/Day_6_-_Messaging_Hindi.mp4", lang: "Hindi" }
-                ],
-                images: []
-            },
-            {
-                day: 7, title: "Mock Interview",
-                desc: "Design an Amazon-like order system in 45 minutes without Google.",
-                page: "pages/day7-v1.html",
-                audio: [{ src: "audio/Day_7_-_Mock_Interview.m4a", lang: "English" }],
-                video: [{ src: "video/Day_7_-_Mock_Interview.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 8, title: "Azure Architecture",
-                desc: "App Service, Functions, AKS, Service Bus, Event Grid, Cosmos DB, Azure SQL, Key Vault, and API Management.",
-                page: "pages/day8-v1.html",
-                audio: [{ src: "audio/Day_8_-_Azure_Architect_Mindset_Hindi.m4a", lang: "Hindi" }],
-                video: [{ src: "video/Day_8_-_Azure_Architect_Mindset.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 9, title: "AWS Equivalent Architecture",
-                desc: "Map Azure services to AWS equivalents: App Service to Elastic Beanstalk, Functions to Lambda, Service Bus to SQS/SNS, and more.",
-                page: "pages/day9-v1.html",
-                audio: [{ src: "audio/Day_9_-_AWS_And_Azure.m4a", lang: "English" }],
-                video: [{ src: "video/Day_9_-_AWS_equivalent_architecture.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 10, title: "Docker + Kubernetes",
-                desc: "Explain why Kubernetes exists beyond scalability. Containers, orchestration, and cloud-native patterns.",
-                page: "pages/day10-v1.html",
-                audio: [{ src: "audio/Day_10_-_Docker_+_Kubernetes.m4a", lang: "English" }],
-                video: [{ src: "video/Day_10_-_Docker_+_Kubernetes.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 11, title: "Security Architecture",
-                desc: "OAuth2, OpenID Connect, JWT, Entra ID, API gateway, RBAC, secrets, encryption, and zero trust.",
-                page: "pages/day11-v1.html",
-                audio: [{ src: "audio/Day_11_-_Security_Architecture.m4a", lang: "English" }],
-                video: [{ src: "video/Day_11_-_Security_Architecture.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 12, title: "Observability",
-                desc: "Logs, metrics, traces, correlation IDs, OpenTelemetry, Application Insights, and alerting.",
-                page: "pages/day12-v1.html",
-                audio: [{ src: "audio/Day_12_-_Systems_Observability.m4a", lang: "English" }],
-                video: [{ src: "video/Day_12_-_Systems_Observability.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 13, title: "Resilience",
-                desc: "Timeout, retry, exponential backoff, circuit breaker, bulkhead, rate limiting, and idempotency.",
-                page: "pages/day13-v1.html",
-                audio: [{ src: "audio/Day_13_-_Resilience.m4a", lang: "English" }],
-                video: [{ src: "video/Day_13_-_Resilience.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 14, title: "Mock Payment Platform",
-                desc: "Build a payment system with 99.99% availability, retries, duplicate requests, and observability.",
-                page: "pages/day14-v1.html",
-                audio: [{ src: "audio/Day_14_-_Estimation_Masterclass(Mock_payment_platform).m4a", lang: "English" }],
-                video: [{ src: "video/Day_14_-_Estimation_Masterclass(Mock_payment_platform).mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 15, title: "Domain-Driven Design",
-                desc: "Bounded context, aggregate, entity, value object, and domain event.",
-                page: "pages/day15-v1.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 16, title: "CQRS",
-                desc: "Command Query Responsibility Segregation. Answer: why would I not use CQRS?",
-                page: "pages/day16-v1.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 17, title: "Event-Driven Architecture",
-                desc: "Design Order to Payment to Inventory to Shipping to Notification with events and sagas.",
-                page: "pages/day17-v1.html",
-                audio: [{ src: "audio/Day_17_-_Event-Driven_Architecture.m4a", lang: "English" }],
-                video: [{ src: "video/Day_17_-_Event-Driven_Architecture.mp4", lang: "English" }],
-                images: [{ src: "media/Day_17_-_Event-Driven_Architecture.png", label: "Event-Driven Architecture Diagram" }]
-            },
-            {
-                day: 18, title: "Microservices",
-                desc: "When should you not use microservices? Service boundaries, data ownership, and inter-service communication.",
-                page: "pages/day18-v1.html",
-                audio: [{ src: "audio/Day_18_-_Microservices.m4a", lang: "English" }],
-                video: [{ src: "video/Day_18_-_Microservices__Trade-offs.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 19, title: "Modular Monolith vs Microservices",
-                desc: "Make this one of your strongest interview topics. Trade-offs, migration paths, and team organization.",
-                page: "pages/day19-v1.html",
-                audio: [{ src: "audio/Day_19_-_Modular_Monolith_vs_Microservice.m4a", lang: "English" }],
-                video: [{ src: "video/Day_19_-_Monolith_vs_Microservices.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 20, title: "Architecture Trade-Offs",
-                desc: "For every major technology, create Option A, Option B, pros, cons, cost, complexity, scale, and recommendation.",
-                page: "pages/day20-v1.html",
-                audio: [{ src: "audio/Day_20_-_Architecture_Trade-offs_and_Decisons.m4a", lang: "English" }],
-                video: [{ src: "video/Day_20_-_Architecture_Trade-offs_and_Decisions.mp4", lang: "English" }],
-                images: []
-            },
-            {
-                day: 21, title: "Architecture Presentation",
-                desc: "Explain one architecture in 10 minutes to a CTO, Product Manager, and Engineering Manager. Avoid jargon.",
-                page: "pages/day21-v1.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 22, title: "Netflix-like Video Platform",
-                desc: "Complete system design with requirements, NFRs, trade-offs, and failure modes.",
-                page: "pages/day22-v2.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 23, title: "Uber-like Ride Platform",
-                desc: "Focus on geo, matching, availability, location updates, and surge load.",
-                page: "pages/day23-v1.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 24, title: "WhatsApp-like Messaging System",
-                desc: "Messaging, delivery guarantees, fanout, presence, storage, and offline handling.",
-                page: "pages/day24-v1.html",
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 25, title: "Multi-Tenant Enterprise SaaS",
-                desc: "Tenancy, authorization, scale, reporting, integrations, and future AI. Particularly relevant to your experience.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 26, title: "Production Incident Interview",
-                desc: "Redis goes down, returns, and 1M requests hit SQL. Explain what happens and how you prevent database collapse.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 27, title: "Architecture Governance",
-                desc: "ADRs, architecture review boards, decision records, and governing distributed systems evolution.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 28, title: "Cost Architecture",
-                desc: "Cloud cost models, reserved instances, spot instances, serverless vs dedicated, and TCO analysis.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 29, title: "Architecture for AI Systems",
-                desc: "RAG patterns, embedding stores, vector databases, inference scaling, and AI integration patterns.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
-            },
-            {
-                day: 30, title: "Final Mock Exam",
-                desc: "Complete 60-minute system design under exam conditions. Review gaps and create personal architect manifesto.",
-                page: null,
-                audio: [],
-                video: [],
-                images: []
+            // ─── Day Data ───
+            var days = [
+                {
+                    day: 0, title: "Roadmap",
+                    desc: "This roadmap gives you the structure to think like an architect. It covers: 1. 6 key pillars of architecture (reliability, performance, scalability, maintainability, cost, security). 2. System design basics and patterns. 3. How to handle NFRs vs functional requirements. 4. A step-by-step approach to solving any system design problem.",
+                    page: "pages/day0-roadmap.html",
+                    audio: [
+                    ],
+                    video: [
+                    ],
+                    images: []
+                },
+                {
+                    day: 1, title: "Architecture Mindset",
+                    desc: "Functional vs NFR, scalability, availability, reliability, maintainability, and cost. Design a multi-tenant SaaS platform.",
+                    page: "pages/day1-v1.html",
+                    audio: [
+                        { src: "audio/Day_1_-_Architect_Mindset_Hindi.m4a", lang: "Hindi" },
+                        { src: "media/The_human_side_of_technical_leadership (1).m4a", lang: "English", label: "The Human Side of Technical Leadership" }
+                    ],
+                    video: [
+                        { src: "video/Day_1_-_Architect_Midset_Hindi.mp4", lang: "Hindi" },
+                        { src: "video/Day_1_-_The_Architect_Mindset.mp4", lang: "English" }
+                    ],
+                    images: []
+                },
+                {
+                    day: 2, title: "Scaling Basics",
+                    desc: "Load balancing, horizontal scaling, vertical scaling, caching, CDN, and database scaling. Design for 1M users and 100K concurrent.",
+                    page: "pages/day2-v1.html",
+                    audio: [{ src: "audio/Day_2_-_Scaling_basic_Hindi.m4a", lang: "Hindi" }],
+                    video: [
+                        { src: "video/Day_2_-_Scaling_basic_Hindi.mp4", lang: "Hindi" },
+                        { src: "video/Day_2_-_Scaling_basics.mp4", lang: "English" }
+                    ],
+                    images: []
+                },
+                {
+                    day: 3, title: "Databases",
+                    desc: "SQL vs NoSQL, indexing, partitioning, replication, sharding, read replicas, and consistency. SQL Server vs PostgreSQL vs MongoDB vs Cosmos DB.",
+                    page: "pages/day3-v1.html",
+                    audio: [{ src: "audio/Day_3_-_Databases_Selection.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_3_-_Databases_Selection.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 4, title: "Distributed Systems",
+                    desc: "CAP, consistency, availability, eventual consistency, and distributed transactions. Explain Order to Payment to Inventory to Notification.",
+                    page: "pages/day4-v1.html",
+                    audio: [{ src: "audio/Day_4_-_Distributed_systems.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_4_-_Distributed_systems.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 5, title: "Caching",
+                    desc: "Cache-aside, write-through, write-behind, TTL, invalidation, cache stampede, and distributed cache failure. Use Redis outage as interview case.",
+                    page: "pages/day5-v1.html",
+                    audio: [
+                        { src: "audio/Day_5_-_Caching_Architect_Hindi.m4a", lang: "Hindi" },
+                        { src: "audio/Day_5_-_Caching_English.m4a", lang: "English" }
+                    ],
+                    video: [{ src: "video/Day_5_-_Caching_Architecture.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 6, title: "Messaging",
+                    desc: "RabbitMQ, Kafka, Azure Service Bus, queues vs topics, retry, DLQ, and idempotency.",
+                    page: "pages/day6-v1.html",
+                    audio: [{ src: "audio/Day_6_-_Messaging_Debate-Hindi.m4a", lang: "Hindi" }],
+                    video: [
+                        { src: "video/Day_6_-_Messaging.mp4", lang: "English" },
+                        { src: "video/Day_6_-_Messaging_Hindi.mp4", lang: "Hindi" }
+                    ],
+                    images: []
+                },
+                {
+                    day: 7, title: "Mock Interview",
+                    desc: "Design an Amazon-like order system in 45 minutes without Google.",
+                    page: "pages/day7-v1.html",
+                    audio: [{ src: "audio/Day_7_-_Mock_Interview.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_7_-_Mock_Interview.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 8, title: "Azure Architecture",
+                    desc: "App Service, Functions, AKS, Service Bus, Event Grid, Cosmos DB, Azure SQL, Key Vault, and API Management.",
+                    page: "pages/day8-v1.html",
+                    audio: [{ src: "audio/Day_8_-_Azure_Architect_Mindset_Hindi.m4a", lang: "Hindi" }],
+                    video: [{ src: "video/Day_8_-_Azure_Architect_Mindset.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 9, title: "AWS Equivalent Architecture",
+                    desc: "Map Azure services to AWS equivalents: App Service to Elastic Beanstalk, Functions to Lambda, Service Bus to SQS/SNS, and more.",
+                    page: "pages/day9-v1.html",
+                    audio: [{ src: "audio/Day_9_-_AWS_And_Azure.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_9_-_AWS_equivalent_architecture.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 10, title: "Docker + Kubernetes",
+                    desc: "Explain why Kubernetes exists beyond scalability. Containers, orchestration, and cloud-native patterns.",
+                    page: "pages/day10-v1.html",
+                    audio: [{ src: "audio/Day_10_-_Docker_+_Kubernetes.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_10_-_Docker_+_Kubernetes.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 11, title: "Security Architecture",
+                    desc: "OAuth2, OpenID Connect, JWT, Entra ID, API gateway, RBAC, secrets, encryption, and zero trust.",
+                    page: "pages/day11-v1.html",
+                    audio: [{ src: "audio/Day_11_-_Security_Architecture.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_11_-_Security_Architecture.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 12, title: "Observability",
+                    desc: "Logs, metrics, traces, correlation IDs, OpenTelemetry, Application Insights, and alerting.",
+                    page: "pages/day12-v1.html",
+                    audio: [{ src: "audio/Day_12_-_Systems_Observability.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_12_-_Systems_Observability.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 13, title: "Resilience",
+                    desc: "Timeout, retry, exponential backoff, circuit breaker, bulkhead, rate limiting, and idempotency.",
+                    page: "pages/day13-v1.html",
+                    audio: [{ src: "audio/Day_13_-_Resilience.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_13_-_Resilience.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 14, title: "Mock Payment Platform",
+                    desc: "Build a payment system with 99.99% availability, retries, duplicate requests, and observability.",
+                    page: "pages/day14-v1.html",
+                    audio: [{ src: "audio/Day_14_-_Estimation_Masterclass(Mock_payment_platform).m4a", lang: "English" }],
+                    video: [{ src: "video/Day_14_-_Estimation_Masterclass(Mock_payment_platform).mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 15, title: "Domain-Driven Design",
+                    desc: "Bounded context, aggregate, entity, value object, and domain event.",
+                    page: "pages/day15-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 16, title: "CQRS",
+                    desc: "Command Query Responsibility Segregation. Answer: why would I not use CQRS?",
+                    page: "pages/day16-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 17, title: "Event-Driven Architecture",
+                    desc: "Design Order to Payment to Inventory to Shipping to Notification with events and sagas.",
+                    page: "pages/day17-v1.html",
+                    audio: [{ src: "audio/Day_17_-_Event-Driven_Architecture.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_17_-_Event-Driven_Architecture.mp4", lang: "English" }],
+                    images: [{ src: "media/Day_17_-_Event-Driven_Architecture.png", label: "Event-Driven Architecture Diagram" }]
+                },
+                {
+                    day: 18, title: "Microservices",
+                    desc: "When should you not use microservices? Service boundaries, data ownership, and inter-service communication.",
+                    page: "pages/day18-v1.html",
+                    audio: [{ src: "audio/Day_18_-_Microservices.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_18_-_Microservices__Trade-offs.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 19, title: "Modular Monolith vs Microservices",
+                    desc: "Make this one of your strongest interview topics. Trade-offs, migration paths, and team organization.",
+                    page: "pages/day19-v1.html",
+                    audio: [{ src: "audio/Day_19_-_Modular_Monolith_vs_Microservice.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_19_-_Monolith_vs_Microservices.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 20, title: "Architecture Trade-Offs",
+                    desc: "For every major technology, create Option A, Option B, pros, cons, cost, complexity, scale, and recommendation.",
+                    page: "pages/day20-v1.html",
+                    audio: [{ src: "audio/Day_20_-_Architecture_Trade-offs_and_Decisons.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_20_-_Architecture_Trade-offs_and_Decisions.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 21, title: "Architecture Presentation",
+                    desc: "Explain one architecture in 10 minutes to a CTO, Product Manager, and Engineering Manager. Avoid jargon.",
+                    page: "pages/day21-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 22, title: "Netflix-like Video Platform",
+                    desc: "Complete system design with requirements, NFRs, trade-offs, and failure modes.",
+                    page: "pages/day22-v2.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 23, title: "Uber-like Ride Platform",
+                    desc: "Focus on geo, matching, availability, location updates, and surge load.",
+                    page: "pages/day23-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 24, title: "WhatsApp-like Messaging System",
+                    desc: "Messaging, delivery guarantees, fanout, presence, storage, and offline handling.",
+                    page: "pages/day24-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 25, title: "Multi-Tenant Enterprise SaaS",
+                    desc: "Tenancy, authorization, scale, reporting, integrations, and future AI. Particularly relevant to your experience.",
+                    page: "pages/day25-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 26, title: "Production Incident Interview",
+                    desc: "Redis goes down, returns, and 1M requests hit SQL. Explain what happens and how you prevent database collapse.",
+                    page: "pages/day26-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 27, title: "Architecture Governance",
+                    desc: "ADRs, architecture review boards, decision records, and governing distributed systems evolution.",
+                    page: "pages/day27-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 28, title: "Cost Architecture",
+                    desc: "Cloud cost models, reserved instances, spot instances, serverless vs dedicated, and TCO analysis.",
+                    page: "pages/day28-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 29, title: "Architecture for AI Systems",
+                    desc: "RAG patterns, embedding stores, vector databases, inference scaling, and AI integration patterns.",
+                    page: "pages/day29-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                },
+                {
+                    day: 30, title: "Final Mock Exam",
+                    desc: "Complete 60-minute system design under exam conditions. Review gaps and create personal architect manifesto.",
+                    page: "pages/day30-v1.html",
+                    audio: [],
+                    video: [],
+                    images: []
+                }
+            ];
+
+            // ─── Queue System ───
+            var queue = [];
+            var qIdx = -1;
+            var currentPlayer = null; // the <audio>/<video> DOM element currently playing from queue
+
+            function padDay(n) { return n < 10 ? '0' + n : '' + n; }
+
+            function fmtTime(s) {
+                if (isNaN(s) || !isFinite(s)) return '0:00';
+                var m = Math.floor(s / 60);
+                var sec = Math.floor(s % 60);
+                return m + ':' + (sec < 10 ? '0' : '') + sec;
             }
-        ];
 
-        // ─── Queue System ───
-        var queue = [];
-        var qIdx = -1;
-        var currentPlayer = null; // the <audio>/<video> DOM element currently playing from queue
+            // ─── Build Quick Nav ───
+            var $nav = $('#dayNav');
+            $.each(days, function (i, d) {
+                $nav.append('<a href="#day' + d.day + '">Day ' + padDay(d.day) + '</a>');
+            });
 
-        function padDay(n) { return n < 10 ? '0' + n : '' + n; }
+            // ─── Build Day Sections ───
+            var $sections = $('#daySections');
 
-        function fmtTime(s) {
-            if (isNaN(s) || !isFinite(s)) return '0:00';
-            var m = Math.floor(s / 60);
-            var sec = Math.floor(s % 60);
-            return m + ':' + (sec < 10 ? '0' : '') + sec;
-        }
+            $.each(days, function (i, d) {
+                var hasMedia = d.audio.length || d.video.length || d.images.length;
+                var html = '<section class="day-section" id="day' + d.day + '">';
+                html += '<div class="day-section-head">';
+                html += '<div class="day-num">DAY ' + padDay(d.day) + '</div>';
+                html += '<h2>' + d.title + '</h2>';
+                html += '<p class="day-desc">' + d.desc + '</p>';
+                html += '<div class="day-actions">';
+                if (d.page) {
+                    html += '<a class="btn-open" href="' + d.page + '">Open Lesson →</a>';
+                } else {
+                    html += '<span class="btn-open coming-soon">Coming Soon</span>';
+                }
+                html += '</div></div>';
 
-        // ─── Build Quick Nav ───
-        var $nav = $('#dayNav');
-        $.each(days, function (i, d) {
-            $nav.append('<a href="#day' + d.day + '">Day ' + padDay(d.day) + '</a>');
-        });
+                // Media Zone
+                html += '<div class="day-media-zone">';
+                html += '<div class="media-zone-title">Resources</div>';
 
-        // ─── Build Day Sections ───
-        var $sections = $('#daySections');
+                if (!hasMedia) {
+                    html += '<div class="media-empty">No media available yet</div>';
+                } else {
+                    html += '<div class="media-items">';
 
-        $.each(days, function (i, d) {
-            var hasMedia = d.audio.length || d.video.length || d.images.length;
-            var html = '<section class="day-section" id="day' + d.day + '">';
-            html += '<div class="day-section-head">';
-            html += '<div class="day-num">DAY ' + padDay(d.day) + '</div>';
-            html += '<h2>' + d.title + '</h2>';
-            html += '<p class="day-desc">' + d.desc + '</p>';
-            html += '<div class="day-actions">';
-            if (d.page) {
-                html += '<a class="btn-open" href="' + d.page + '">Open Lesson →</a>';
-            } else {
-                html += '<span class="btn-open coming-soon">Coming Soon</span>';
+                    // Audio items
+                    $.each(d.audio, function (ai, a) {
+                        var uid = 'a-' + d.day + '-' + ai;
+                        var label = a.label || 'Day ' + d.day + ' — ' + d.title;
+                        html += '<div class="media-item" data-uid="' + uid + '">';
+                        html += '<div class="media-item-head">';
+                        html += '<div class="media-item-info">';
+                        html += '<span class="media-type-badge audio">Audio</span>';
+                        html += '<span class="media-item-label">' + label + '</span>';
+                        html += '<span class="lang-badge">' + a.lang + '</span>';
+                        html += '</div>';
+                        html += '<div class="media-item-actions">';
+                        html += '<button class="btn-media btn-play-audio" data-src="' + a.src + '" data-uid="' + uid + '" data-label="' + label + ' (' + a.lang + ')">▶ Play</button>';
+                        html += '<button class="btn-media btn-queue" data-src="' + a.src + '" data-type="audio" data-label="' + label + ' (' + a.lang + ')" data-uid="' + uid + '">+ Queue</button>';
+                        html += '</div></div>';
+                        // Player container (hidden until click)
+                        html += '<div class="player-container" id="pc-' + uid + '">';
+                        html += '<div class="custom-player">';
+                        html += '<div class="player-top">';
+                        html += '<button class="player-btn pp-btn" data-uid="' + uid + '"><svg><use href="#ico-play"/></svg></button>';
+                        html += '<div class="player-progress-wrap">';
+                        html += '<div class="player-track" data-uid="' + uid + '"><div class="player-buffer"></div><div class="player-fill"></div></div>';
+                        html += '<div class="player-times"><span class="p-cur">0:00</span><span class="p-dur">0:00</span></div>';
+                        html += '</div>';
+                        html += '<div class="player-vol"><svg><use href="#ico-vol"/></svg><div class="vol-track" data-uid="' + uid + '"><div class="vol-fill"></div></div></div>';
+                        html += '<button class="player-speed" data-uid="' + uid + '">1x</button>';
+                        html += '</div></div></div>';
+                        html += '</div>';
+                    });
+
+                    // Video items
+                    $.each(d.video, function (vi, v) {
+                        var uid = 'v-' + d.day + '-' + vi;
+                        var label = v.label || 'Day ' + d.day + ' — ' + d.title;
+                        html += '<div class="media-item" data-uid="' + uid + '">';
+                        html += '<div class="media-item-head">';
+                        html += '<div class="media-item-info">';
+                        html += '<span class="media-type-badge video">Video</span>';
+                        html += '<span class="media-item-label">' + label + '</span>';
+                        html += '<span class="lang-badge">' + v.lang + '</span>';
+                        html += '</div>';
+                        html += '<div class="media-item-actions">';
+                        html += '<button class="btn-media btn-play-video" data-src="' + v.src + '" data-uid="' + uid + '" data-label="' + label + ' (' + v.lang + ')">▶ Play</button>';
+                        html += '<button class="btn-media btn-queue" data-src="' + v.src + '" data-type="video" data-label="' + label + ' (' + v.lang + ')" data-uid="' + uid + '">+ Queue</button>';
+                        html += '</div></div>';
+                        // Video player container (hidden until click)
+                        html += '<div class="player-container" id="pc-' + uid + '">';
+                        html += '<div class="video-wrapper" data-uid="' + uid + '">';
+                        html += '<div class="video-overlay"><div class="play-circle"><svg><use href="#ico-play"/></svg></div></div>';
+                        html += '<div class="video-controls">';
+                        html += '<div class="video-progress-track" data-uid="' + uid + '"><div class="video-buffer"></div><div class="video-fill"></div></div>';
+                        html += '<div class="video-bottom">';
+                        html += '<button class="player-btn vp-btn" data-uid="' + uid + '"><svg><use href="#ico-play"/></svg></button>';
+                        html += '<span class="v-times"><span class="p-cur">0:00</span> / <span class="p-dur">0:00</span></span>';
+                        html += '<button class="player-speed" data-uid="' + uid + '">1x</button>';
+                        html += '<div class="player-vol"><svg><use href="#ico-vol"/></svg><div class="vol-track" data-uid="' + uid + '"><div class="vol-fill"></div></div></div>';
+                        html += '<button class="btn-fullscreen" data-uid="' + uid + '" title="Toggle Fullscreen"><svg><use href="#ico-fs-enter"/></svg></button>';
+                        html += '</div></div></div></div>';
+                        html += '</div>';
+                    });
+
+                    // Image items
+                    $.each(d.images, function (ii, img) {
+                        var uid = 'i-' + d.day + '-' + ii;
+                        html += '<div class="media-item" data-uid="' + uid + '">';
+                        html += '<div class="media-item-head">';
+                        html += '<div class="media-item-info">';
+                        html += '<span class="media-type-badge image">Image</span>';
+                        html += '<span class="media-item-label">' + img.label + '</span>';
+                        html += '</div>';
+                        html += '<div class="media-item-actions">';
+                        html += '<button class="btn-media btn-show-img" data-src="' + img.src + '" data-uid="' + uid + '">View</button>';
+                        html += '</div></div>';
+                        html += '<div class="media-image-preview" id="ip-' + uid + '"></div>';
+                        html += '</div>';
+                    });
+
+                    html += '</div>'; // .media-items
+                }
+                html += '</div>'; // .day-media-zone
+                html += '</section>';
+                $sections.append(html);
+            });
+
+            // ─── Media Element Store ───
+            var mediaElements = {}; // uid -> <audio>/<video> element
+
+            function getOrCreateAudio(uid, src) {
+                if (!mediaElements[uid]) {
+                    var el = new Audio();
+                    el.preload = 'none';
+                    el.src = src;
+                    mediaElements[uid] = el;
+                }
+                return mediaElements[uid];
             }
-            html += '</div></div>';
 
-            // Media Zone
-            html += '<div class="day-media-zone">';
-            html += '<div class="media-zone-title">Resources</div>';
-
-            if (!hasMedia) {
-                html += '<div class="media-empty">No media available yet</div>';
-            } else {
-                html += '<div class="media-items">';
-
-                // Audio items
-                $.each(d.audio, function (ai, a) {
-                    var uid = 'a-' + d.day + '-' + ai;
-                    var label = a.label || 'Day ' + d.day + ' — ' + d.title;
-                    html += '<div class="media-item" data-uid="' + uid + '">';
-                    html += '<div class="media-item-head">';
-                    html += '<div class="media-item-info">';
-                    html += '<span class="media-type-badge audio">Audio</span>';
-                    html += '<span class="media-item-label">' + label + '</span>';
-                    html += '<span class="lang-badge">' + a.lang + '</span>';
-                    html += '</div>';
-                    html += '<div class="media-item-actions">';
-                    html += '<button class="btn-media btn-play-audio" data-src="' + a.src + '" data-uid="' + uid + '" data-label="' + label + ' (' + a.lang + ')">▶ Play</button>';
-                    html += '<button class="btn-media btn-queue" data-src="' + a.src + '" data-type="audio" data-label="' + label + ' (' + a.lang + ')" data-uid="' + uid + '">+ Queue</button>';
-                    html += '</div></div>';
-                    // Player container (hidden until click)
-                    html += '<div class="player-container" id="pc-' + uid + '">';
-                    html += '<div class="custom-player">';
-                    html += '<div class="player-top">';
-                    html += '<button class="player-btn pp-btn" data-uid="' + uid + '"><svg><use href="#ico-play"/></svg></button>';
-                    html += '<div class="player-progress-wrap">';
-                    html += '<div class="player-track" data-uid="' + uid + '"><div class="player-buffer"></div><div class="player-fill"></div></div>';
-                    html += '<div class="player-times"><span class="p-cur">0:00</span><span class="p-dur">0:00</span></div>';
-                    html += '</div>';
-                    html += '<div class="player-vol"><svg><use href="#ico-vol"/></svg><div class="vol-track" data-uid="' + uid + '"><div class="vol-fill"></div></div></div>';
-                    html += '<button class="player-speed" data-uid="' + uid + '">1x</button>';
-                    html += '</div></div></div>';
-                    html += '</div>';
-                });
-
-                // Video items
-                $.each(d.video, function (vi, v) {
-                    var uid = 'v-' + d.day + '-' + vi;
-                    var label = v.label || 'Day ' + d.day + ' — ' + d.title;
-                    html += '<div class="media-item" data-uid="' + uid + '">';
-                    html += '<div class="media-item-head">';
-                    html += '<div class="media-item-info">';
-                    html += '<span class="media-type-badge video">Video</span>';
-                    html += '<span class="media-item-label">' + label + '</span>';
-                    html += '<span class="lang-badge">' + v.lang + '</span>';
-                    html += '</div>';
-                    html += '<div class="media-item-actions">';
-                    html += '<button class="btn-media btn-play-video" data-src="' + v.src + '" data-uid="' + uid + '" data-label="' + label + ' (' + v.lang + ')">▶ Play</button>';
-                    html += '<button class="btn-media btn-queue" data-src="' + v.src + '" data-type="video" data-label="' + label + ' (' + v.lang + ')" data-uid="' + uid + '">+ Queue</button>';
-                    html += '</div></div>';
-                    // Video player container (hidden until click)
-                    html += '<div class="player-container" id="pc-' + uid + '">';
-                    html += '<div class="video-wrapper" data-uid="' + uid + '">';
-                    html += '<div class="video-overlay"><div class="play-circle"><svg><use href="#ico-play"/></svg></div></div>';
-                    html += '<div class="video-controls">';
-                    html += '<div class="video-progress-track" data-uid="' + uid + '"><div class="video-buffer"></div><div class="video-fill"></div></div>';
-                    html += '<div class="video-bottom">';
-                    html += '<button class="player-btn vp-btn" data-uid="' + uid + '"><svg><use href="#ico-play"/></svg></button>';
-                    html += '<span class="v-times"><span class="p-cur">0:00</span> / <span class="p-dur">0:00</span></span>';
-                    html += '<button class="player-speed" data-uid="' + uid + '">1x</button>';
-                    html += '<div class="player-vol"><svg><use href="#ico-vol"/></svg><div class="vol-track" data-uid="' + uid + '"><div class="vol-fill"></div></div></div>';
-                    html += '<button class="btn-fullscreen" data-uid="' + uid + '" title="Toggle Fullscreen"><svg><use href="#ico-fs-enter"/></svg></button>';
-                    html += '</div></div></div></div>';
-                    html += '</div>';
-                });
-
-                // Image items
-                $.each(d.images, function (ii, img) {
-                    var uid = 'i-' + d.day + '-' + ii;
-                    html += '<div class="media-item" data-uid="' + uid + '">';
-                    html += '<div class="media-item-head">';
-                    html += '<div class="media-item-info">';
-                    html += '<span class="media-type-badge image">Image</span>';
-                    html += '<span class="media-item-label">' + img.label + '</span>';
-                    html += '</div>';
-                    html += '<div class="media-item-actions">';
-                    html += '<button class="btn-media btn-show-img" data-src="' + img.src + '" data-uid="' + uid + '">View</button>';
-                    html += '</div></div>';
-                    html += '<div class="media-image-preview" id="ip-' + uid + '"></div>';
-                    html += '</div>';
-                });
-
-                html += '</div>'; // .media-items
+            function getOrCreateVideo(uid, src) {
+                if (!mediaElements[uid]) {
+                    var $pc = $('#pc-' + uid);
+                    var $vw = $pc.find('.video-wrapper');
+                    // Create video element lazily
+                    var el = document.createElement('video');
+                    el.preload = 'none';
+                    el.src = src;
+                    $vw.prepend(el);
+                    mediaElements[uid] = el;
+                }
+                return mediaElements[uid];
             }
-            html += '</div>'; // .day-media-zone
-            html += '</section>';
-            $sections.append(html);
-        });
 
-        // ─── Media Element Store ───
-        var mediaElements = {}; // uid -> <audio>/<video> element
+            // ─── Speed cycling ───
+            var speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
 
-        function getOrCreateAudio(uid, src) {
-            if (!mediaElements[uid]) {
-                var el = new Audio();
-                el.preload = 'none';
-                el.src = src;
-                mediaElements[uid] = el;
-            }
-            return mediaElements[uid];
-        }
+            $(document).on('click', '.player-speed', function () {
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el) return;
+                var cur = el.playbackRate;
+                var idx = speeds.indexOf(cur);
+                var next = speeds[(idx + 1) % speeds.length];
+                el.playbackRate = next;
+                // Update all speed buttons for this uid
+                $('.player-speed[data-uid="' + uid + '"]').text(next + 'x');
+            });
 
-        function getOrCreateVideo(uid, src) {
-            if (!mediaElements[uid]) {
+            // ─── Audio: Play Button (lazy load + toggle) ───
+            $(document).on('click', '.btn-play-audio', function () {
+                var $btn = $(this);
+                var uid = $btn.data('uid');
+                var src = $btn.data('src');
                 var $pc = $('#pc-' + uid);
-                var $vw = $pc.find('.video-wrapper');
-                // Create video element lazily
-                var el = document.createElement('video');
-                el.preload = 'none';
-                el.src = src;
-                $vw.prepend(el);
-                mediaElements[uid] = el;
-            }
-            return mediaElements[uid];
-        }
 
-        // ─── Speed cycling ───
-        var speeds = [0.5, 0.75, 1, 1.25, 1.5, 2];
+                // Show player
+                $pc.addClass('active');
 
-        $(document).on('click', '.player-speed', function () {
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el) return;
-            var cur = el.playbackRate;
-            var idx = speeds.indexOf(cur);
-            var next = speeds[(idx + 1) % speeds.length];
-            el.playbackRate = next;
-            // Update all speed buttons for this uid
-            $('.player-speed[data-uid="' + uid + '"]').text(next + 'x');
-        });
-
-        // ─── Audio: Play Button (lazy load + toggle) ───
-        $(document).on('click', '.btn-play-audio', function () {
-            var $btn = $(this);
-            var uid = $btn.data('uid');
-            var src = $btn.data('src');
-            var $pc = $('#pc-' + uid);
-
-            // Show player
-            $pc.addClass('active');
-
-            var el = getOrCreateAudio(uid, src);
-            if (el.paused) {
-                // Pause all others
-                pauseAll();
-                el.play();
-                $btn.text('⏸ Pause');
-            } else {
-                el.pause();
-                $btn.text('▶ Play');
-            }
-            bindAudioEvents(uid, el);
-        });
-
-        // ─── Audio: Play/Pause within player ───
-        $(document).on('click', '.pp-btn', function () {
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el) return;
-            if (el.paused) {
-                pauseAll();
-                el.play();
-            } else {
-                el.pause();
-            }
-        });
-
-        function bindAudioEvents(uid, el) {
-            if (el._bound) return;
-            el._bound = true;
-            var $pc = $('#pc-' + uid);
-
-            $(el).on('timeupdate', function () {
-                var pct = (el.currentTime / el.duration) * 100 || 0;
-                $pc.find('.player-fill').css('width', pct + '%');
-                $pc.find('.p-cur').text(fmtTime(el.currentTime));
-                // Queue progress
-                if (qIdx >= 0 && queue[qIdx] && queue[qIdx].uid === uid) {
-                    $('#qProgress').css('width', pct + '%');
+                var el = getOrCreateAudio(uid, src);
+                if (el.paused) {
+                    // Pause all others
+                    pauseAll();
+                    el.play();
+                    $btn.text('⏸ Pause');
+                } else {
+                    el.pause();
+                    $btn.text('▶ Play');
                 }
+                bindAudioEvents(uid, el);
             });
 
-            $(el).on('loadedmetadata', function () {
-                $pc.find('.p-dur').text(fmtTime(el.duration));
-            });
-
-            $(el).on('progress', function () {
-                if (el.buffered.length) {
-                    var buf = (el.buffered.end(el.buffered.length - 1) / el.duration) * 100;
-                    $pc.find('.player-buffer').css('width', buf + '%');
-                }
-            });
-
-            $(el).on('play', function () {
-                $pc.find('.pp-btn svg use').attr('href', '#ico-pause');
-                $('.btn-play-audio[data-uid="' + uid + '"]').text('⏸ Pause');
-            });
-
-            $(el).on('pause', function () {
-                $pc.find('.pp-btn svg use').attr('href', '#ico-play');
-                $('.btn-play-audio[data-uid="' + uid + '"]').text('▶ Play');
-            });
-
-            $(el).on('ended', function () {
-                $pc.find('.pp-btn svg use').attr('href', '#ico-play');
-                $pc.find('.player-fill').css('width', '0%');
-                $('.btn-play-audio[data-uid="' + uid + '"]').text('▶ Play');
-                playNextInQueue();
-            });
-        }
-
-        // ─── Audio: Seek ───
-        $(document).on('click', '.player-track', function (e) {
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el || !el.duration) return;
-            var pct = (e.pageX - $(this).offset().left) / $(this).width();
-            el.currentTime = pct * el.duration;
-        });
-
-        // ─── Audio: Volume ───
-        $(document).on('click', '.vol-track', function (e) {
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el) return;
-            var pct = (e.pageX - $(this).offset().left) / $(this).width();
-            pct = Math.max(0, Math.min(1, pct));
-            el.volume = pct;
-            $(this).find('.vol-fill').css('width', (pct * 100) + '%');
-        });
-
-        // ─── Video: Play Button (lazy load + toggle) ───
-        $(document).on('click', '.btn-play-video', function () {
-            var $btn = $(this);
-            var uid = $btn.data('uid');
-            var src = $btn.data('src');
-            var $pc = $('#pc-' + uid);
-
-            $pc.addClass('active');
-
-            var el = getOrCreateVideo(uid, src);
-            if (el.paused) {
-                pauseAll();
-                el.play();
-                $btn.text('⏸ Pause');
-            } else {
-                el.pause();
-                $btn.text('▶ Play');
-            }
-            bindVideoEvents(uid, el);
-        });
-
-        // ─── Video: Overlay click ───
-        $(document).on('click', '.video-overlay', function () {
-            var $vw = $(this).closest('.video-wrapper');
-            var uid = $vw.data('uid');
-            var $item = $vw.closest('.media-item');
-            var src = $item.find('.btn-play-video').data('src');
-
-            var el = getOrCreateVideo(uid, src);
-            pauseAll();
-            el.play();
-            $(this).addClass('hidden');
-            $vw.addClass('playing');
-            bindVideoEvents(uid, el);
-        });
-
-        // ─── Video: Play/Pause within controls ───
-        $(document).on('click', '.vp-btn', function (e) {
-            e.stopPropagation();
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el) return;
-            if (el.paused) {
-                pauseAll();
-                el.play();
-            } else {
-                el.pause();
-            }
-        });
-
-        // ─── Video: Click on video area toggles play/pause ───
-        $(document).on('click', '.video-wrapper video', function () {
-            var $vw = $(this).closest('.video-wrapper');
-            var uid = $vw.data('uid');
-            var el = mediaElements[uid];
-            if (!el) return;
-            if (el.paused) {
-                pauseAll();
-                el.play();
-            } else {
-                el.pause();
-            }
-        });
-
-        function bindVideoEvents(uid, el) {
-            if (el._bound) return;
-            el._bound = true;
-            var $pc = $('#pc-' + uid);
-            var $vw = $pc.find('.video-wrapper');
-
-            $(el).on('timeupdate', function () {
-                var pct = (el.currentTime / el.duration) * 100 || 0;
-                $pc.find('.video-fill').css('width', pct + '%');
-                $pc.find('.p-cur').text(fmtTime(el.currentTime));
-                if (qIdx >= 0 && queue[qIdx] && queue[qIdx].uid === uid) {
-                    $('#qProgress').css('width', pct + '%');
-                }
-            });
-
-            $(el).on('loadedmetadata', function () {
-                $pc.find('.p-dur').text(fmtTime(el.duration));
-            });
-
-            $(el).on('progress', function () {
-                if (el.buffered.length) {
-                    var buf = (el.buffered.end(el.buffered.length - 1) / el.duration) * 100;
-                    $pc.find('.video-buffer').css('width', buf + '%');
-                }
-            });
-
-            $(el).on('play', function () {
-                $pc.find('.vp-btn svg use').attr('href', '#ico-pause');
-                $vw.find('.video-overlay').addClass('hidden');
-                $vw.addClass('playing');
-                $('.btn-play-video[data-uid="' + uid + '"]').text('⏸ Pause');
-            });
-
-            $(el).on('pause', function () {
-                $pc.find('.vp-btn svg use').attr('href', '#ico-play');
-                $vw.removeClass('playing');
-                $('.btn-play-video[data-uid="' + uid + '"]').text('▶ Play');
-            });
-
-            $(el).on('ended', function () {
-                $pc.find('.vp-btn svg use').attr('href', '#ico-play');
-                $pc.find('.video-fill').css('width', '0%');
-                $vw.removeClass('playing');
-                $vw.find('.video-overlay').removeClass('hidden');
-                $('.btn-play-video[data-uid="' + uid + '"]').text('▶ Play');
-                playNextInQueue();
-            });
-        }
-
-        // ─── Video: Seek ───
-        $(document).on('click', '.video-progress-track', function (e) {
-            e.stopPropagation();
-            var uid = $(this).data('uid');
-            var el = mediaElements[uid];
-            if (!el || !el.duration) return;
-            var pct = (e.pageX - $(this).offset().left) / $(this).width();
-            el.currentTime = pct * el.duration;
-        });
-
-        // ─── Video: Fullscreen Toggle ───
-        $(document).on('click', '.btn-fullscreen', function (e) {
-            e.stopPropagation();
-            var uid = $(this).data('uid');
-            var $vw = $(this).closest('.video-wrapper');
-            var wrapper = $vw[0];
-
-            var isFs = document.fullscreenElement || document.webkitFullscreenElement;
-            if (!isFs) {
-                var rq = wrapper.requestFullscreen || wrapper.webkitRequestFullscreen;
-                if (rq) rq.call(wrapper);
-            } else {
-                var ex = document.exitFullscreen || document.webkitExitFullscreen;
-                if (ex) ex.call(document);
-            }
-        });
-
-        // Update icon on fullscreen change
-        $(document).on('fullscreenchange webkitfullscreenchange', function () {
-            var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
-            if (fsEl) {
-                $(fsEl).find('.btn-fullscreen svg use').attr('href', '#ico-fs-exit');
-            } else {
-                $('.btn-fullscreen svg use').attr('href', '#ico-fs-enter');
-            }
-        });
-
-        // ─── Image: Show ───
-        $(document).on('click', '.btn-show-img', function () {
-            var uid = $(this).data('uid');
-            var src = $(this).data('src');
-            var $ip = $('#ip-' + uid);
-            if ($ip.hasClass('active')) {
-                $ip.removeClass('active');
-                $(this).text('View');
-            } else {
-                if (!$ip.find('img').length) {
-                    $ip.html('<img src="' + src + '" alt="" loading="lazy">');
-                }
-                $ip.addClass('active');
-                $(this).text('Hide');
-            }
-        });
-
-        // ─── Pause All ───
-        function pauseAll(exceptUid) {
-            $.each(mediaElements, function (uid, el) {
-                if (uid !== exceptUid && !el.paused) {
+            // ─── Audio: Play/Pause within player ───
+            $(document).on('click', '.pp-btn', function () {
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el) return;
+                if (el.paused) {
+                    pauseAll();
+                    el.play();
+                } else {
                     el.pause();
                 }
             });
-        }
 
-        // ─── Queue: Add ───
-        $(document).on('click', '.btn-queue', function () {
-            var $btn = $(this);
-            var src = $btn.data('src');
-            var type = $btn.data('type');
-            var label = $btn.data('label');
-            var uid = $btn.data('uid');
+            function bindAudioEvents(uid, el) {
+                if (el._bound) return;
+                el._bound = true;
+                var $pc = $('#pc-' + uid);
 
-            // Check duplicate
-            for (var i = 0; i < queue.length; i++) {
-                if (queue[i].uid === uid) return;
+                $(el).on('timeupdate', function () {
+                    var pct = (el.currentTime / el.duration) * 100 || 0;
+                    $pc.find('.player-fill').css('width', pct + '%');
+                    $pc.find('.p-cur').text(fmtTime(el.currentTime));
+                    // Queue progress
+                    if (qIdx >= 0 && queue[qIdx] && queue[qIdx].uid === uid) {
+                        $('#qProgress').css('width', pct + '%');
+                    }
+                });
+
+                $(el).on('loadedmetadata', function () {
+                    $pc.find('.p-dur').text(fmtTime(el.duration));
+                });
+
+                $(el).on('progress', function () {
+                    if (el.buffered.length) {
+                        var buf = (el.buffered.end(el.buffered.length - 1) / el.duration) * 100;
+                        $pc.find('.player-buffer').css('width', buf + '%');
+                    }
+                });
+
+                $(el).on('play', function () {
+                    $pc.find('.pp-btn svg use').attr('href', '#ico-pause');
+                    $('.btn-play-audio[data-uid="' + uid + '"]').text('⏸ Pause');
+                });
+
+                $(el).on('pause', function () {
+                    $pc.find('.pp-btn svg use').attr('href', '#ico-play');
+                    $('.btn-play-audio[data-uid="' + uid + '"]').text('▶ Play');
+                });
+
+                $(el).on('ended', function () {
+                    $pc.find('.pp-btn svg use').attr('href', '#ico-play');
+                    $pc.find('.player-fill').css('width', '0%');
+                    $('.btn-play-audio[data-uid="' + uid + '"]').text('▶ Play');
+                    playNextInQueue();
+                });
             }
 
-            queue.push({ src: src, type: type, label: label, uid: uid });
-            $btn.addClass('queued').text('✓ Queued');
-            updateQueueBar();
+            // ─── Audio: Seek ───
+            $(document).on('click', '.player-track', function (e) {
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el || !el.duration) return;
+                var pct = (e.pageX - $(this).offset().left) / $(this).width();
+                el.currentTime = pct * el.duration;
+            });
 
-            // Auto-start if first item
-            if (queue.length === 1) {
-                qIdx = 0;
-                playQueueItem(0);
-            }
-        });
+            // ─── Audio: Volume ───
+            $(document).on('click', '.vol-track', function (e) {
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el) return;
+                var pct = (e.pageX - $(this).offset().left) / $(this).width();
+                pct = Math.max(0, Math.min(1, pct));
+                el.volume = pct;
+                $(this).find('.vol-fill').css('width', (pct * 100) + '%');
+            });
 
-        function updateQueueBar() {
-            if (queue.length === 0) {
-                $('#queueBar').removeClass('visible');
-                return;
-            }
-            $('#queueBar').addClass('visible');
-            if (qIdx >= 0 && qIdx < queue.length) {
-                $('#qNow').text(queue[qIdx].label);
-            }
-            $('#qCount').text((qIdx + 1) + ' / ' + queue.length);
-        }
+            // ─── Video: Play Button (lazy load + toggle) ───
+            $(document).on('click', '.btn-play-video', function () {
+                var $btn = $(this);
+                var uid = $btn.data('uid');
+                var src = $btn.data('src');
+                var $pc = $('#pc-' + uid);
 
-        function playQueueItem(idx) {
-            if (idx < 0 || idx >= queue.length) return;
-            qIdx = idx;
-            var item = queue[idx];
-            pauseAll();
+                $pc.addClass('active');
 
-            var $pc = $('#pc-' + item.uid);
-            $pc.addClass('active');
+                var el = getOrCreateVideo(uid, src);
+                if (el.paused) {
+                    pauseAll();
+                    el.play();
+                    $btn.text('⏸ Pause');
+                } else {
+                    el.pause();
+                    $btn.text('▶ Play');
+                }
+                bindVideoEvents(uid, el);
+            });
 
-            var el;
-            if (item.type === 'audio') {
-                el = getOrCreateAudio(item.uid, item.src);
-                bindAudioEvents(item.uid, el);
-            } else {
-                el = getOrCreateVideo(item.uid, item.src);
-                bindVideoEvents(item.uid, el);
-            }
-            el.currentTime = 0;
-            el.play();
-            currentPlayer = el;
-            updateQueueBar();
+            // ─── Video: Overlay click ───
+            $(document).on('click', '.video-overlay', function () {
+                var $vw = $(this).closest('.video-wrapper');
+                var uid = $vw.data('uid');
+                var $item = $vw.closest('.media-item');
+                var src = $item.find('.btn-play-video').data('src');
 
-            // Scroll into view
-            $pc.closest('.day-section')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-
-        function playNextInQueue() {
-            if (qIdx < 0) return;
-            if (qIdx + 1 < queue.length) {
-                playQueueItem(qIdx + 1);
-            } else {
-                // Queue finished
-                qIdx = queue.length - 1;
-                updateQueueBar();
-            }
-        }
-
-        // ─── Queue Controls ───
-        $('#qPlayPause').on('click', function () {
-            if (qIdx < 0 || qIdx >= queue.length) return;
-            var el = mediaElements[queue[qIdx].uid];
-            if (!el) return;
-            if (el.paused) {
+                var el = getOrCreateVideo(uid, src);
                 pauseAll();
                 el.play();
-            } else {
-                el.pause();
+                $(this).addClass('hidden');
+                $vw.addClass('playing');
+                bindVideoEvents(uid, el);
+            });
+
+            // ─── Video: Play/Pause within controls ───
+            $(document).on('click', '.vp-btn', function (e) {
+                e.stopPropagation();
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el) return;
+                if (el.paused) {
+                    pauseAll();
+                    el.play();
+                } else {
+                    el.pause();
+                }
+            });
+
+            // ─── Video: Click on video area toggles play/pause ───
+            $(document).on('click', '.video-wrapper video', function () {
+                var $vw = $(this).closest('.video-wrapper');
+                var uid = $vw.data('uid');
+                var el = mediaElements[uid];
+                if (!el) return;
+                if (el.paused) {
+                    pauseAll();
+                    el.play();
+                } else {
+                    el.pause();
+                }
+            });
+
+            function bindVideoEvents(uid, el) {
+                if (el._bound) return;
+                el._bound = true;
+                var $pc = $('#pc-' + uid);
+                var $vw = $pc.find('.video-wrapper');
+
+                $(el).on('timeupdate', function () {
+                    var pct = (el.currentTime / el.duration) * 100 || 0;
+                    $pc.find('.video-fill').css('width', pct + '%');
+                    $pc.find('.p-cur').text(fmtTime(el.currentTime));
+                    if (qIdx >= 0 && queue[qIdx] && queue[qIdx].uid === uid) {
+                        $('#qProgress').css('width', pct + '%');
+                    }
+                });
+
+                $(el).on('loadedmetadata', function () {
+                    $pc.find('.p-dur').text(fmtTime(el.duration));
+                });
+
+                $(el).on('progress', function () {
+                    if (el.buffered.length) {
+                        var buf = (el.buffered.end(el.buffered.length - 1) / el.duration) * 100;
+                        $pc.find('.video-buffer').css('width', buf + '%');
+                    }
+                });
+
+                $(el).on('play', function () {
+                    $pc.find('.vp-btn svg use').attr('href', '#ico-pause');
+                    $vw.find('.video-overlay').addClass('hidden');
+                    $vw.addClass('playing');
+                    $('.btn-play-video[data-uid="' + uid + '"]').text('⏸ Pause');
+                });
+
+                $(el).on('pause', function () {
+                    $pc.find('.vp-btn svg use').attr('href', '#ico-play');
+                    $vw.removeClass('playing');
+                    $('.btn-play-video[data-uid="' + uid + '"]').text('▶ Play');
+                });
+
+                $(el).on('ended', function () {
+                    $pc.find('.vp-btn svg use').attr('href', '#ico-play');
+                    $pc.find('.video-fill').css('width', '0%');
+                    $vw.removeClass('playing');
+                    $vw.find('.video-overlay').removeClass('hidden');
+                    $('.btn-play-video[data-uid="' + uid + '"]').text('▶ Play');
+                    playNextInQueue();
+                });
             }
-        });
 
-        $('#qNext').on('click', function () {
-            if (qIdx + 1 < queue.length) {
-                playQueueItem(qIdx + 1);
+            // ─── Video: Seek ───
+            $(document).on('click', '.video-progress-track', function (e) {
+                e.stopPropagation();
+                var uid = $(this).data('uid');
+                var el = mediaElements[uid];
+                if (!el || !el.duration) return;
+                var pct = (e.pageX - $(this).offset().left) / $(this).width();
+                el.currentTime = pct * el.duration;
+            });
+
+            // ─── Video: Fullscreen Toggle ───
+            $(document).on('click', '.btn-fullscreen', function (e) {
+                e.stopPropagation();
+                var uid = $(this).data('uid');
+                var $vw = $(this).closest('.video-wrapper');
+                var wrapper = $vw[0];
+
+                var isFs = document.fullscreenElement || document.webkitFullscreenElement;
+                if (!isFs) {
+                    var rq = wrapper.requestFullscreen || wrapper.webkitRequestFullscreen;
+                    if (rq) rq.call(wrapper);
+                } else {
+                    var ex = document.exitFullscreen || document.webkitExitFullscreen;
+                    if (ex) ex.call(document);
+                }
+            });
+
+            // Update icon on fullscreen change
+            $(document).on('fullscreenchange webkitfullscreenchange', function () {
+                var fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+                if (fsEl) {
+                    $(fsEl).find('.btn-fullscreen svg use').attr('href', '#ico-fs-exit');
+                } else {
+                    $('.btn-fullscreen svg use').attr('href', '#ico-fs-enter');
+                }
+            });
+
+            // ─── Image: Show ───
+            $(document).on('click', '.btn-show-img', function () {
+                var uid = $(this).data('uid');
+                var src = $(this).data('src');
+                var $ip = $('#ip-' + uid);
+                if ($ip.hasClass('active')) {
+                    $ip.removeClass('active');
+                    $(this).text('View');
+                } else {
+                    if (!$ip.find('img').length) {
+                        $ip.html('<img src="' + src + '" alt="" loading="lazy">');
+                    }
+                    $ip.addClass('active');
+                    $(this).text('Hide');
+                }
+            });
+
+            // ─── Pause All ───
+            function pauseAll(exceptUid) {
+                $.each(mediaElements, function (uid, el) {
+                    if (uid !== exceptUid && !el.paused) {
+                        el.pause();
+                    }
+                });
             }
-        });
 
-        $('#qPrev').on('click', function () {
-            if (qIdx > 0) {
-                playQueueItem(qIdx - 1);
+            // ─── Queue: Add ───
+            $(document).on('click', '.btn-queue', function () {
+                var $btn = $(this);
+                var src = $btn.data('src');
+                var type = $btn.data('type');
+                var label = $btn.data('label');
+                var uid = $btn.data('uid');
+
+                // Check duplicate
+                for (var i = 0; i < queue.length; i++) {
+                    if (queue[i].uid === uid) return;
+                }
+
+                queue.push({ src: src, type: type, label: label, uid: uid });
+                $btn.addClass('queued').text('✓ Queued');
+                updateQueueBar();
+
+                // Auto-start if first item
+                if (queue.length === 1) {
+                    qIdx = 0;
+                    playQueueItem(0);
+                }
+            });
+
+            function updateQueueBar() {
+                if (queue.length === 0) {
+                    $('#queueBar').removeClass('visible');
+                    return;
+                }
+                $('#queueBar').addClass('visible');
+                if (qIdx >= 0 && qIdx < queue.length) {
+                    $('#qNow').text(queue[qIdx].label);
+                }
+                $('#qCount').text((qIdx + 1) + ' / ' + queue.length);
             }
-        });
 
-        $('#qClear').on('click', function () {
-            pauseAll();
-            queue = [];
-            qIdx = -1;
-            currentPlayer = null;
-            $('#qProgress').css('width', '0%');
-            updateQueueBar();
-            // Reset all queue buttons
-            $('.btn-queue').removeClass('queued').text('+ Queue');
-        });
+            function playQueueItem(idx) {
+                if (idx < 0 || idx >= queue.length) return;
+                qIdx = idx;
+                var item = queue[idx];
+                pauseAll();
 
-    });
+                var $pc = $('#pc-' + item.uid);
+                $pc.addClass('active');
+
+                var el;
+                if (item.type === 'audio') {
+                    el = getOrCreateAudio(item.uid, item.src);
+                    bindAudioEvents(item.uid, el);
+                } else {
+                    el = getOrCreateVideo(item.uid, item.src);
+                    bindVideoEvents(item.uid, el);
+                }
+                el.currentTime = 0;
+                el.play();
+                currentPlayer = el;
+                updateQueueBar();
+
+                // Scroll into view
+                $pc.closest('.day-section')[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            function playNextInQueue() {
+                if (qIdx < 0) return;
+                if (qIdx + 1 < queue.length) {
+                    playQueueItem(qIdx + 1);
+                } else {
+                    // Queue finished
+                    qIdx = queue.length - 1;
+                    updateQueueBar();
+                }
+            }
+
+            // ─── Queue Controls ───
+            $('#qPlayPause').on('click', function () {
+                if (qIdx < 0 || qIdx >= queue.length) return;
+                var el = mediaElements[queue[qIdx].uid];
+                if (!el) return;
+                if (el.paused) {
+                    pauseAll();
+                    el.play();
+                } else {
+                    el.pause();
+                }
+            });
+
+            $('#qNext').on('click', function () {
+                if (qIdx + 1 < queue.length) {
+                    playQueueItem(qIdx + 1);
+                }
+            });
+
+            $('#qPrev').on('click', function () {
+                if (qIdx > 0) {
+                    playQueueItem(qIdx - 1);
+                }
+            });
+
+            $('#qClear').on('click', function () {
+                pauseAll();
+                queue = [];
+                qIdx = -1;
+                currentPlayer = null;
+                $('#qProgress').css('width', '0%');
+                updateQueueBar();
+                // Reset all queue buttons
+                $('.btn-queue').removeClass('queued').text('+ Queue');
+            });
+
+        });
     </script>
 </body>
 
