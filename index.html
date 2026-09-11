@@ -1087,16 +1087,16 @@
                     day: 15, title: "Domain-Driven Design",
                     desc: "Bounded context, aggregate, entity, value object, and domain event.",
                     page: "pages/day15-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_15_-_DDD.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_15_-_DDD_-_CAP_Theorem_Guide.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 16, title: "CQRS",
                     desc: "Command Query Responsibility Segregation. Answer: why would I not use CQRS?",
                     page: "pages/day16-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_16_-_CQRS.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_16_-_CQRS.mp4", lang: "English" }],
                     images: []
                 },
                 {
@@ -1135,80 +1135,80 @@
                     day: 21, title: "Architecture Presentation",
                     desc: "Explain one architecture in 10 minutes to a CTO, Product Manager, and Engineering Manager. Avoid jargon.",
                     page: "pages/day21-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_21_-_Architecture_presentation.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_21_-_Architecture_presentation.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 22, title: "Netflix-like Video Platform",
                     desc: "Complete system design with requirements, NFRs, trade-offs, and failure modes.",
                     page: "pages/day22-v2.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_22_-_Netflix-like_video_platform.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_22_-_Netflix-like_video_platform.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 23, title: "Uber-like Ride Platform",
                     desc: "Focus on geo, matching, availability, location updates, and surge load.",
                     page: "pages/day23-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_23_-_Uber-like_Ride_Platform.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_23_-_Uber-like_Ride_Platform.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 24, title: "WhatsApp-like Messaging System",
                     desc: "Messaging, delivery guarantees, fanout, presence, storage, and offline handling.",
                     page: "pages/day24-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_24_-_WhatsApp-like_Messaging_System.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_24_-_WhatsApp-like_Messaging_System.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 25, title: "Multi-Tenant Enterprise SaaS",
                     desc: "Tenancy, authorization, scale, reporting, integrations, and future AI. Particularly relevant to your experience.",
                     page: "pages/day25-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_25_-_Multi-Tenant_Enterprise_SaaS.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_25_-_Multi-Tenant_Enterprise_SaaS.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 26, title: "Production Incident Interview",
                     desc: "Redis goes down, returns, and 1M requests hit SQL. Explain what happens and how you prevent database collapse.",
-                    page: "pages/day26-v1.html",
-                    audio: [],
-                    video: [],
+                    page: [{ file: "pages/day26-v1.html" }, { file: "others/day26.html" }],
+                    audio: [{ src: "audio/Day_26_-_Production_incident_interview.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_26_-_Production_incident_interview.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 27, title: "Architecture Governance",
                     desc: "ADRs, architecture review boards, decision records, and governing distributed systems evolution.",
                     page: "pages/day27-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_27_-_Architecture_governance.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_27_-_Architecture_governance.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 28, title: "Cost Architecture",
                     desc: "Cloud cost models, reserved instances, spot instances, serverless vs dedicated, and TCO analysis.",
                     page: "pages/day28-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_28_-_Behavioral_Architect_interview.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_28_-_Behavioral_Architect_interview.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 29, title: "Architecture for AI Systems",
                     desc: "RAG patterns, embedding stores, vector databases, inference scaling, and AI integration patterns.",
                     page: "pages/day29-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_29_-_Full_mock_interview.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_29_-_Architecture_for_AI_Systems.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 30, title: "Final Mock Exam",
                     desc: "Complete 60-minute system design under exam conditions. Review gaps and create personal architect manifesto.",
                     page: "pages/day30-v1.html",
-                    audio: [],
-                    video: [],
+                    audio: [{ src: "audio/Day_30_-_Architecture_exam.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_30_-_Final_Mock_Exam.mp4", lang: "English" }],
                     images: []
                 }
             ];
@@ -1245,7 +1245,14 @@
                 html += '<p class="day-desc">' + d.desc + '</p>';
                 html += '<div class="day-actions">';
                 if (d.page) {
-                    html += '<a class="btn-open" href="' + d.page + '">Open Lesson →</a>';
+                    console.log(d);
+                    if (Array.isArray(d.page)) {
+                        $.each(d.page, function (i, p) {
+                            html += '<a class="btn-open" href="' + p.file + '">Open Lesson ' + (i + 1) + ' →</a>';
+                        });
+                    } else {
+                        html += '<a class="btn-open" href="' + d.page + '">Open Lesson →</a>';
+                    }
                 } else {
                     html += '<span class="btn-open coming-soon">Coming Soon</span>';
                 }
