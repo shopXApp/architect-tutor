@@ -1,0 +1,1877 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Architect Interview — 3.5 Hour Senior/Lead/Architect Assessment Pack</title>
+    <style>
+        :root {
+            --bg: #f4f5f7;
+            --panel: #ffffff;
+            --ink: #1c2430;
+            --ink-soft: #4a5666;
+            --line: #d8dee7;
+            --line-soft: #e9edf2;
+            --accent: #1f4e79;
+            --accent-2: #2d6ca2;
+            --good: #1d7a4c;
+            --warn: #a35c00;
+            --bad: #a32020;
+            --guide-bg: #f2f7fb;
+            --guide-line: #9fc2dd;
+            --code-bg: #1e2530;
+            --code-ink: #e6edf3;
+            --radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            scroll-behavior: smooth
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            line-height: 1.55;
+            font-size: 15px;
+        }
+
+        header.masthead {
+            background: linear-gradient(135deg, #12324f 0%, #1f4e79 55%, #2d6ca2 100%);
+            color: #fff;
+            padding: 26px 22px 22px;
+        }
+
+        header.masthead h1 {
+            margin: 0 0 6px;
+            font-size: 26px;
+            letter-spacing: .2px
+        }
+
+        header.masthead p {
+            margin: 0;
+            opacity: .9;
+            font-size: 14px;
+            max-width: 1000px
+        }
+
+        .badgerow {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, .15);
+            border: 1px solid rgba(255, 255, 255, .35);
+            padding: 3px 10px;
+            border-radius: 999px;
+            font-size: 12px
+        }
+
+        .wrap {
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 18px 16px 80px
+        }
+
+        section.card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin: 0 0 22px;
+            scroll-margin-top: 70px;
+        }
+
+        section.card>h2 {
+            margin: 0 0 4px;
+            font-size: 20px;
+            color: var(--accent);
+            border-bottom: 2px solid var(--line-soft);
+            padding-bottom: 8px;
+        }
+
+        .sectionmeta {
+            font-size: 12.5px;
+            color: var(--ink-soft);
+            margin: 6px 0 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px
+        }
+
+        .sectionmeta b {
+            color: var(--ink)
+        }
+
+        h3 {
+            font-size: 16.5px;
+            margin: 22px 0 8px;
+            color: #16334d
+        }
+
+        h4 {
+            font-size: 14.5px;
+            margin: 16px 0 6px;
+            color: #264a6b;
+            text-transform: uppercase;
+            letter-spacing: .4px
+        }
+
+        p {
+            margin: 8px 0
+        }
+
+        ul,
+        ol {
+            margin: 8px 0 8px 20px;
+            padding: 0
+        }
+
+        li {
+            margin: 3px 0
+        }
+
+        code {
+            background: #eef1f5;
+            border: 1px solid var(--line-soft);
+            border-radius: 4px;
+            padding: 1px 5px;
+            font-family: Consolas, "SF Mono", Menlo, monospace;
+            font-size: 13px;
+            color: #123
+        }
+
+        pre {
+            background: var(--code-bg);
+            color: var(--code-ink);
+            padding: 14px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-family: Consolas, "SF Mono", Menlo, monospace;
+            font-size: 13px;
+            line-height: 1.5
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            color: inherit;
+            padding: 0;
+            font-size: 13px
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+            font-size: 13.5px
+        }
+
+        th,
+        td {
+            border: 1px solid var(--line);
+            padding: 7px 9px;
+            text-align: left;
+            vertical-align: top
+        }
+
+        th {
+            background: #eef2f7;
+            font-weight: 600;
+            color: #1b3a57
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafbfc
+        }
+
+        .q {
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--accent-2);
+            border-radius: 6px;
+            padding: 12px 14px;
+            margin: 14px 0;
+            background: #fff
+        }
+
+        .q>.qhead {
+            font-weight: 600;
+            color: #12324f;
+            font-size: 15px
+        }
+
+        .qnum {
+            display: inline-block;
+            background: var(--accent);
+            color: #fff;
+            font-size: 11.5px;
+            padding: 1px 7px;
+            border-radius: 4px;
+            margin-right: 8px;
+            vertical-align: 1px;
+            font-weight: 700;
+            letter-spacing: .3px
+        }
+
+        .ask {
+            background: #fbfcfe;
+            border-left: 3px solid #c4d4e2;
+            padding: 6px 10px;
+            margin: 8px 0;
+            font-style: italic;
+            color: #2b3a4a
+        }
+
+        details {
+            border: 1px solid var(--guide-line);
+            background: var(--guide-bg);
+            border-radius: 6px;
+            padding: 0;
+            margin: 10px 0
+        }
+
+        details[open] {
+            padding-bottom: 10px
+        }
+
+        details>summary {
+            cursor: pointer;
+            padding: 8px 12px;
+            font-weight: 600;
+            color: #0f3d61;
+            font-size: 13.5px;
+            list-style: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            user-select: none;
+        }
+
+        details>summary::-webkit-details-marker {
+            display: none
+        }
+
+        details>summary::before {
+            content: "▸";
+            font-size: 13px;
+            transition: transform .15s
+        }
+
+        details[open]>summary::before {
+            content: "▾"
+        }
+
+        details>summary:hover {
+            background: #e7f0f8
+        }
+
+        details .dbody {
+            padding: 2px 14px 0;
+            font-size: 14px
+        }
+
+        details.warnbox {
+            border-color: #e0b78a;
+            background: #fdf6ee
+        }
+
+        details.warnbox>summary {
+            color: #7a4a06
+        }
+
+        .scorebox {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--line)
+        }
+
+        .scorebox label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--ink-soft);
+            text-transform: uppercase;
+            letter-spacing: .4px
+        }
+
+        input.score {
+            width: 64px;
+            padding: 5px 6px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-size: 14px;
+            text-align: center
+        }
+
+        input.note {
+            flex: 1;
+            min-width: 200px;
+            padding: 5px 8px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-size: 13px
+        }
+
+        input[type=text],
+        input[type=date],
+        input[type=number],
+        textarea,
+        select {
+            font-family: inherit;
+            color: var(--ink);
+            background: #fff
+        }
+
+        textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-size: 13.5px;
+            min-height: 70px;
+            resize: vertical
+        }
+
+        .grid {
+            display: grid;
+            gap: 12px
+        }
+
+        .g2 {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr))
+        }
+
+        .g3 {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr))
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px
+        }
+
+        .field label {
+            font-size: 11.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--ink-soft)
+        }
+
+        .field input,
+        .field select {
+            padding: 7px 8px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            font-size: 14px
+        }
+
+        .btnrow {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 16px 0 4px
+        }
+
+        button {
+            font-family: inherit;
+            font-size: 13.5px;
+            padding: 8px 14px;
+            border-radius: 5px;
+            border: 1px solid var(--accent);
+            background: var(--accent);
+            color: #fff;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button.ghost {
+            background: #fff;
+            color: var(--accent)
+        }
+
+        button:hover {
+            filter: brightness(1.08)
+        }
+
+        .progressbar {
+            height: 16px;
+            background: #e3e8ee;
+            border-radius: 999px;
+            overflow: hidden;
+            border: 1px solid var(--line)
+        }
+
+        .progressbar>div {
+            height: 100%;
+            background: linear-gradient(90deg, #2d6ca2, #1d7a4c);
+            width: 0%;
+            transition: width .3s
+        }
+
+        .mono {
+            font-family: Consolas, Menlo, monospace
+        }
+
+        .kpi {
+            background: #f7f9fb;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 10px 12px
+        }
+
+        .kpi .val {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--accent)
+        }
+
+        .kpi .lbl {
+            font-size: 11.5px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            color: var(--ink-soft)
+        }
+
+        .tag {
+            display: inline-block;
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-weight: 700;
+            letter-spacing: .3px
+        }
+
+        .t-good {
+            background: #e3f4ea;
+            color: var(--good);
+            border: 1px solid #a9d9be
+        }
+
+        .t-warn {
+            background: #fdf1de;
+            color: var(--warn);
+            border: 1px solid #e6c491
+        }
+
+        .t-bad {
+            background: #fbe7e7;
+            color: var(--bad);
+            border: 1px solid #e2adad
+        }
+
+        .t-info {
+            background: #e8f0f8;
+            color: #1f4e79;
+            border: 1px solid #b3ccdf
+        }
+
+        nav.toc {
+            position: sticky;
+            top: 0;
+            z-index: 40;
+            background: #0f2a42;
+            padding: 6px 10px;
+            overflow-x: auto;
+            white-space: nowrap;
+            border-bottom: 2px solid #1f4e79
+        }
+
+        nav.toc a {
+            color: #cfe0ee;
+            text-decoration: none;
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            display: inline-block
+        }
+
+        nav.toc a:hover {
+            background: #1f4e79;
+            color: #fff
+        }
+
+        .timerbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 14px;
+            align-items: center;
+            background: #12324f;
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-top: 14px
+        }
+
+        .timerbar .clock {
+            font-family: Consolas, monospace;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: 1px
+        }
+
+        .note-small {
+            font-size: 12.5px;
+            color: var(--ink-soft)
+        }
+
+        .split {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px
+        }
+
+        @media(max-width:760px) {
+            .split {
+                grid-template-columns: 1fr
+            }
+        }
+
+        .checklist {
+            list-style: none;
+            margin-left: 0
+        }
+
+        .checklist li {
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+            margin: 5px 0
+        }
+
+        .checklist input {
+            margin-top: 4px
+        }
+
+        hr.soft {
+            border: none;
+            border-top: 1px solid var(--line-soft);
+            margin: 18px 0
+        }
+
+        .legend {
+            font-size: 12.5px;
+            background: #f7f9fb;
+            border: 1px dashed var(--line);
+            padding: 8px 12px;
+            border-radius: 6px
+        }
+
+        @media print {
+
+            nav.toc,
+            .btnrow,
+            .timerbar {
+                display: none
+            }
+
+            body {
+                background: #fff;
+                font-size: 11.5px
+            }
+
+            section.card {
+                break-inside: avoid;
+                border: 1px solid #bbb
+            }
+
+            details {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header class="masthead">
+        <h1>Technical Architect Interview Assessment — Senior Engineer → Tech Lead → Architect</h1>
+        <p>A complete, evidence-based 180–225 minute interview process for a candidate with ~12 years of C# / .NET /
+            distributed systems experience. Interviewer guidance, model answers and scoring rubrics are hidden inside
+            collapsible panels — <strong>do not open them in front of the candidate</strong>.</p>
+        <div class="badgerow">
+            <span class="pill">Duration: 225 min target (180 min minimum)</span>
+            <span class="pill">35 sections</span>
+            <span class="pill">Weighted scoring</span>
+            <span class="pill">Offline / self-contained</span>
+            <span class="pill">Levelling: SSE · TL · TA · SA · EA</span>
+        </div>
+    </header>
+
+    <nav class="toc" id="toc">
+        <a href="#s1">1 Dashboard</a>
+        <a href="#s2">2 How to Run</a>
+        <a href="#s3">3 Intro/Career</a>
+        <a href="#s4">4 CS Fundamentals</a>
+        <a href="#s5">5 C#/.NET</a>
+        <a href="#s6">6 Database</a>
+        <a href="#s7">7 OS</a>
+        <a href="#s8">8 Networking</a>
+        <a href="#s9">9 Coding</a>
+        <a href="#s10">10 Code Review</a>
+        <a href="#s11">11 Debugging</a>
+        <a href="#s12">12 Testing</a>
+        <a href="#s13">13 Tooling</a>
+        <a href="#s14">14 System Design</a>
+        <a href="#s15">15 Architecture</a>
+        <a href="#s16">16 Scalability</a>
+        <a href="#s17">17 API Design</a>
+        <a href="#s18">18 Security</a>
+        <a href="#s19">19 Cloud</a>
+        <a href="#s20">20 Decisions</a>
+        <a href="#s21">21 Leadership</a>
+        <a href="#s22">22 Behavioral</a>
+        <a href="#s23">23 Ethics</a>
+        <a href="#s24">24 Culture</a>
+        <a href="#s25">25 Arch Challenge</a>
+        <a href="#s26">26 Defense</a>
+        <a href="#s27">27 Rapid Fire</a>
+        <a href="#s28">28 Scoring</a>
+        <a href="#s29">29 Level</a>
+        <a href="#s30">30 Verdict</a>
+        <a href="#s31">31 Strengths</a>
+        <a href="#s32">32 Weaknesses</a>
+        <a href="#s33">33 Gap Analysis</a>
+        <a href="#s34">34 90-Day Plan</a>
+        <a href="#s35">35 Final Report</a>
+    </nav>
+
+    <div class="wrap">
+
+        <!-- ============ SECTION 1: DASHBOARD ============ -->
+        <section class="card" id="s1">
+            <h2>Section 1 — Interview Dashboard</h2>
+            <div class="sectionmeta"><span><b>Purpose:</b> control panel, timing, live scoring</span><span><b>Time:</b>
+                    setup, 2 min</span></div>
+
+            <div class="grid g3">
+                <div class="field"><label>Candidate Name</label><input type="text" id="f_candidate"
+                        placeholder="Full name"></div>
+                <div class="field"><label>Interviewer / Panel Lead</label><input type="text" id="f_interviewer"
+                        placeholder="Your name"></div>
+                <div class="field"><label>Second Panelist (optional)</label><input type="text" id="f_panel2"
+                        placeholder="Name / role"></div>
+                <div class="field"><label>Date</label><input type="date" id="f_date"></div>
+                <div class="field"><label>Current Role</label><input type="text" id="f_current"
+                        placeholder="e.g. Senior Software Engineer"></div>
+                <div class="field"><label>Target Role</label>
+                    <select id="f_target">
+                        <option>Senior Software Engineer</option>
+                        <option>Technical Lead</option>
+                        <option selected>Technical Architect</option>
+                        <option>Solution Architect</option>
+                        <option>Enterprise Architect</option>
+                    </select>
+                </div>
+                <div class="field"><label>Years of Experience</label><input type="number" id="f_years" value="12"
+                        min="0" max="45"></div>
+                <div class="field"><label>Interview Start Time</label><input type="text" id="f_start"
+                        placeholder="--:--" readonly></div>
+                <div class="field"><label>Interview Status</label>
+                    <select id="f_status">
+                        <option>Not started</option>
+                        <option>In progress</option>
+                        <option>Paused</option>
+                        <option>Completed</option>
+                        <option>Terminated early</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="timerbar">
+                <span class="clock" id="clock">00:00:00</span>
+                <span class="note-small" style="color:#cfe0ee">Elapsed · target 225 min</span>
+                <span id="pacing" class="tag t-info">Pacing: not started</span>
+            </div>
+
+            <div class="btnrow">
+                <button id="btnStart">▶ Start Interview</button>
+                <button id="btnPause" class="ghost">⏸ Pause / Resume</button>
+                <button id="btnReset" class="ghost">⟲ Reset Interview</button>
+                <button id="btnExpand" class="ghost">⊞ Expand All</button>
+                <button id="btnCollapse" class="ghost">⊟ Collapse All</button>
+                <button id="btnPrint" class="ghost">🖨 Print / Save PDF</button>
+                <button id="btnSave" class="ghost">💾 Save to browser</button>
+                <button id="btnLoad" class="ghost">↺ Restore</button>
+            </div>
+
+            <h3>Overall Progress</h3>
+            <div class="progressbar">
+                <div id="bar"></div>
+            </div>
+            <p class="note-small" id="progressText">0 of 0 scored items completed (0%)</p>
+
+            <div class="grid g3" style="margin-top:14px">
+                <div class="kpi">
+                    <div class="lbl">Weighted Score</div>
+                    <div class="val" id="kpiWeighted">–</div>
+                    <div class="note-small">out of 10</div>
+                </div>
+                <div class="kpi">
+                    <div class="lbl">Items Scored</div>
+                    <div class="val" id="kpiCount">0</div>
+                    <div class="note-small">score fields completed</div>
+                </div>
+                <div class="kpi">
+                    <div class="lbl">Indicated Level</div>
+                    <div class="val" id="kpiLevel" style="font-size:19px">–</div>
+                    <div class="note-small">auto-suggested, override in §29</div>
+                </div>
+            </div>
+
+            <h3>Time Plan (interviewer keeps to this)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Block</th>
+                        <th>Minutes</th>
+                        <th>Cumulative</th>
+                        <th>May be shortened?</th>
+                        <th>Done</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>3</td>
+                        <td>Introduction &amp; career</td>
+                        <td>10</td>
+                        <td>10</td>
+                        <td>To 6 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>4</td>
+                        <td>Computer science fundamentals</td>
+                        <td>20</td>
+                        <td>30</td>
+                        <td>To 12 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>5</td>
+                        <td>C# / .NET / ASP.NET Core</td>
+                        <td>25</td>
+                        <td>55</td>
+                        <td>To 18 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td>Database &amp; data modelling</td>
+                        <td>20</td>
+                        <td>75</td>
+                        <td>To 14 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>7–8</td>
+                        <td>OS + Networking</td>
+                        <td>25</td>
+                        <td>100</td>
+                        <td>To 15 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>—</td>
+                        <td><em>Break</em></td>
+                        <td>5</td>
+                        <td>105</td>
+                        <td>Do not skip</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>9–10</td>
+                        <td>Coding + code review</td>
+                        <td>25</td>
+                        <td>130</td>
+                        <td>Never below 20 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>11–13</td>
+                        <td>Debugging, testing, engineering practice</td>
+                        <td>35</td>
+                        <td>165</td>
+                        <td>To 22 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>14</td>
+                        <td>System design (live)</td>
+                        <td>25</td>
+                        <td>190</td>
+                        <td>Never below 20 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>15–20</td>
+                        <td>Architecture, scalability, API, security, cloud, decisions</td>
+                        <td>20</td>
+                        <td>210</td>
+                        <td>Pick 6–8 items</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>21–26</td>
+                        <td>Leadership, behavioral, ethics, architecture defense</td>
+                        <td>15</td>
+                        <td>225</td>
+                        <td>To 10 min</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>27</td>
+                        <td>Rapid fire (filler / gap probe)</td>
+                        <td>optional 10</td>
+                        <td>235</td>
+                        <td>Use only if time remains</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                    <tr>
+                        <td>30–35</td>
+                        <td>Candidate questions + panel debrief (candidate not present)</td>
+                        <td>5 + 15</td>
+                        <td>—</td>
+                        <td>No</td>
+                        <td><input type="checkbox" class="blockdone"></td>
+                    </tr>
+                </tbody>
+            </table>
+            <p class="note-small">Total candidate-facing time: <strong>225 minutes</strong> (3 h 45 m) including one
+                5-minute break. Minimum viable run: 180 minutes by using the "may be shortened" column.</p>
+        </section>
+
+        <!-- ============ SECTION 2: INSTRUCTIONS ============ -->
+        <section class="card" id="s2">
+            <h2>Section 2 — Interviewer Instructions</h2>
+            <div class="sectionmeta"><span><b>Read before the interview starts.</b></span><span><b>Time:</b> pre-read, 5
+                    min</span></div>
+
+            <h3>How to conduct this interview</h3>
+            <ol>
+                <li><strong>Ask the primary question exactly as written.</strong> Do not paraphrase into an easier
+                    version.</li>
+                <li><strong>Allow silence.</strong> Give 10–20 seconds of thinking time before helping. Senior
+                    candidates structure before speaking.</li>
+                <li><strong>Ask the follow-ups.</strong> The primary question separates nobody; the follow-ups separate
+                    everybody.</li>
+                <li><strong>Challenge assumptions.</strong> Even when the answer is correct, push: "What if that
+                    assumption is wrong?"</li>
+                <li><strong>Ask "Why?" at least twice per topic.</strong> Ask "Why not the alternative?" once.</li>
+                <li><strong>Demand real examples.</strong> "Give me a specific system you did this on, and what the
+                    numbers were."</li>
+                <li><strong>Force trade-offs.</strong> An architect never answers with one option; they answer with a
+                    chosen option plus the cost of choosing it.</li>
+                <li><strong>Ask what could fail.</strong> Production thinking is the strongest architect signal.</li>
+                <li><strong>Ask how success would be measured.</strong> Metrics, SLOs, business KPIs, cost.</li>
+                <li><strong>Score only after the discussion.</strong> Never score during the answer; you will anchor on
+                    delivery, not substance.</li>
+            </ol>
+
+            <div class="split">
+                <div>
+                    <h4>Do NOT reward</h4>
+                    <ul>
+                        <li>Buzzwords ("we used CQRS, event-driven, cloud-native")</li>
+                        <li>Technology name-dropping without decision reasoning</li>
+                        <li>Memorised textbook definitions</li>
+                        <li>Long answers with no conclusion</li>
+                        <li>"We" answers that never become "I"</li>
+                        <li>Fake or unverifiable experience</li>
+                        <li>Blaming previous teams / management for everything</li>
+                        <li>Confident wrongness that never self-corrects</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>DO reward</h4>
+                    <ul>
+                        <li>Clear structured reasoning under ambiguity</li>
+                        <li>Correct fundamentals (they never go out of date)</li>
+                        <li>Concrete production experience with numbers</li>
+                        <li>Explicit trade-off statements and reversibility thinking</li>
+                        <li>Ownership of failure and of the fix</li>
+                        <li>Business/cost awareness</li>
+                        <li>Operability: logs, metrics, traces, alerts, rollbacks</li>
+                        <li>Communication: can explain to a junior AND to a CFO</li>
+                    </ul>
+                </div>
+            </div>
+
+            <h3>The five levels of demonstration (used in every rubric)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Level</th>
+                        <th>Meaning</th>
+                        <th>Typical signal</th>
+                        <th>Maps to</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1. Knowing</strong></td>
+                        <td>Can explain the concept</td>
+                        <td>"Redis is an in-memory key-value store"</td>
+                        <td>Mid-level</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2. Applying</strong></td>
+                        <td>Has used it in a real situation</td>
+                        <td>"We cached the pricing lookup with a 5-minute TTL"</td>
+                        <td>Senior</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3. Designing</strong></td>
+                        <td>Can build a solution around it</td>
+                        <td>"Cache-aside + stampede protection + invalidation on outbox event"</td>
+                        <td>Senior+/Lead</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4. Defending</strong></td>
+                        <td>Can justify vs. alternatives, under attack</td>
+                        <td>"We rejected write-through because…, and here is the cost model"</td>
+                        <td>Architect</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5. Leading</strong></td>
+                        <td>Can align others, manage trade-offs, own the outcome</td>
+                        <td>"I ran the ADR review, got infra buy-in, we measured X after 60 days"</td>
+                        <td>Architect / Solution Architect</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>Rule:</strong> A Technical Architect must demonstrate all five. Knowing many technologies is not
+                architecture. If the candidate never gets past level 3 across the whole interview, they are a strong
+                Senior/Lead — not an Architect.</p>
+
+            <h3>Scoring scale (use consistently everywhere)</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Score</th>
+                        <th>Band</th>
+                        <th>Definition</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>1–3</td>
+                        <td><span class="tag t-bad">Weak</span></td>
+                        <td>Incorrect, absent, or fundamentally confused. Cannot be coached quickly.</td>
+                    </tr>
+                    <tr>
+                        <td>4–5</td>
+                        <td><span class="tag t-warn">Below level</span></td>
+                        <td>Partially correct, textbook only, no real application, needs prompting throughout.</td>
+                    </tr>
+                    <tr>
+                        <td>6</td>
+                        <td><span class="tag t-warn">Acceptable</span></td>
+                        <td>Correct with prompting. Meets senior engineer bar, not lead/architect bar.</td>
+                    </tr>
+                    <tr>
+                        <td>7</td>
+                        <td><span class="tag t-info">Good</span></td>
+                        <td>Correct, applied, one real example, some trade-off awareness.</td>
+                    </tr>
+                    <tr>
+                        <td>8</td>
+                        <td><span class="tag t-good">Strong</span></td>
+                        <td>Correct + designed + measured. Handles follow-ups without help.</td>
+                    </tr>
+                    <tr>
+                        <td>9</td>
+                        <td><span class="tag t-good">Very strong</span></td>
+                        <td>Defends against challenge with evidence; discusses cost and failure modes unprompted.</td>
+                    </tr>
+                    <tr>
+                        <td>10</td>
+                        <td><span class="tag t-good">Architect-level</span></td>
+                        <td>Taught the interviewer something; org-level thinking; owns outcomes and people.</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <div class="legend"><strong>Calibration anchor:</strong> a strong senior engineer with 12 years should
+                average 7. An architect-ready candidate averages 8+ <em>with System Design and Architecture ≥ 8</em>. Do
+                not award 9–10 for fluency alone.</div>
+
+            <h3>Panel etiquette</h3>
+            <ul>
+                <li>Only one interviewer drives at a time; the second takes notes in the note fields.</li>
+                <li>Never reveal an <code>&lt;details&gt;</code> panel while the candidate can see the screen. Share
+                    only the question area if screen-sharing.</li>
+                <li>Give the candidate a whiteboard/diagram tool for §14 and §25.</li>
+                <li>Announce timings: "We have 25 minutes for this design; I'll interrupt to keep us moving."</li>
+                <li>Reserve the last 5 minutes for the candidate's questions — their questions are themselves a signal
+                    (score in §24).</li>
+                <li>Debrief and finalise scoring within 30 minutes of the interview ending, while evidence is fresh.
+                </li>
+            </ul>
+
+            <details>
+                <summary>Interviewer Only — Red flags that should end the Architect consideration (not necessarily the
+                    interview)</summary>
+                <div class="dbody">
+                    <ul>
+                        <li>Cannot explain a decision they personally claim to have made.</li>
+                        <li>Every architecture answer is "microservices + Kubernetes + Kafka" regardless of the problem.
+                        </li>
+                        <li>No awareness of cost, licensing, headcount, or operational burden.</li>
+                        <li>Cannot name a single thing that went wrong in 12 years, or blames only others.</li>
+                        <li>Cannot read/critique code — "I don't code anymore" at 12 YOE is a lead/architect
+                            disqualifier in most product orgs.</li>
+                        <li>Treats non-functional requirements (latency, RTO/RPO, compliance) as someone else's job.
+                        </li>
+                        <li>Hostile or dismissive when challenged in §26.</li>
+                    </ul>
+                </div>
+            </details>
+        </section>
+
+        <!-- ============ SECTION 3: INTRODUCTION ============ -->
+        <section class="card" id="s3">
+            <h2>Section 3 — Introduction &amp; Career Discussion</h2>
+            <div class="sectionmeta"><span><b>Target:</b> 10 minutes</span><span><b>Scoring category:</b> Behavioral /
+                    Communication</span><span><b>Goal:</b> establish the truth of the CV and set the depth of the rest
+                    of the interview</span></div>
+
+            <p class="note-small">Open with: "This is a long interview — roughly 3.5 hours with one break. I will
+                interrupt you sometimes to keep us on time; that is not a negative signal. I will also disagree with you
+                deliberately at points — I want to see how you reason, not whether you agree with me."</p>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.1</span>Tell me about yourself — 3 minutes, technical focus, not
+                    a CV recital.</div>
+                <div class="ask">Follow-ups: (a) Which of those years were the most technically formative and why? (b)
+                    What is the single system you would put on your tombstone? (c) If I called your last tech lead, what
+                    would they say you are worst at?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> communication, self-awareness, ability to compress 12 years into a
+                            narrative with a thesis.</p>
+                        <p><strong>Strong indicators:</strong> chronological arc with a <em>reason</em> for each move;
+                            mentions scale/impact numbers; ends by connecting to the target role; answers the "worst at"
+                            question honestly and specifically.</p>
+                        <p><strong>Warning signs:</strong> reads the CV linearly for 6+ minutes; cannot stop talking (a
+                            real problem for an architect who must brief executives); "worst at" answer is a humblebrag
+                            ("I care too much").</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="behav"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence / quotes"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.2</span>Walk me through your career progression. What changed in
+                    <em>how you work</em> between year 4, year 8 and year 12?
+                </div>
+                <div class="ask">Follow-ups: (a) When did you stop being measured on code and start being measured on
+                    outcomes? (b) What did you have to unlearn? (c) What is still true today that you believed in year
+                    4?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> genuine growth vs. 12 × 1 year of experience.</p>
+                        <p><strong>Strong:</strong> describes a shift from "how do I build it" → "should we build it,
+                            and who else is affected"; can name specific unlearned beliefs (e.g. "I used to think
+                            abstraction was always good", "I used to over-engineer for scale we never hit").</p>
+                        <p><strong>Warning:</strong> the last 8 years sound identical; describes seniority purely as
+                            bigger tickets; no mention of people, stakeholders, or money.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="behav"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.3</span>What are you personally responsible for today? Describe
+                    yesterday, hour by hour.</div>
+                <div class="ask">Follow-ups: (a) What breaks if you are on holiday for 3 weeks? (b) Who reviews your
+                    work? (c) What do you sign off on that nobody else can?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> real scope vs. inflated title. "Hour by hour yesterday" is very
+                            hard to fake.</p>
+                        <p><strong>Strong:</strong> concrete mix — design review, unblocking two devs, a production
+                            issue, a stakeholder call, some code; can name what only they can approve (schema changes,
+                            API contracts, release go/no-go).</p>
+                        <p><strong>Warning:</strong> pure ticket execution; cannot describe any decision authority;
+                            claims architect responsibilities but the day is 100% coding assigned work.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="behav"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.4</span>What percentage of your work is architecture? Define
+                    what you mean by "architecture" first.</div>
+                <div class="ask">Follow-ups: (a) Show me an artefact you produced — ADR, diagram, NFR doc, cost model.
+                    (b) Who consumed it? (c) What did it change?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> whether "architecture" means "I drew a box diagram" or "I own
+                            cross-cutting decisions that are expensive to reverse".</p>
+                        <p><strong>Strong:</strong> defines architecture as the set of decisions that are hard/expensive
+                            to change; 20–50% of time; names artefacts (ADR, C4 diagrams, NFR catalogue, threat model,
+                            cost estimate) and their audience.</p>
+                        <p><strong>Warning:</strong> claims 80% architecture but cannot produce an artefact or name a
+                            consumer; confuses architecture with tech selection only.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="arch"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.5</span>Name three technical decisions <em>you personally</em>
+                    made in the last 18 months, and the one you got wrong.</div>
+                <div class="ask">Follow-ups: (a) What were the alternatives and why did you reject them? (b) Who
+                    disagreed? (c) How did you find out it was wrong? (d) What did it cost to correct?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Strong:</strong> decisions have context, constraints, alternatives, and a measurable
+                            outcome; the wrong one is described without defensiveness, with a detection mechanism ("our
+                            p99 alert caught it in week 2").</p>
+                        <p><strong>Warning:</strong> all three decisions are tool choices; no alternatives considered;
+                            "nothing went wrong"; the mistake is trivially small (a naming convention).</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="arch"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.6</span>What is the most complex system you have worked on? Draw
+                    it in 90 seconds (whiteboard).</div>
+                <div class="ask">Follow-ups: (a) Where was the complexity — essential or accidental? (b) What was the
+                    peak throughput / data volume / user count? (c) What part did YOU design? (d) What would you
+                    redesign now?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> depth of exposure and the ability to abstract on demand. Keep this
+                            diagram — reuse it in §14 and §26 ("you said your system did X; how would that survive
+                            here?").</p>
+                        <p><strong>Strong:</strong> distinguishes essential domain complexity from accidental
+                            complexity; knows real numbers (TPS, GB, rows, users, latency); clearly separates their
+                            contribution from the team's.</p>
+                        <p><strong>Warning:</strong> "complex" = many technologies; no numbers; cannot draw the data
+                            flow; ownership is vague.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="arch"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.7</span>What was your single biggest technical contribution,
+                    measured in business terms?</div>
+                <div class="ask">Follow-ups: (a) What was the metric before and after? (b) Who else could have done it?
+                    (c) How was it maintained after you left it?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Strong:</strong> converts technical work into money/time/risk ("cut infra spend 38% =
+                            £190k/yr", "reduced order failures from 2.1% to 0.05%"); mentions handover and durability of
+                            the change.</p>
+                        <p><strong>Warning:</strong> can only express value technically ("we migrated to .NET 8"); no
+                            before/after metric.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="behav"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.8</span>What is the biggest mistake you have made in production?
+                    Full story: cause, blast radius, detection, recovery, prevention.</div>
+                <div class="ask">Follow-ups: (a) How long until you knew? (b) Who told you — a monitor or a customer?
+                    (c) What did the post-mortem change permanently? (d) Did it ever happen again?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Testing:</strong> ownership, blameless post-mortem culture, systemic vs. personal
+                            fixes.</p>
+                        <p><strong>Strong:</strong> owns the decision, not just the keystroke; detection story is
+                            honest; the fix is systemic (guardrail, test, alert, process) rather than "I was more
+                            careful afterwards".</p>
+                        <p><strong>Warning:</strong> the mistake is someone else's; no post-mortem; "we added a manual
+                            checklist" as the only remedy.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="behav"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">3.9</span>Why are you targeting Technical Architect / Solution
+                    Architect now? What do you think the job actually is?</div>
+                <div class="ask">Follow-ups: (a) What part of your current work would you have to give up? (b) What is
+                    the hardest part of the architect job that engineers underestimate? (c) How would you know, 6 months
+                    in, that you were failing?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Strong:</strong> understands that the job is influence without authority, writing,
+                            saying no, and being accountable for decisions whose consequences appear 18 months later;
+                            accepts loss of hands-on time but insists on staying technically credible.</p>
+                        <p><strong>Warning:</strong> wants the title/salary; thinks architects don't code and don't get
+                            paged; describes it as "designing systems and handing them over".</p>
+                        <p><strong>Killer follow-up:</strong> "Describe a time you got a team to adopt a decision you
+                            had no authority to enforce."</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="lead"
+                        min="1" max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <h4>Section 3 interviewer summary</h4>
+            <textarea
+                placeholder="Overall impression after 10 minutes: credibility of CV, communication, likely ceiling. Set your depth strategy for the rest of the interview here."></textarea>
+        </section>
+
+        <!-- ============ SECTION 4: CS FUNDAMENTALS ============ -->
+        <section class="card" id="s4">
+            <h2>Section 4 — Computer Science Fundamentals</h2>
+            <div class="sectionmeta"><span><b>Target:</b> 20 minutes</span><span><b>Category:</b> Computer Science
+                    (5%)</span><span><b>Rule:</b> no definitions — every question is applied</span></div>
+            <p class="note-small">Pick 8–12 questions total. Prioritise 4.1–4.6, 4.11, 4.16–4.20. Fundamentals at 12 YOE
+                should be automatic; hesitation here predicts weak performance in §9 and §14.</p>
+
+            <h3>4A · Data Structures (applied)</h3>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.1</span>You must check whether a user ID already exists among 10
+                    million records, thousands of times per second. What data structure do you choose and why?</div>
+                <div class="ask">Follow-ups: (a) Lookup complexity, average and worst case? (b) Memory implications for
+                    10M entries? (c) What if the set changes constantly? (d) What if it must be shared across 6 API
+                    instances? (e) What if 100 MB of RAM is the hard limit — what do you sacrifice?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> <code>HashSet&lt;T&gt;</code> / <code>Dictionary</code> — O(1)
+                            average, O(n) worst case with pathological collisions (in .NET, randomised string hashing
+                            mitigates this). Memory: ~10M × (hash + key + bucket overhead) ≈ hundreds of MB for strings,
+                            far less for <code>long</code>. Mutating data → invalidation strategy needed.</p>
+                        <p><strong>Level 3+ signals:</strong> moves the set out of process (Redis
+                            <code>SET</code>/<code>SISMEMBER</code>) once multiple instances exist; mentions
+                            <strong>Bloom filter</strong> or cuckoo filter for the memory-constrained variant, and
+                            correctly states it gives false positives but never false negatives → use it as a pre-filter
+                            before the database.
+                        </p>
+                        <p><strong>Level 4+:</strong> asks first "is this a correctness check or an optimisation?";
+                            discusses the race between check and insert (must be enforced by a unique constraint in the
+                            DB regardless of the cache).</p>
+                        <p><strong>Warning:</strong> answers "a List and Contains"; unaware of hash collisions; never
+                            mentions the database's unique index as the source of truth.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.2</span>Array vs <code>List&lt;T&gt;</code> vs
+                    <code>LinkedList&lt;T&gt;</code> in .NET: when has the choice actually mattered in your code?
+                </div>
+                <div class="ask">Follow-ups: (a) What happens internally when a <code>List&lt;T&gt;</code> grows past
+                    capacity? (b) Why is <code>LinkedList&lt;T&gt;</code> almost always slower in practice despite O(1)
+                    insertion? (c) When would you pre-size a list? (d) What is <code>Span&lt;T&gt;</code> for?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> List = dynamic array; doubling reallocation + copy (amortised O(1)
+                            add); LinkedList loses on cache locality and per-node allocation — the O(1) is theoretical,
+                            memory access dominates. Pre-size when count is known to avoid repeated copies and LOH
+                            pressure. <code>Span&lt;T&gt;</code>/<code>Memory&lt;T&gt;</code> for allocation-free
+                            slicing over contiguous memory.</p>
+                        <p><strong>Strong:</strong> mentions Large Object Heap (&gt;85 KB arrays),
+                            <code>ArrayPool&lt;T&gt;</code>, and that "measure first" beats theory.
+                        </p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.3</span>Explain how a Dictionary works internally. What happens
+                    if I use a mutable object as a key and then mutate it?</div>
+                <div class="ask">Follow-ups: (a) Contract between <code>GetHashCode</code> and <code>Equals</code>? (b)
+                    What makes a good hash function? (c) What is the effect of a hash function that returns a constant?
+                    (d) Why are <code>record</code> types convenient here?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> buckets + chaining; hash → bucket index → equality comparison
+                            within bucket. Mutating a key changes its hash → the entry becomes unreachable (a real,
+                            silent bug class). Equal objects must have equal hash codes; the reverse is not required.
+                            Constant hash → all entries in one bucket → O(n) lookups (also a hash-DoS vector). Records
+                            give structural equality and hash for free.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.4</span>Stack vs Queue — give me a production problem you solved
+                    with each. Then: how would you implement an "undo" feature with a 50-step limit?</div>
+                <div class="ask">Follow-ups: (a) Why is a plain <code>Stack&lt;T&gt;</code> wrong for the 50-step limit?
+                    (b) What structure gives O(1) push/pop at both ends? (c) How would you make undo work across a
+                    distributed session?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> stack = LIFO (undo, DFS, expression parsing, call stack); queue =
+                            FIFO (work distribution, message consumers, BFS). 50-step limit needs a bounded deque /
+                            circular buffer — a stack cannot evict from the bottom. Distributed undo → Redis list with
+                            <code>LPUSH</code>/<code>LTRIM</code>, or an event log.
+                        </p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.5</span>You need the top 20 highest-value orders from a stream
+                    of 50 million orders that does not fit in memory. Design it.</div>
+                <div class="ask">Follow-ups: (a) Why not sort everything? (b) Which heap — min or max — and why? (c)
+                    Complexity and memory? (d) How does this change if the stream is partitioned across 10 nodes? (e)
+                    What if you also need the top 20 per customer?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> bounded <strong>min-heap of size 20</strong> — compare each
+                            incoming item to the root, replace if larger. O(n log k) time, O(k) memory, single pass.
+                            Sorting is O(n log n) and needs all data resident. .NET:
+                            <code>PriorityQueue&lt;TElement,TPriority&gt;</code>.
+                        </p>
+                        <p><strong>Level 4 signal:</strong> distributed = each node computes local top-20 → merge 200
+                            candidates centrally (this is correct for top-k; note it is NOT correct for
+                            medians/percentiles, which need sketches like t-digest/HLL). Top-20-per-customer → SQL
+                            window function <code>ROW_NUMBER() OVER (PARTITION BY CustomerId ORDER BY Value DESC)</code>
+                            is likely better than app code.</p>
+                        <p><strong>Warning:</strong> "load into a list and OrderBy().Take(20)" without noticing the
+                            memory constraint.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.6</span>Where do trees and graphs show up in the systems you
+                    build? (Not in interviews — in your actual work.)</div>
+                <div class="ask">Follow-ups: (a) How does a B+ tree relate to a SQL index? (b) Model an org chart /
+                    category hierarchy / permission inheritance in SQL Server — which approaches exist? (c) How do you
+                    detect a cycle in a dependency graph? (d) What is topological sort used for in your world?</div>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p><strong>Expected:</strong> B+ tree = index pages, high fanout, few disk reads, sorted leaves
+                            supporting range scans — that's why an index helps <code>BETWEEN</code> and
+                            <code>ORDER BY</code>. Hierarchies: adjacency list + recursive CTE, nested sets,
+                            materialized path, or <code>hierarchyid</code>; each with read/write trade-offs. Cycle
+                            detection: DFS with a visiting/visited colouring, or Kahn's algorithm. Topological sort:
+                            build/deploy ordering, workflow steps, migration dependencies, DI graph resolution.
+                        </p>
+                        <p><strong>Warning:</strong> can recite tree traversals but has never connected them to indexes,
+                            deployment ordering, or hierarchy modelling.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.7</span>Rapid structure-selection drill — one sentence each, 60
+                    seconds total.</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Requirement</th>
+                            <th>Candidate's choice</th>
+                            <th>✓</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Deduplicate 5M email addresses</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                        <tr>
+                            <td>Rate-limit: last 100 request timestamps per user</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                        <tr>
+                            <td>LRU cache with 10k entries</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                        <tr>
+                            <td>Autocomplete over 2M product names</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                        <tr>
+                            <td>Scheduled jobs, always execute the earliest due</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                        <tr>
+                            <td>Fast range query "orders between two dates"</td>
+                            <td><input type="text" class="note" style="width:100%"></td>
+                            <td><input type="checkbox"></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <details>
+                    <summary>Interviewer Only — Acceptable answers</summary>
+                    <div class="dbody">
+                        <p>HashSet · circular buffer/deque (or Redis sorted set with score = timestamp) · Dictionary +
+                            doubly linked list (or <code>MemoryCache</code>/Redis with LRU eviction policy) · trie /
+                            prefix index / search engine (Elastic, SQL full-text) · min-heap / priority queue (or
+                            Quartz/Hangfire backed by a DB index) · B-tree index / sorted structure.</p>
+                        <p>Score the <em>reasoning speed</em>: a senior should answer 5 of 6 instantly.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <h3>4B · Algorithms (conceptual + practical)</h3>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.8</span>Ten conceptual questions — ask quickly, ~45 seconds
+                    each.</div>
+                <ol>
+                    <li>When is binary search valid, and what is the classic bug in its implementation?</li>
+                    <li>Why is quicksort usually faster than mergesort despite the same average complexity — and when is
+                        it a bad choice?</li>
+                    <li>What does "stable sort" mean and when do you need it?</li>
+                    <li>How does .NET's <code>List.Sort()</code> differ from <code>OrderBy()</code> in LINQ regarding
+                        stability and allocation?</li>
+                    <li>Explain recursion vs iteration — what limits recursion in .NET, and what is tail-call
+                        elimination?</li>
+                    <li>BFS vs DFS: which one for "shortest number of hops", which one for "does a path exist with low
+                        memory"?</li>
+                    <li>What is memoization and where have you used it?</li>
+                    <li>What is the difference between a greedy algorithm and dynamic programming? Give one real example
+                        of each.</li>
+                    <li>What is a hash collision and how do hash tables resolve it?</li>
+                    <li>What is the two-pointer / sliding-window technique good for?</li>
+                </ol>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p>Key expected points: binary search needs a sorted, randomly-accessible collection — classic
+                            bug is <code>(low+high)/2</code> overflow and the off-by-one in the loop bound. Quicksort:
+                            in-place, cache-friendly, but O(n²) with bad pivots / adversarial input; mergesort is stable
+                            and predictable, better for linked structures and external sorting. <code>List.Sort()</code>
+                            = unstable introsort, in-place; <code>OrderBy()</code> = stable, allocates. Recursion
+                            limited by the ~1 MB default thread stack; the .NET JIT does not guarantee tail-call
+                            elimination in C#. BFS = shortest hops + more memory; DFS = lower memory, may find
+                            non-optimal path. Greedy: coin change with canonical coins, scheduling by earliest deadline;
+                            DP: knapsack, edit distance, retry-cost optimisation.</p>
+                        <p><strong>Score holistically:</strong> 8+ if they answer 8 of 10 crisply with an example; 5 if
+                            textbook-only; ≤4 if several are wrong.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Which ones were missed?"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.9</span>Five practical algorithm scenarios — ask 2 or 3
+                    depending on time.</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Scenario</th>
+                            <th>What good looks like (interviewer only — do not read aloud)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>S1</td>
+                            <td>Reconcile 4 million bank transactions against 4 million ledger entries nightly. Design
+                                the matching.</td>
+                            <td>Hash join on a composite key in memory or in SQL; O(n+m) not O(n·m); handle duplicates,
+                                tolerance windows, and unmatched buckets; idempotent re-runs.</td>
+                        </tr>
+                        <tr>
+                            <td>S2</td>
+                            <td>Detect duplicate customer records across 2M rows where names/addresses differ slightly.
+                            </td>
+                            <td>Blocking/bucketing first (postcode, soundex, first 3 chars) to avoid O(n²); then fuzzy
+                                distance (Levenshtein/Jaro) within blocks; threshold + human review queue.</td>
+                        </tr>
+                        <tr>
+                            <td>S3</td>
+                            <td>Merge 30 sorted daily export files (each 2 GB) into one sorted file.</td>
+                            <td>k-way merge with a min-heap, streaming, O(N log k), constant memory — classic external
+                                sort.</td>
+                        </tr>
+                        <tr>
+                            <td>S4</td>
+                            <td>Given a warehouse layout graph, find the cheapest picking route between two zones.</td>
+                            <td>Dijkstra with a priority queue; A* if a heuristic exists; discuss negative weights
+                                (Bellman-Ford) and pre-computation caching.</td>
+                        </tr>
+                        <tr>
+                            <td>S5</td>
+                            <td>An API must return the 95th percentile latency over a rolling 5-minute window,
+                                continuously.</td>
+                            <td>Cannot store everything — use histogram buckets / t-digest / HDR histogram; discuss
+                                approximation vs exactness and why averages hide problems.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Scenarios used + performance"></div>
+            </div>
+
+            <h3>4C · Complexity Analysis</h3>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.10</span>Complexity ladder — show each snippet in order, ask for
+                    time AND space complexity.</div>
+                <p><strong>Snippet 1</strong></p>
+                <pre><code>for (int i = 0; i &lt; n; i++)
+    for (int j = 0; j &lt; n; j++)
+        Console.WriteLine(i + j);</code></pre>
+                <p><strong>Snippet 2</strong></p>
+                <pre><code>for (int i = 0; i &lt; n; i++)
+    for (int j = i; j &lt; n; j++)
+        Sum(i, j);</code></pre>
+                <p><strong>Snippet 3</strong></p>
+                <pre><code>while (n &gt; 1) { n = n / 2; Process(n); }</code></pre>
+                <p><strong>Snippet 4</strong></p>
+                <pre><code>for (int i = 0; i &lt; n; i++)
+    for (int j = 1; j &lt; n; j *= 2)
+        Work(i, j);</code></pre>
+                <p><strong>Snippet 5 — the one that matters</strong></p>
+                <pre><code>// orders: 100,000 items   customers: 50,000 items
+var result = orders
+    .Where(o =&gt; customers.Any(c =&gt; c.Id == o.CustomerId))
+    .ToList();</code></pre>
+                <p><strong>Snippet 6</strong></p>
+                <pre><code>public int Fib(int n) =&gt; n &lt;= 1 ? n : Fib(n - 1) + Fib(n - 2);</code></pre>
+                <p><strong>Snippet 7 — the production trap</strong></p>
+                <pre><code>foreach (var order in await _db.Orders.ToListAsync())
+{
+    var customer = await _db.Customers.FindAsync(order.CustomerId);
+    order.CustomerName = customer.Name;
+}</code></pre>
+                <div class="ask">For snippet 5 and 7 ask: "What would you change, and what is the new complexity / query
+                    count?"</div>
+                <details>
+                    <summary>Interviewer Only — Answers</summary>
+                    <div class="dbody">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Time</th>
+                                    <th>Space</th>
+                                    <th>Notes</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>1</td>
+                                    <td>O(n²)</td>
+                                    <td>O(1)</td>
+                                    <td>Baseline sanity check. Anyone failing this at 12 YOE is a serious concern.</td>
+                                </tr>
+                                <tr>
+                                    <td>2</td>
+                                    <td>O(n²)</td>
+                                    <td>O(1)</td>
+                                    <td>n(n+1)/2 iterations — still quadratic. Watch for "O(n²/2)" — constants dropped.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>3</td>
+                                    <td>O(log n)</td>
+                                    <td>O(1)</td>
+                                    <td>Halving loop.</td>
+                                </tr>
+                                <tr>
+                                    <td>4</td>
+                                    <td>O(n log n)</td>
+                                    <td>O(1)</td>
+                                    <td>Outer linear × inner doubling.</td>
+                                </tr>
+                                <tr>
+                                    <td>5</td>
+                                    <td>O(n·m) = 5×10⁹ comparisons</td>
+                                    <td>O(1) extra</td>
+                                    <td><strong>Fix:</strong> build a <code>HashSet</code> of customer IDs → O(n+m). If
+                                        these are <code>IQueryable</code>, it becomes a SQL join instead — ask which.
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>6</td>
+                                    <td>O(2ⁿ)</td>
+                                    <td>O(n) stack</td>
+                                    <td>Memoize → O(n)/O(n); iterative → O(n)/O(1).</td>
+                                </tr>
+                                <tr>
+                                    <td>7</td>
+                                    <td>1 + N queries (N+1 problem)</td>
+                                    <td>—</td>
+                                    <td><strong>Fix:</strong> single projection/join <code>Include</code> or
+                                        <code>Select</code>; also note it loads the whole Orders table into memory, and
+                                        mutating tracked entities here may cause unintended writes on
+                                        <code>SaveChanges</code>.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        <p><strong>Also probe:</strong> average vs worst case (hash lookup, quicksort), amortised cost
+                            (List growth), and "when does O(n²) not matter?" — correct answer: when n is bounded and
+                            small, and clarity wins. An architect knows Big-O is a screening tool, not the decision.</p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Which snippets were missed?"></div>
+            </div>
+
+            <div class="q">
+                <div class="qhead"><span class="qnum">4.11</span>Five complexity discussion questions</div>
+                <ol>
+                    <li>What is the difference between average case and worst case, and give a case where the worst case
+                        actually happened to you in production.</li>
+                    <li>What is amortised complexity? Where does it appear in .NET collections?</li>
+                    <li>Why can an O(n log n) algorithm beat an O(n) algorithm on real hardware?</li>
+                    <li>How does space complexity influence a decision when RAM is cheap but GC pauses are not?</li>
+                    <li>Your batch job is O(n) but takes 6 hours. Complexity is fine — what do you investigate?</li>
+                </ol>
+                <details>
+                    <summary>Interviewer Evaluation Guide</summary>
+                    <div class="dbody">
+                        <p>Q3 expected: constant factors, cache locality, branch prediction, allocation and GC, I/O
+                            dominance. Q4: allocations drive Gen0/Gen2 collections and LOH fragmentation → latency
+                            spikes; a "slower" algorithm with fewer allocations often wins on p99. Q5 expected checks:
+                            is it I/O bound (network/disk/DB round trips), per-item overhead, serialization, chattiness,
+                            single-threaded when it could be partitioned, DB locking, logging cost. <strong>The signal:
+                                they stop treating Big-O as the answer and start measuring.</strong></p>
+                    </div>
+                </details>
+                <div class="scorebox"><label>Score 1–10</label><input type="number" class="score" data-cat="cs" min="1"
+                        max="10"><input type="text" class="note" placeholder="Evidence"></div>
+            </div>
+
+            <h4>Section 4 interviewer summary</h4>
+            <textarea
+                placeholder="Are fundamentals automatic or laboured? Did they connect CS theory to production systems (indexes, caches, queues)? Note any gap to re-probe in §9."></textarea>
+        </section>
+
+        <!-- INSERT-POINT -->
+
+    </div><!-- /wrap -->
+
+    <footer style="background:#0f2a42;color:#b9cfe2;padding:18px 16px;font-size:12.5px;text-align:center">
+        Technical Architect Interview Assessment Pack · self-contained, offline · Keep interviewer panels closed during
+        the interview · Finalise scoring within 30 minutes of the debrief.
+    </footer>
+
+    <script>
+        (function () {
+            "use strict";
+
+            /* ---------- Timer ---------- */
+            var elapsed = 0, running = false, tid = null;
+            var clock = document.getElementById('clock');
+            var pacing = document.getElementById('pacing');
+            function two(n) { return (n < 10 ? '0' : '') + n; }
+            function render() {
+                var h = Math.floor(elapsed / 3600), m = Math.floor((elapsed % 3600) / 60), s = elapsed % 60;
+                clock.textContent = two(h) + ':' + two(m) + ':' + two(s);
+                var mins = elapsed / 60, label, cls = 't-info';
+                if (!running && elapsed === 0) { label = 'Pacing: not started'; }
+                else if (mins < 30) { label = 'Block: Intro / CS fundamentals'; }
+                else if (mins < 75) { label = 'Block: .NET / Database'; }
+                else if (mins < 105) { label = 'Block: OS / Networking / break'; }
+                else if (mins < 165) { label = 'Block: Coding / Debugging / Testing'; cls = 't-good'; }
+                else if (mins < 190) { label = 'Block: System Design'; cls = 't-good'; }
+                else if (mins < 225) { label = 'Block: Architecture / Leadership'; cls = 't-warn'; }
+                else { label = 'Over target time — wrap up'; cls = 't-bad'; }
+                pacing.textContent = label; pacing.className = 'tag ' + cls;
+            }
+            function tick() { elapsed++; render(); }
+            document.getElementById('btnStart').onclick = function () {
+                if (running) return;
+                running = true; tid = setInterval(tick, 1000);
+                var d = new Date();
+                if (!document.getElementById('f_start').value)
+                    document.getElementById('f_start').value = two(d.getHours()) + ':' + two(d.getMinutes());
+                document.getElementById('f_status').value = 'In progress';
+                if (!document.getElementById('f_date').value)
+                    document.getElementById('f_date').value = d.toISOString().slice(0, 10);
+                render();
+            };
+            document.getElementById('btnPause').onclick = function () {
+                if (running) { clearInterval(tid); running = false; document.getElementById('f_status').value = 'Paused'; }
+                else { running = true; tid = setInterval(tick, 1000); document.getElementById('f_status').value = 'In progress'; }
+            };
+            document.getElementById('btnReset').onclick = function () {
+                if (!confirm('Reset timer, all scores, notes and checkboxes?')) return;
+                clearInterval(tid); running = false; elapsed = 0; render();
+                document.querySelectorAll('input.score, input.note, textarea, input[type=text], input[type=date]').forEach(function (e) {
+                    if (e.id === 'f_years') return; e.value = '';
+                });
+                document.querySelectorAll('input[type=checkbox]').forEach(function (c) { c.checked = false; });
+                document.getElementById('f_status').value = 'Not started';
+                recalc();
+            };
+            render();
+
+            /* ---------- Expand / collapse ---------- */
+            document.getElementById('btnExpand').onclick = function () {
+                document.querySelectorAll('details').forEach(function (d) { d.open = true; });
+            };
+            document.getElementById('btnCollapse').onclick = function () {
+                document.querySelectorAll('details').forEach(function (d) { d.open = false; });
+            };
+            document.getElementById('btnPrint').onclick = function () { window.print(); };
+
+            /* ---------- Scoring ---------- */
+            var WEIGHTS = { dotnet: 10, cs: 5, db: 10, osnet: 5, coding: 10, debug: 10, test: 5, design: 15, arch: 15, sec: 5, lead: 5, behav: 5 };
+            var NAMES = {
+                dotnet: 'C# / .NET', cs: 'Computer Science', db: 'Database', osnet: 'OS / Networking',
+                coding: 'Coding', debug: 'Debugging', test: 'Testing', design: 'System Design', arch: 'Architecture',
+                sec: 'Security / Reliability', lead: 'Leadership', behav: 'Behavioral / Communication'
+            };
+
+            function recalc() {
+                var inputs = document.querySelectorAll('input.score');
+                var sums = {}, counts = {}, done = 0;
+                Object.keys(WEIGHTS).forEach(function (k) { sums[k] = 0; counts[k] = 0; });
+                inputs.forEach(function (i) {
+                    var v = parseFloat(i.value); var c = i.getAttribute('data-cat');
+                    if (!isNaN(v) && v >= 1 && v <= 10 && sums.hasOwnProperty(c)) {
+                        sums[c] += v; counts[c]++; done++;
+                        i.style.borderColor = v >= 8 ? '#1d7a4c' : (v >= 6 ? '#a35c00' : '#a32020');
+                    } else if (i.value === '') { i.style.borderColor = '#d8dee7'; }
+                });
+                var total = inputs.length;
+                var pct = total ? Math.round(done / total * 100) : 0;
+                document.getElementById('bar').style.width = pct + '%';
+                document.getElementById('progressText').textContent = done + ' of ' + total + ' scored items completed (' + pct + '%)';
+                document.getElementById('kpiCount').textContent = done;
+
+                var weightedSum = 0, weightUsed = 0;
+                Object.keys(WEIGHTS).forEach(function (k) {
+                    var avg = counts[k] ? sums[k] / counts[k] : null;
+                    var cell = document.getElementById('avg_' + k);
+                    var manual = document.getElementById('man_' + k);
+                    var effective = null;
+                    if (manual && manual.value !== '' && !isNaN(parseFloat(manual.value))) effective = parseFloat(manual.value);
+                    else effective = avg;
+                    if (cell) cell.textContent = avg !== null ? avg.toFixed(1) : '–';
+                    var eff = document.getElementById('eff_' + k);
+                    if (eff) eff.textContent = effective !== null ? effective.toFixed(1) : '–';
+                    var pts = document.getElementById('pts_' + k);
+                    if (effective !== null) {
+                        weightedSum += effective * WEIGHTS[k]; weightUsed += WEIGHTS[k];
+                        if (pts) pts.textContent = (effective * WEIGHTS[k] / 10).toFixed(2);
+                    } else if (pts) { pts.textContent = '–'; }
+                });
+                var overall = weightUsed ? weightedSum / weightUsed : null;
+                var ov = overall !== null ? overall.toFixed(2) : '–';
+                document.getElementById('kpiWeighted').textContent = ov;
+                var ovCell = document.getElementById('overallScore'); if (ovCell) ovCell.textContent = ov;
+                var covCell = document.getElementById('weightCovered'); if (covCell) covCell.textContent = weightUsed + '%';
+
+                var level = '–', hint = '';
+                if (overall !== null) {
+                    var design = document.getElementById('eff_design'), archv = document.getElementById('eff_arch');
+                    var dv = design ? parseFloat(design.textContent) : NaN;
+                    var av = archv ? parseFloat(archv.textContent) : NaN;
+                    if (overall >= 8.5 && dv >= 8 && av >= 8) { level = 'Architect-ready'; hint = 'Strong across design + architecture.'; }
+                    else if (overall >= 7.5 && dv >= 7 && av >= 7) { level = 'Tech Lead → Architect'; hint = 'Architect-capable with a gap plan.'; }
+                    else if (overall >= 6.5) { level = 'Technical Lead'; hint = 'Solid senior/lead, not yet architect.'; }
+                    else if (overall >= 5.5) { level = 'Senior Software Engineer'; hint = 'Meets senior bar only.'; }
+                    else { level = 'Below senior bar'; hint = 'Do not progress for this role.'; }
+                }
+                document.getElementById('kpiLevel').textContent = level;
+                var lv = document.getElementById('autoLevel'); if (lv) lv.textContent = level + (hint ? ' — ' + hint : '');
+
+                /* report mirror fields */
+                var map = {
+                    rep_overall: ov, rep_candidate: document.getElementById('f_candidate').value,
+                    rep_date: document.getElementById('f_date').value, rep_target: document.getElementById('f_target').value,
+                    rep_interviewer: document.getElementById('f_interviewer').value,
+                    rep_duration: Math.floor(elapsed / 60) + ' min'
+                };
+                Object.keys(map).forEach(function (id) { var e = document.getElementById(id); if (e) e.textContent = map[id] || '–'; });
+                ['dotnet', 'db', 'coding', 'debug', 'design', 'arch', 'lead', 'behav', 'test', 'sec', 'cs', 'osnet'].forEach(function (k) {
+                    var e = document.getElementById('rep_' + k); var s = document.getElementById('eff_' + k);
+                    if (e && s) e.textContent = s.textContent;
+                });
+            }
+            document.addEventListener('input', function (e) {
+                if (e.target.matches('input.score, input.manual, #f_candidate, #f_date, #f_target, #f_interviewer')) recalc();
+            });
+            document.addEventListener('change', function (e) {
+                if (e.target.matches('input[type=checkbox], select')) recalc();
+            });
+
+            /* ---------- Persistence ---------- */
+            function collect() {
+                var data = { elapsed: elapsed, fields: {}, checks: [] };
+                document.querySelectorAll('input[type=text],input[type=number],input[type=date],textarea,select').forEach(function (e, i) {
+                    data.fields[(e.id || 'idx' + i) + '|' + i] = e.value;
+                });
+                document.querySelectorAll('input[type=checkbox]').forEach(function (c) { data.checks.push(c.checked); });
+                return data;
+            }
+            document.getElementById('btnSave').onclick = function () {
+                try { localStorage.setItem('ta_interview_v1', JSON.stringify(collect())); alert('Saved to this browser.'); }
+                catch (err) { alert('Save failed: ' + err.message); }
+            };
+            document.getElementById('btnLoad').onclick = function () {
+                try {
+                    var raw = localStorage.getItem('ta_interview_v1'); if (!raw) { alert('Nothing saved.'); return; }
+                    var d = JSON.parse(raw);
+                    document.querySelectorAll('input[type=text],input[type=number],input[type=date],textarea,select').forEach(function (e, i) {
+                        var key = (e.id || 'idx' + i) + '|' + i; if (d.fields[key] !== undefined) e.value = d.fields[key];
+                    });
+                    document.querySelectorAll('input[type=checkbox]').forEach(function (c, i) { c.checked = !!d.checks[i]; });
+                    elapsed = d.elapsed || 0; render(); recalc(); alert('Restored.');
+                } catch (err) { alert('Restore failed: ' + err.message); }
+            };
+
+            recalc();
+        })();
+    </script>
+</body>
+
+</html>

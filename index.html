@@ -1144,7 +1144,7 @@
                     desc: "Complete system design with requirements, NFRs, trade-offs, and failure modes.",
                     page: "pages/day22-v2.html",
                     audio: [{ src: "audio/Day_22_-_Netflix-like_video_platform.m4a", lang: "English" }],
-                    video: [{ src: "video/Day_22_-_Netflix-like_video_platform.mp4", lang: "English" }],
+                    video: [{ src: "video/Day_22_-_Design_a_Netflix_System.mp4", lang: "English" }],
                     images: []
                 },
                 {
@@ -1182,7 +1182,7 @@
                 {
                     day: 27, title: "Architecture Governance",
                     desc: "ADRs, architecture review boards, decision records, and governing distributed systems evolution.",
-                    page: "pages/day27-v1.html",
+                    page: [{ title: "snorlax", file: "pages/day27-v1.html" }, { title: "claude-fable-5.1-high", file: "others/day27.html" }],
                     audio: [{ src: "audio/Day_27_-_Architecture_governance.m4a", lang: "English" }],
                     video: [{ src: "video/Day_27_-_Architecture_governance.mp4", lang: "English" }],
                     images: []
@@ -1200,13 +1200,21 @@
                     desc: "RAG patterns, embedding stores, vector databases, inference scaling, and AI integration patterns.",
                     page: "pages/day29-v1.html",
                     audio: [{ src: "audio/Day_29_-_Full_mock_interview.m4a", lang: "English" }],
-                    video: [{ src: "video/Day_29_-_Architecture_for_AI_Systems.mp4", lang: "English" }],
+                    video: [{ src: "video/Day_29_-_Full_mock_interview.mp4", lang: "English" }],
                     images: []
                 },
                 {
                     day: 30, title: "Final Mock Exam",
                     desc: "Complete 60-minute system design under exam conditions. Review gaps and create personal architect manifesto.",
                     page: "pages/day30-v1.html",
+                    audio: [{ src: "audio/Day_30_-_Architecture_exam.m4a", lang: "English" }],
+                    video: [{ src: "video/Day_30_-_Architecture_exam.mp4", lang: "English" }],
+                    images: []
+                },
+                {
+                    day: 31, title: "Pre Final Mock Exam",
+                    desc: "Complete 3 hours system design under exam conditions. Review gaps and create personal architect manifesto.",
+                    page: [{ title: "Exam 1", file: "pages/exam-1.html" }, { title: "Exam 2", file: "pages/exam-2.html" }, { title: "Exam 3", file: "pages/exam-3.html" }],
                     audio: [{ src: "audio/Day_30_-_Architecture_exam.m4a", lang: "English" }],
                     video: [{ src: "video/Day_30_-_Final_Mock_Exam.mp4", lang: "English" }],
                     images: []
@@ -1245,10 +1253,9 @@
                 html += '<p class="day-desc">' + d.desc + '</p>';
                 html += '<div class="day-actions">';
                 if (d.page) {
-                    console.log(d);
                     if (Array.isArray(d.page)) {
                         $.each(d.page, function (i, p) {
-                            html += '<a class="btn-open" href="' + p.file + '">Open Lesson ' + (i + 1) + ' →</a>';
+                            html += '<a class="btn-open" href="' + p.file + '">' + (p.title ? p.title : 'Open Lesson ' + (i + 1)) + ' →</a>';
                         });
                     } else {
                         html += '<a class="btn-open" href="' + d.page + '">Open Lesson →</a>';
