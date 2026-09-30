@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Paste a Markdown URL, upload a .md file, or type Markdown and view it rendered as formatted HTML.">
+    <title>Markdown Viewer</title>
+    <link rel="icon"
+        href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C2571B'/%3E%3Cpath d='M6 22V10h3l4 6 4-6h3v12h-3v-7l-4 6-4-6v7z' fill='%23F6F2E9'/%3E%3C/svg%3E">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --paper: #F6F2E9;
+            --paper2: #EFE9DB;
+            --card: #FBF8F1;
+            --ink: #20293A;
+            --ink2: #5A637A;
+            --ink3: #8A90A3;
+            --line: #DCD3BF;
+            --accent: #C2571B;
+            --accent-d: #9E4312;
+            --accent-tint: rgba(194, 87, 27, .08);
+            --ok: #2F6D5C;
+            --err: #8C2F39;
+            --errbg: rgba(140, 47, 57, .08);
+            --tipbg: rgba(44, 93, 119, .07);
+            --shadow: 0 18px 40px -24px rgba(32, 41, 58, .35);
+            --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            --disp: 'Fraunces', Georgia, 'Times New Roman', serif;
+            --body: 'Source Sans 3', 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: var(--body);
+            font-size: 17px;
+            line-height: 1.65;
+            padding: 32px 20px 64px;
+        }
+
+        .wrap {
+            max-width: 980px;
+            margin: 0 auto;
+        }
+
+        header.page {
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 20px;
+            margin-bottom: 28px;
+        }
+
+        header.page h1 {
+            font-family: var(--disp);
+            font-weight: 700;
+            font-size: clamp(1.8rem, 4vw, 2.6rem);
+            letter-spacing: -.01em;
+        }
+
+        header.page p {
+            color: var(--ink2);
+            margin-top: 6px;
+        }
+
+        .panel {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            padding: 22px;
+            margin-bottom: 26px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .tab {
+            font: inherit;
+            font-weight: 600;
+            font-size: .95rem;
+            color: var(--ink2);
+            background: transparent;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            padding: 7px 16px;
+            cursor: pointer;
+        }
+
+        .tab:hover {
+            border-color: var(--accent);
+            color: var(--accent-d);
+        }
+
+        .tab[aria-selected="true"] {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #FBF8F1;
+        }
+
+        .tabpanel[hidden] {
+            display: none;
+        }
+
+        label.field {
+            display: block;
+            font-weight: 600;
+            font-size: .9rem;
+            color: var(--ink2);
+            margin-bottom: 6px;
+        }
+
+        input[type="url"],
+        input[type="file"],
+        textarea {
+            width: 100%;
+            font: inherit;
+            color: var(--ink);
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+
+        input[type="url"] {
+            font-family: var(--mono);
+            font-size: .92rem;
+        }
+
+        textarea {
+            font-family: var(--mono);
+            font-size: .88rem;
+            line-height: 1.6;
+            min-height: 240px;
+            resize: vertical;
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: 2px solid var(--accent);
+            outline-offset: 1px;
+            border-color: var(--accent);
+        }
+
+        .hint {
+            font-size: .82rem;
+            color: var(--ink3);
+            margin-top: 6px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 18px;
+        }
+
+        button {
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            padding: 10px 18px;
+            border: 1px solid transparent;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #FBF8F1;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-d);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            border-color: var(--line);
+            color: var(--ink2);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--accent);
+            color: var(--accent-d);
+        }
+
+        #status {
+            margin-top: 14px;
+            font-size: .9rem;
+            padding: 9px 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #status.show {
+            display: block;
+        }
+
+        #status.info {
+            background: var(--tipbg);
+            color: var(--scalability, #2C5D77);
+        }
+
+        #status.error {
+            background: var(--errbg);
+            color: var(--err);
+        }
+
+        #status.ok {
+            background: var(--accent-tint);
+            color: var(--ok);
+        }
+
+        .output-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 14px;
+        }
+
+        .output-head h2 {
+            font-family: var(--disp);
+            font-size: 1.25rem;
+        }
+
+        /* ---- rendered markdown ---- */
+        #output {
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 28px 30px;
+        }
+
+        #output:empty::before {
+            content: "Rendered Markdown will appear here.";
+            color: var(--ink3);
+        }
+
+        #output h1 {
+            font-family: var(--disp);
+            font-size: clamp(1.6rem, 3.6vw, 2.2rem);
+            font-weight: 700;
+            line-height: 1.2;
+            margin: 0 0 12px;
+        }
+
+        #output h2 {
+            font-family: var(--disp);
+            font-size: 1.55rem;
+            font-weight: 600;
+            margin: 30px 0 10px;
+            padding-bottom: 6px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        #output h3 {
+            font-size: 1.22rem;
+            font-weight: 700;
+            margin: 24px 0 8px;
+        }
+
+        #output h3 strong,
+        #output h3 b {
+            font-weight: 700;
+        }
+
+        #output h4,
+        #output h5,
+        #output h6 {
+            font-size: 1.05rem;
+            font-weight: 700;
+            margin: 18px 0 6px;
+        }
+
+        #output p {
+            margin: 10px 0;
+        }
+
+        #output a {
+            color: var(--accent-d);
+        }
+
+        #output ul,
+        #output ol {
+            margin: 10px 0 10px 24px;
+        }
+
+        #output li {
+            margin: 4px 0;
+        }
+
+        #output strong,
+        #output b {
+            font-weight: 700;
+            color: var(--ink);
+        }
+
+        #output blockquote {
+            border-left: 4px solid var(--accent);
+            background: var(--accent-tint);
+            margin: 14px 0;
+            padding: 10px 16px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        #output code {
+            font-family: var(--mono);
+            font-size: .88em;
+            background: var(--paper2);
+            border-radius: 5px;
+            padding: 1px 5px;
+        }
+
+        #output pre {
+            background: var(--paper2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 12px 14px;
+            overflow-x: auto;
+            margin: 14px 0;
+        }
+
+        #output pre code {
+            background: none;
+            padding: 0;
+        }
+
+        #output hr {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 26px 0;
+        }
+
+        #output img {
+            max-width: 100%;
+        }
+
+        #output table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: .95rem;
+        }
+
+        #output thead th {
+            background: var(--paper2);
+            text-align: left;
+            font-weight: 700;
+            border: 1px solid var(--line);
+            padding: 9px 11px;
+        }
+
+        #output tbody td {
+            border: 1px solid var(--line);
+            padding: 9px 11px;
+            vertical-align: top;
+        }
+
+        #output tbody tr:nth-child(even) {
+            background: rgba(246, 242, 233, .55);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 20px 12px 48px;
+            }
+
+            #output {
+                padding: 18px 16px;
+            }
+
+            #output table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <header class="page">
+            <h1>Markdown Viewer</h1>
+            <p>Load Markdown from a URL, a local <code>.md</code> file, or paste it directly — then read it rendered.</p>
+        </header>
+
+        <section class="panel">
+            <div class="tabs" role="tablist">
+                <button class="tab" id="tab-url" role="tab" aria-selected="true" aria-controls="panel-url"
+                    data-target="panel-url">URL</button>
+                <button class="tab" id="tab-file" role="tab" aria-selected="false" aria-controls="panel-file"
+                    data-target="panel-file">Upload file</button>
+                <button class="tab" id="tab-text" role="tab" aria-selected="false" aria-controls="panel-text"
+                    data-target="panel-text">Paste Markdown</button>
+            </div>
+
+            <div class="tabpanel" id="panel-url" role="tabpanel" aria-labelledby="tab-url">
+                <label class="field" for="md-url">Markdown file URL (.md)</label>
+                <input type="url" id="md-url" placeholder="https://example.com/health-plan.md">
+                <p class="hint">The server hosting the file must allow cross-origin requests (CORS). Opening this page via <code>file://</code> blocks most fetches — serve the folder over HTTP if a fetch fails.</p>
+            </div>
+
+            <div class="tabpanel" id="panel-file" role="tabpanel" aria-labelledby="tab-file" hidden>
+                <label class="field" for="md-file">Choose a .md or .markdown file</label>
+                <input type="file" id="md-file" accept=".md,.markdown,.mdown,.mkd,.txt,text/markdown,text/plain">
+                <p class="hint">Only <code>.md</code>, <code>.markdown</code> and <code>.txt</code> files are accepted (max 5 MB).</p>
+            </div>
+
+            <div class="tabpanel" id="panel-text" role="tabpanel" aria-labelledby="tab-text" hidden>
+                <label class="field" for="md-text">Markdown source</label>
+                <textarea id="md-text" spellcheck="false"
+                    placeholder="# Comprehensive Health &amp; Fitness Plan&#10;&#10;| Finding | Your Value |&#10;|---|---|&#10;| Triglycerides | 483 mg/dL |"></textarea>
+            </div>
+
+            <div class="actions">
+                <button class="btn-primary" id="render-btn" type="button">Render Markdown</button>
+                <button class="btn-ghost" id="clear-btn" type="button">Clear</button>
+                <button class="btn-ghost" id="sample-btn" type="button">Load sample</button>
+            </div>
+
+            <div id="status" role="status" aria-live="polite"></div>
+        </section>
+
+        <div class="output-head">
+            <h2>Rendered output</h2>
+        </div>
+        <article id="output"></article>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+    <script>
+        (function () {
+            'use strict';
+
+            var MAX_BYTES = 5 * 1024 * 1024;
+            var ALLOWED_EXT = /\.(md|markdown|mdown|mkd|txt)$/i;
+
+            var els = {
+                tabs: Array.prototype.slice.call(document.querySelectorAll('.tab')),
+                url: document.getElementById('md-url'),
+                file: document.getElementById('md-file'),
+                text: document.getElementById('md-text'),
+                output: document.getElementById('output'),
+                status: document.getElementById('status')
+            };
+
+            var activeTab = 'url';
+
+            var SAMPLE = [
+                '# Comprehensive Health & Fitness Plan',
+                '',
+                '### Personalized for: Mr. Suraj Prajapati | 32 y/M | Software Engineer (8 AM – 6 PM)',
+                '',
+                '### Based on: Apollo Diagnostics Full Body Checkup, 27-Sep-2026 + Current Daily Eating Routine',
+                '',
+                '| Finding | Your Value | Target | What It Means for Your Plan |',
+                '|---|---|---|---|',
+                '| Triglycerides | 483 mg/dL ⚠️ | <150 | Top priority. Driven by fried food, sugar and a desk-bound schedule. |',
+                '| Fasting Glucose | 115 mg/dL | <100 | Early insulin resistance — fixable with walking after meals. |',
+                '',
+                '- Cut refined carbs and sugar sharply',
+                '- **3–3.5 litres** of water per day',
+                '- 150–200 minutes of cardio per week',
+                '',
+                '> Consistency beats perfection. Re-test in 3 months.'
+            ].join('\n');
+
+            function setStatus(message, kind) {
+                els.status.textContent = message;
+                els.status.className = 'show ' + (kind || 'info');
+            }
+
+            function clearStatus() {
+                els.status.textContent = '';
+                els.status.className = '';
+            }
+
+            function selectTab(name) {
+                activeTab = name;
+                els.tabs.forEach(function (tab) {
+                    var selected = tab.dataset.target === 'panel-' + name;
+                    tab.setAttribute('aria-selected', selected ? 'true' : 'false');
+                    document.getElementById(tab.dataset.target).hidden = !selected;
+                });
+            }
+
+            els.tabs.forEach(function (tab) {
+                tab.addEventListener('click', function () {
+                    selectTab(tab.dataset.target.replace('panel-', ''));
+                });
+            });
+
+            function fallbackMarkdown(src) {
+                var blocks = src.replace(/\r\n?/g, '\n').split(/\n{2,}/);
+                var html = '';
+                var inline = function (s) {
+                    return s
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img alt="$1" src="$2">')
+                        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2">$1</a>')
+                        .replace(/`([^`]+)`/g, '<code>$1</code>')
+                        .replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>')
+                        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+                        .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+                        .replace(/(^|\W)\*([^*\n]+)\*/g, '$1<em>$2</em>');
+                };
+                var isTableRow = function (line) { return /^\s*\|.*\|\s*$/.test(line); };
+                var splitRow = function (line) {
+                    return line.replace(/^\s*\|/, '').replace(/\|\s*$/, '').split('|').map(function (c) { return c.trim(); });
+                };
+
+                blocks.forEach(function (block) {
+                    var lines = block.split('\n');
+                    var first = lines[0];
+
+                    if (/^(-{3,}|\*{3,}|_{3,})$/.test(first.trim())) {
+                        html += '<hr>';
+                        return;
+                    }
+                    if (isTableRow(first) && lines.length > 1 && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(lines[1])) {
+                        var head = splitRow(lines[0]).map(function (c) { return '<th>' + inline(c) + '</th>'; }).join('');
+                        var body = lines.slice(2).map(function (line) {
+                            if (!isTableRow(line)) { return ''; }
+                            return '<tr>' + splitRow(line).map(function (c) { return '<td>' + inline(c) + '</td>'; }).join('') + '</tr>';
+                        }).join('');
+                        html += '<table><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table>';
+                        return;
+                    }
+                    var heading = first.match(/^(#{1,6})\s+(.*)$/);
+                    if (heading) {
+                        var level = heading[1].length;
+                        html += '<h' + level + '>' + inline(heading[2].trim()) + '</h' + level + '>';
+                        return;
+                    }
+                    if (/^>\s?/.test(first)) {
+                        html += '<blockquote>' + inline(block.replace(/^>\s?/gm, '')) + '</blockquote>';
+                        return;
+                    }
+                    if (/^\s*[-*+]\s+/.test(first)) {
+                        html += '<ul>' + lines.map(function (l) {
+                            return /^\s*[-*+]\s+/.test(l) ? '<li>' + inline(l.replace(/^\s*[-*+]\s+/, '')) + '</li>' : '';
+                        }).join('') + '</ul>';
+                        return;
+                    }
+                    if (/^\s*\d+[.)]\s+/.test(first)) {
+                        html += '<ol>' + lines.map(function (l) {
+                            return /^\s*\d+[.)]\s+/.test(l) ? '<li>' + inline(l.replace(/^\s*\d+[.)]\s+/, '')) + '</li>' : '';
+                        }).join('') + '</ol>';
+                        return;
+                    }
+                    html += '<p>' + inline(block).replace(/\n/g, '<br>') + '</p>';
+                });
+
+                return html;
+            }
+
+            function render(markdown, sourceLabel) {
+                var html;
+                if (window.marked && typeof window.marked.parse === 'function') {
+                    if (window.marked.setOptions) {
+                        window.marked.setOptions({ gfm: true, breaks: false });
+                    }
+                    html = window.marked.parse(markdown);
+                } else {
+                    html = fallbackMarkdown(markdown);
+                }
+                els.output.innerHTML = html;
+                if (sourceLabel) {
+                    setStatus('Rendered ' + sourceLabel + '.', 'ok');
+                } else {
+                    setStatus('Rendered pasted Markdown.', 'ok');
+                }
+            }
+
+            function renderUrl() {
+                var url = els.url.value.trim();
+                if (!url) {
+                    setStatus('Enter a URL pointing to a Markdown file.', 'error');
+                    return;
+                }
+                try {
+                    var parsed = new URL(url, window.location.href);
+                    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+                        throw new Error('Only http(s) URLs are supported.');
+                    }
+                } catch (e) {
+                    setStatus('Invalid URL: ' + e.message, 'error');
+                    return;
+                }
+
+                setStatus('Fetching ' + url + ' …', 'info');
+                fetch(parsed.href)
+                    .then(function (res) {
+                        if (!res.ok) {
+                            throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+                        }
+                        return res.text();
+                    })
+                    .then(function (text) {
+                        if (!text.trim()) {
+                            throw new Error('The response was empty.');
+                        }
+                        render(text, 'from ' + parsed.href);
+                    })
+                    .catch(function (err) {
+                        setStatus('Could not fetch that URL — ' + err.message +
+                            '. Check the address, CORS headers, and that the server allows requests from this page.', 'error');
+                    });
+            }
+
+            function renderFile() {
+                var file = els.file.files && els.file.files[0];
+                if (!file) {
+                    setStatus('Choose a Markdown file to upload.', 'error');
+                    return;
+                }
+                if (!ALLOWED_EXT.test(file.name)) {
+                    setStatus('Unsupported file type: ' + file.name + '. Please pick a .md, .markdown or .txt file.', 'error');
+                    return;
+                }
+                if (file.size > MAX_BYTES) {
+                    setStatus('File is too large (max 5 MB).', 'error');
+                    return;
+                }
+                var reader = new FileReader();
+                reader.onload = function () {
+                    render(String(reader.result || ''), 'from ' + file.name);
+                };
+                reader.onerror = function () {
+                    setStatus('Could not read the selected file.', 'error');
+                };
+                setStatus('Reading ' + file.name + ' …', 'info');
+                reader.readAsText(file);
+            }
+
+            function renderText() {
+                var text = els.text.value;
+                if (!text.trim()) {
+                    setStatus('Paste some Markdown into the text area.', 'error');
+                    return;
+                }
+                render(text);
+            }
+
+            document.getElementById('render-btn').addEventListener('click', function () {
+                if (activeTab === 'url') {
+                    renderUrl();
+                } else if (activeTab === 'file') {
+                    renderFile();
+                } else {
+                    renderText();
+                }
+            });
+
+            document.getElementById('clear-btn').addEventListener('click', function () {
+                els.url.value = '';
+                els.file.value = '';
+                els.text.value = '';
+                els.output.innerHTML = '';
+                clearStatus();
+            });
+
+            document.getElementById('sample-btn').addEventListener('click', function () {
+                selectTab('text');
+                els.text.value = SAMPLE;
+                clearStatus();
+                render(SAMPLE, 'sample');
+            });
+
+            els.text.addEventListener('keydown', function (e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    renderText();
+                }
+            });
+
+            if (window.location.protocol === 'file:') {
+                setStatus('This page is open from the filesystem — URL loading may be blocked. File upload and pasted text still work.', 'info');
+            }
+        })();
+    </script>
+</body>
+
+</html>
